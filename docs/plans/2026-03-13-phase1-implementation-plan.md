@@ -254,12 +254,26 @@ model Customer {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders Order[]
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders    Order[]
+  favorites Favorite[]
 
   @@unique([tenantId, userId])
   @@map("customers")
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  customerId String   @map("customer_id")
+  productId  String   @map("product_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productId])
+  @@map("favorites")
 }
 
 // ─── MENU ────────────────────────────────────────────────────
@@ -294,10 +308,20 @@ model Product {
   sortOrder     Int       @default(0) @map("sort_order")
   isActive      Boolean   @default(true) @map("is_active")
 
+  // Dietary/allergen tags (booleans for fast filtering)
+  isVegan       Boolean   @default(false) @map("is_vegan")
+  isVegetarian  Boolean   @default(false) @map("is_vegetarian")
+  isGlutenFree  Boolean   @default(false) @map("is_gluten_free")
+  isDairyFree   Boolean   @default(false) @map("is_dairy_free")
+  containsNuts  Boolean   @default(false) @map("contains_nuts")
+  isSpicy       Boolean   @default(false) @map("is_spicy")
+  allergens     String?   // free-text for additional allergens
+
   tenant         Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   category       Category              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   modifierGroups ProductModifierGroup[]
   orderItems     OrderItem[]
+  favorites      Favorite[]
 
   @@index([tenantId, categoryId])
   @@index([tenantId, isActive])
@@ -387,6 +411,7 @@ model Order {
   paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
   stripePaymentIntentId String? @unique @map("stripe_payment_intent_id")
   stripeCheckoutSessionId String? @unique @map("stripe_checkout_session_id")
+  promoCode               String? @map("promo_code") // Stripe promo code applied
 
   // Pricing (cents)
   subtotal Int
@@ -861,7 +886,7 @@ Layout: Left side = category list (sortable), right side = products for selected
 
 - Category list with drag-and-drop reordering, add/edit/delete
 - Product grid/list for selected category, add/edit/delete
-- Product form: name (en/el), description (en/el), price, image upload, category select, active toggle
+- Product form: name (en/el), description (en/el), price, image upload, category select, active toggle, dietary/allergen tags (vegan, vegetarian, gluten-free, dairy-free, nuts, spicy checkboxes + free-text allergens field)
 - Modifier groups section in product form: attach existing groups or create inline
 - Modifier options: name (en/el), price adjustment, default flag, active toggle
 
@@ -1182,12 +1207,18 @@ git commit -m "feat: AADE myDATA invoice integration
 **Files:**
 - Create: `app/[locale]/order/page.tsx`
 - Create: `app/[locale]/order/layout.tsx`
+- Create: `app/[locale]/order/orders/page.tsx` (order history)
 - Create: `components/order/category-tabs.tsx`
 - Create: `components/order/product-card.tsx`
 - Create: `components/order/product-detail-sheet.tsx`
+- Create: `components/order/menu-search.tsx`
+- Create: `components/order/dietary-filters.tsx`
+- Create: `components/order/order-history.tsx`
 - Create: `lib/stores/cart-store.ts`
 - Create: `components/order/cart-sheet.tsx`
 - Create: `components/order/cart-button.tsx`
+- Create: `app/api/tenants/[tenantSlug]/favorites/route.ts`
+- Create: `app/api/tenants/[tenantSlug]/orders/history/route.ts`
 
 **Step 1: Create Zustand cart store**
 
@@ -1202,14 +1233,18 @@ git commit -m "feat: AADE myDATA invoice integration
 **Step 2: Create menu page**
 
 - Fetch menu via React Query: `useQuery(queryKeys.menu.all(tenantId), fetchMenu)`
+- **Search bar** at top — client-side filter products by name as user types
 - Category tabs (horizontal scroll on mobile, 44px touch targets)
-- Product cards: image, name, price, description truncated
+- **Dietary filter chips** below categories: Vegan, Vegetarian, Gluten-Free (toggle on/off, filter products)
+- Product cards: image, name, price, description truncated, dietary tags as small badges (V, VG, GF)
+- **Heart icon** on product card — tap to favorite/unfavorite (requires login)
 - Tap product → product detail sheet
 
 **Step 3: Product detail sheet**
 
 - Bottom sheet (slide up on mobile)
 - Product image, name, full description, base price
+- Dietary/allergen info displayed (icons + text for allergens)
 - Modifier groups:
   - `required + maxSelect=1` → radio group
   - `required + maxSelect>1` → checkbox group with min/max
@@ -1227,29 +1262,51 @@ git commit -m "feat: AADE myDATA invoice integration
   - Subtotal
   - "Proceed to checkout" button
 
-**Step 5: E2E Verification**
+**Step 5: Favorites API**
 
-1. Seed a tenant with full menu (categories + products + modifiers)
+- `POST /api/tenants/[slug]/favorites` — toggle favorite (add/remove)
+- `GET /api/tenants/[slug]/favorites` — get user's favorites for this tenant
+- Heart icon on product cards reflects favorite state
+- Requires auth (show login prompt if not signed in)
+
+**Step 6: Order history + reorder**
+
+- `GET /api/tenants/[slug]/orders/history` — customer's past orders for this tenant
+- `app/[locale]/order/orders/page.tsx` — order history page
+  - List past orders: date, order number, items summary, total, status
+  - "Reorder" button on each past order → adds all items to cart
+  - Link accessible from menu page header (small icon/link)
+
+**Step 7: E2E Verification**
+
+1. Seed a tenant with full menu (categories + products + modifiers + dietary tags)
 2. Visit `/en/order` → verify categories and products load
-3. Tap a product → verify detail sheet opens with modifiers
-4. Select modifiers → verify price updates
-5. Add to cart → verify cart button appears with count
-6. Open cart → verify items display correctly
-7. Modify quantity → verify total updates
-8. Screenshot mobile: `node screenshot.mjs http://localhost:3000/en/order order-menu`
-9. Screenshot cart: `node screenshot.mjs http://localhost:3000/en/order order-cart`
-10. Refresh page → verify cart persists (localStorage)
+3. **Search**: type a product name → verify filter works
+4. **Dietary filters**: toggle "Vegan" → verify only vegan products show
+5. Tap a product → verify detail sheet opens with modifiers + allergen info
+6. Select modifiers → verify price updates
+7. Add to cart → verify cart button appears with count
+8. **Favorite**: tap heart on a product → verify it toggles (requires login)
+9. Open cart → verify items display correctly
+10. Modify quantity → verify total updates
+11. Screenshot mobile: `node screenshot.mjs http://localhost:3000/en/order order-menu`
+12. Screenshot cart: `node screenshot.mjs http://localhost:3000/en/order order-cart`
+13. Refresh page → verify cart persists (localStorage)
+14. Complete an order → visit `/en/order/orders` → verify order history shows
+15. Tap "Reorder" → verify items added to cart
 
 **Step 6: Commit**
 
 ```bash
 git add app/[locale]/order/ components/order/ lib/stores/cart-store.ts
-git commit -m "feat: customer ordering UI — menu browsing and cart
+git commit -m "feat: customer ordering UI — menu, cart, search, favorites, history
 
-- Menu with category tabs and product grid
-- Product detail sheet with modifier selection
+- Menu with category tabs, search bar, dietary filters
+- Product cards with allergen badges and favorite hearts
+- Product detail sheet with modifier selection + allergen info
 - Zustand cart with localStorage persistence
-- Floating cart button with slide-in sheet
+- Favorites API (toggle + list)
+- Order history with reorder functionality
 - Mobile-first, 44px touch targets"
 ```
 
@@ -1271,8 +1328,9 @@ git commit -m "feat: customer ordering UI — menu browsing and cart
 2. Cart summary (read-only, items with modifiers and prices)
 3. Payment method selector (Stripe / Cash) — radio buttons
 4. Pickup time selector
-5. Customer note (optional textarea)
-6. Place order button
+5. **Promo code input** — text field to enter Stripe promo code, validate via Stripe API, show discount applied
+6. Customer note (optional textarea)
+7. Place order button
 
 **Step 2: Pickup time selector**
 

@@ -58,6 +58,7 @@ Tenant (the store)
  │    ├── Payment (stripe/cash, status, myAADE invoice ref)
  │    └── linked to Customer
  ├── Customer (per-tenant, linked to global User)
+ │    └── Favorite[] (saved products for quick reorder)
  ├── Coupon (Stripe-powered promotions)
  └── Preset (pre-filled menu templates)
 
@@ -87,9 +88,17 @@ User (global, across all tenants)
 ### Customer Flow
 
 ```
-Browse Menu -> Add to Cart -> Review Cart -> Login (Google/Magic Link)
-  -> Choose Payment (Stripe/Cash) -> Select Pickup Time -> Place Order -> Confirmation
+Browse Menu (search, dietary filters, favorites) -> Add to Cart -> Review Cart
+  -> Login (Google/Magic Link) -> Choose Payment (Stripe embedded/Cash)
+  -> Enter Promo Code (optional) -> Select Pickup Time -> Place Order -> Confirmation
 ```
+
+**Menu features:**
+- Search bar — filter products by name
+- Dietary filter chips — Vegan, Vegetarian, Gluten-Free toggles
+- Allergen badges on product cards (V, VG, GF, etc.)
+- Favorite products — heart icon, saved per customer per tenant
+- Order history — view past orders with "Reorder" button to re-add items to cart
 
 ### Pickup Time Logic
 
