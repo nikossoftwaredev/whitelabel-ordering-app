@@ -1,0 +1,6 @@
+{
+    "claudeCode.allowDangerouslySkipPermissions": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    }
+}
