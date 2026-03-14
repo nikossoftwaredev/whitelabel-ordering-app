@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { ProductDetailSheet } from "./product-detail-sheet";
 import { CartSheet } from "./cart-sheet";
+import { LocationPrompt } from "./location-prompt";
 
 /* ─────────────── Types ─────────────── */
 interface ModifierOption {
@@ -104,7 +105,7 @@ function PopularCard({
 }) {
   const hasRequiredModifiers = product.modifierGroups.some((g) => g.required);
   return (
-    <div className="shrink-0 w-[150px] cursor-pointer group" onClick={onClick}>
+    <div className="shrink-0 w-[150px] md:w-[180px] cursor-pointer group" onClick={onClick}>
       <div className="relative overflow-hidden rounded-2xl aspect-square bg-muted">
         {product.image ? (
           <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -113,11 +114,12 @@ function PopularCard({
             <Store className="size-8 text-muted-foreground/30" />
           </div>
         )}
-        {!hasRequiredModifiers && (
-          <button onClick={onQuickAdd} className="absolute bottom-2 right-2 size-8 rounded-full bg-[var(--brand-primary,hsl(var(--primary)))] text-white flex items-center justify-center shadow-lg transition-transform duration-200 hover:scale-110 active:scale-95">
-            <Plus className="size-4" />
-          </button>
-        )}
+        <button
+          onClick={hasRequiredModifiers ? (e: React.MouseEvent) => { e.stopPropagation(); onClick(); } : onQuickAdd}
+          className="absolute bottom-2 right-2 size-8 rounded-full bg-[var(--brand-primary,hsl(var(--primary)))] text-white flex items-center justify-center shadow-lg transition-transform duration-200 hover:scale-110 active:scale-95"
+        >
+          <Plus className="size-4" />
+        </button>
       </div>
       <div className="mt-2 px-0.5">
         <h3 className="text-[13px] font-semibold leading-tight line-clamp-2">{product.name}</h3>
@@ -152,7 +154,7 @@ function ProductCard({
         </div>
         <p className="text-[14px] font-semibold mt-1.5">{formatPrice(product.price)}</p>
       </div>
-      <div className="relative shrink-0 w-[100px] h-[100px] rounded-xl overflow-hidden bg-muted">
+      <div className="relative shrink-0 w-[100px] h-[100px] md:w-[130px] md:h-[130px] rounded-xl overflow-hidden bg-muted">
         {product.image ? (
           <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
         ) : (
@@ -160,11 +162,12 @@ function ProductCard({
             <Store className="size-6 text-muted-foreground/20" />
           </div>
         )}
-        {!hasRequiredModifiers && (
-          <button onClick={onQuickAdd} className="absolute bottom-1.5 right-1.5 size-7 rounded-full bg-[var(--brand-primary,hsl(var(--primary)))] text-white flex items-center justify-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95">
-            <Plus className="size-3.5" />
-          </button>
-        )}
+        <button
+          onClick={hasRequiredModifiers ? (e: React.MouseEvent) => { e.stopPropagation(); onClick(); } : onQuickAdd}
+          className="absolute bottom-1.5 right-1.5 size-7 rounded-full bg-[var(--brand-primary,hsl(var(--primary)))] text-white flex items-center justify-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95"
+        >
+          <Plus className="size-3.5" />
+        </button>
       </div>
     </div>
   );
@@ -209,9 +212,17 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState<string | null>(null);
+
+  // Load stored location on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("user-location");
+    if (stored) setUserLocation(stored);
+  }, []);
 
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const popularScrollRef = useRef<HTMLDivElement>(null);
 
   const cart = useCartStore();
   const itemCount = cart.itemCount();
@@ -334,16 +345,16 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       {/* ═══ LOCATION BAR — like Wolt top bar ═══ */}
       <div className="px-4 py-3 flex items-center gap-2">
         <MapPin className="size-5 text-[var(--brand-primary,hsl(var(--primary)))]" />
-        <button className="flex items-center gap-1 text-sm font-semibold cursor-pointer">
-          Athens
-          <ChevronDown className="size-4 text-muted-foreground" />
+        <button className="flex items-center gap-1 text-sm font-semibold cursor-pointer truncate max-w-[calc(100%-3rem)]">
+          <span className="truncate">{userLocation || "Athens"}</span>
+          <ChevronDown className="size-4 text-muted-foreground shrink-0" />
         </button>
       </div>
 
       {/* ═══ HERO — Cover image with centered logo ═══ */}
       <div className="relative">
-        {/* Cover image */}
-        <div className="h-56 overflow-hidden">
+        {/* Cover image — taller on desktop */}
+        <div className="h-56 md:h-72 lg:h-80 overflow-hidden">
           {coverImage ? (
             <img
               src={coverImage}
@@ -398,7 +409,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       </div>
 
       {/* ═══ SEARCH BAR ═══ */}
-      <div className="px-4 mt-5 mb-2">
+      <div className="px-4 mt-5 mb-2 max-w-2xl mx-auto">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -413,7 +424,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       {/* ═══ STICKY — dietary filters + category tabs ═══ */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md">
         {/* Dietary filter pills */}
-        <div className="flex gap-2 px-4 py-2 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-2 px-4 py-2 overflow-x-auto scrollbar-hide max-w-2xl mx-auto">
           {dietaryFilters.map((f) => (
             <Badge
               key={f.key}
@@ -433,7 +444,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
 
         {/* Category tabs — Wolt uppercase style */}
         {filteredCategories.length > 0 && (
-          <div ref={tabsContainerRef} className="flex overflow-x-auto scrollbar-hide border-b border-border">
+          <div ref={tabsContainerRef} className="flex overflow-x-auto scrollbar-hide border-b border-border max-w-2xl mx-auto">
             {filteredCategories.map((cat) => {
               const isActive = activeCategoryId === cat.id;
               return (
@@ -468,9 +479,18 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
               <section className="pt-5 pb-1">
                 <div className="flex items-center justify-between px-4 mb-3">
                   <h2 className="text-[17px] font-bold">Popular</h2>
-                  <ChevronRight className="size-5 text-muted-foreground" />
+                  <button
+                    className="size-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors duration-200 cursor-pointer"
+                    onClick={() => {
+                      if (popularScrollRef.current) {
+                        popularScrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
+                      }
+                    }}
+                  >
+                    <ChevronRight className="size-5 text-muted-foreground" />
+                  </button>
                 </div>
-                <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 px-4">
+                <div ref={popularScrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 px-4">
                   {popularProducts.map((product) => (
                     <PopularCard key={product.id} product={product} onClick={() => setSelectedProduct(product)} onQuickAdd={handleQuickAdd(product)} />
                   ))}
@@ -515,6 +535,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
 
       <ProductDetailSheet product={selectedProduct} onClose={() => setSelectedProduct(null)} />
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} tenantSlug={tenantSlug} />
+      <LocationPrompt onLocationSet={setUserLocation} />
     </div>
   );
 };

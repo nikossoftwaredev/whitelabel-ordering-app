@@ -6,6 +6,7 @@ import {
   Receipt,
   Settings,
   Users,
+  UserSearch,
   FileText,
   Shield,
 } from "lucide-react";
@@ -24,6 +25,7 @@ export const adminNavItems: Record<string, AdminNavItem[]> = {
     { label: "Menu", href: "menu", icon: UtensilsCrossed },
   ],
   Management: [
+    { label: "Customers", href: "customers", icon: UserSearch },
     { label: "Staff", href: "staff", icon: Users },
     { label: "Invoices", href: "invoices", icon: FileText },
   ],

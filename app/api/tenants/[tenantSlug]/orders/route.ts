@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
 import { validateCart } from "@/lib/orders/validate-cart";
 import { generateOrderNumber } from "@/lib/orders/order-number";
+import { createOrderSchema } from "@/lib/validations/order";
 
 export async function POST(
   request: NextRequest,
@@ -32,7 +33,17 @@ export async function POST(
   }
 
   const body = await request.json();
-  const { items, paymentMethod = "CASH", customerNote } = body;
+
+  // Validate request body with Zod schema
+  const parsed = createOrderSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  const { items, paymentMethod, notes: customerNote } = parsed.data;
 
   // Validate cart
   const validation = await validateCart(tenant.id, items);
