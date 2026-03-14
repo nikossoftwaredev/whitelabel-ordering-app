@@ -8,10 +8,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
-import { Minus, Plus, Store } from "lucide-react";
+import { Minus, Plus, Store, Check } from "lucide-react";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { toast } from "sonner";
 
@@ -55,6 +53,8 @@ interface ProductDetailSheetProps {
   onClose: () => void;
 }
 
+const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
+
 export const ProductDetailSheet = ({
   product,
   onClose,
@@ -65,7 +65,6 @@ export const ProductDetailSheet = ({
     Map<string, Set<string>>
   >(new Map());
 
-  // Reset state when product changes
   useEffect(() => {
     if (product) {
       setQuantity(1);
@@ -92,7 +91,7 @@ export const ProductDetailSheet = ({
           if (maxSelect === 1) {
             current.clear();
           } else if (current.size >= maxSelect) {
-            return prev; // max reached
+            return prev;
           }
           current.add(optionId);
         }
@@ -115,7 +114,6 @@ export const ProductDetailSheet = ({
   }, 0);
 
   const totalPrice = (product.price + modifierTotal) * quantity;
-  const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
 
   const handleAddToCart = () => {
     const modifiers = product.modifierGroups.flatMap((group) => {
@@ -145,130 +143,190 @@ export const ProductDetailSheet = ({
 
   return (
     <Sheet open={!!product} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl">
-        <SheetHeader className="text-left">
-          <SheetTitle>{product.name}</SheetTitle>
-        </SheetHeader>
+      <SheetContent side="bottom" className="max-h-[90vh] rounded-t-3xl p-0 gap-0">
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-2">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+        </div>
 
-        <div className="space-y-4 overflow-y-auto max-h-[60vh] pb-4">
-          {/* Image */}
+        <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
+          {/* Hero image */}
           {product.image ? (
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-48 rounded-xl object-cover"
-            />
+            <div className="relative mx-4 rounded-2xl overflow-hidden aspect-[16/10] bg-muted">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
           ) : (
-            <div className="w-full h-32 rounded-xl bg-muted flex items-center justify-center">
-              <Store className="size-10 text-muted-foreground/30" />
+            <div className="mx-4 rounded-2xl bg-muted flex items-center justify-center h-32">
+              <Store className="size-10 text-muted-foreground/20" />
             </div>
           )}
 
-          {/* Description & tags */}
-          {product.description && (
-            <p className="text-sm text-muted-foreground">{product.description}</p>
-          )}
+          {/* Product info */}
+          <div className="px-5 pt-4 pb-2">
+            <SheetHeader className="text-left p-0">
+              <SheetTitle className="text-xl font-bold leading-tight">
+                {product.name}
+              </SheetTitle>
+            </SheetHeader>
 
-          <div className="flex flex-wrap gap-1">
-            {product.isVegan && <Badge variant="secondary">Vegan</Badge>}
-            {product.isVegetarian && <Badge variant="secondary">Vegetarian</Badge>}
-            {product.isGlutenFree && <Badge variant="secondary">Gluten Free</Badge>}
-            {product.isDairyFree && <Badge variant="secondary">Dairy Free</Badge>}
-            {product.isSpicy && <Badge variant="destructive">Spicy 🌶</Badge>}
-            {product.containsNuts && <Badge variant="outline">Contains Nuts</Badge>}
+            <p className="text-lg font-semibold mt-1" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>
+              {formatPrice(product.price)}
+            </p>
+
+            {product.description && (
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                {product.description}
+              </p>
+            )}
+
+            {/* Dietary tags */}
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {product.isVegan && (
+                <span className="bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">
+                  Vegan
+                </span>
+              )}
+              {product.isVegetarian && (
+                <span className="bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">
+                  Vegetarian
+                </span>
+              )}
+              {product.isGlutenFree && (
+                <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium px-2.5 py-1 rounded-full">
+                  Gluten Free
+                </span>
+              )}
+              {product.isDairyFree && (
+                <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-medium px-2.5 py-1 rounded-full">
+                  Dairy Free
+                </span>
+              )}
+              {product.isSpicy && (
+                <span className="bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium px-2.5 py-1 rounded-full">
+                  Spicy 🌶
+                </span>
+              )}
+              {product.containsNuts && (
+                <span className="bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-medium px-2.5 py-1 rounded-full">
+                  Contains Nuts
+                </span>
+              )}
+            </div>
+
+            {product.allergens && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Allergens: {product.allergens}
+              </p>
+            )}
           </div>
 
-          {product.allergens && (
-            <p className="text-xs text-muted-foreground">
-              Allergens: {product.allergens}
-            </p>
-          )}
-
-          <Separator />
-
           {/* Modifier Groups */}
-          {product.modifierGroups.map((group) => {
-            const selected = selectedModifiers.get(group.id) || new Set();
-            return (
-              <div key={group.id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold">{group.name}</Label>
-                  {group.required && (
-                    <Badge variant="destructive" className="text-[10px]">
-                      Required
-                    </Badge>
-                  )}
-                </div>
-                {group.maxSelect > 1 && (
-                  <p className="text-xs text-muted-foreground">
-                    Select {group.minSelect > 0 ? `${group.minSelect}-` : "up to "}
-                    {group.maxSelect}
-                  </p>
-                )}
-                <div className="space-y-1">
-                  {group.options.map((opt) => {
-                    const isSelected = selected.has(opt.id);
-                    return (
-                      <div
-                        key={opt.id}
-                        className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-colors duration-300 ${
-                          isSelected
-                            ? "border-primary bg-primary/5"
-                            : "hover:bg-muted/50"
-                        }`}
-                        onClick={() =>
-                          toggleModifier(group.id, opt.id, group.maxSelect)
-                        }
-                      >
-                        <span className="text-sm">{opt.name}</span>
-                        {opt.priceAdjustment > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            +{formatPrice(opt.priceAdjustment)}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+          {product.modifierGroups.length > 0 && (
+            <div className="px-5 space-y-4 pb-4">
+              <Separator />
+              {product.modifierGroups.map((group) => {
+                const selected = selectedModifiers.get(group.id) || new Set();
+                return (
+                  <div key={group.id}>
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <h3 className="text-[15px] font-bold">{group.name}</h3>
+                      {group.required && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400">
+                          Required
+                        </span>
+                      )}
+                    </div>
+                    {group.maxSelect > 1 && (
+                      <p className="text-xs text-muted-foreground -mt-1 mb-2">
+                        Select {group.minSelect > 0 ? `${group.minSelect}–` : "up to "}
+                        {group.maxSelect}
+                      </p>
+                    )}
+                    <div className="space-y-1.5">
+                      {group.options.map((opt) => {
+                        const isSelected = selected.has(opt.id);
+                        return (
+                          <button
+                            key={opt.id}
+                            className={`w-full flex items-center justify-between rounded-xl p-3.5 cursor-pointer transition-all duration-200 ${
+                              isSelected
+                                ? "bg-[var(--brand-primary,hsl(var(--primary)))]/8 ring-1.5 ring-[var(--brand-primary,hsl(var(--primary)))]"
+                                : "bg-muted/30 hover:bg-muted/50"
+                            }`}
+                            onClick={() =>
+                              toggleModifier(group.id, opt.id, group.maxSelect)
+                            }
+                          >
+                            <span className="text-sm font-medium">{opt.name}</span>
+                            <div className="flex items-center gap-2">
+                              {opt.priceAdjustment > 0 && (
+                                <span className="text-xs text-muted-foreground">
+                                  +{formatPrice(opt.priceAdjustment)}
+                                </span>
+                              )}
+                              <div
+                                className={`size-5 rounded-full flex items-center justify-center transition-all duration-200 ${
+                                  isSelected
+                                    ? "bg-[var(--brand-primary,hsl(var(--primary)))] text-white"
+                                    : "border-2 border-muted-foreground/20"
+                                }`}
+                              >
+                                {isSelected && <Check className="size-3" />}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-          {/* Quantity */}
-          <div className="flex items-center justify-between pt-2">
-            <Label className="text-sm font-semibold">Quantity</Label>
-            <div className="flex items-center gap-3">
+        {/* ── Bottom bar: quantity + add to cart ── */}
+        <div className="border-t border-border p-4 pb-6 bg-background">
+          <div className="flex items-center gap-4">
+            {/* Quantity */}
+            <div className="flex items-center gap-2 bg-muted/50 rounded-xl p-1">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="size-8 cursor-pointer"
+                className="size-9 rounded-lg cursor-pointer"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
               >
                 <Minus className="size-4" />
               </Button>
-              <span className="text-lg font-semibold w-8 text-center tabular-nums">
+              <span className="text-base font-bold w-6 text-center tabular-nums">
                 {quantity}
               </span>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="size-8 cursor-pointer"
+                className="size-9 rounded-lg cursor-pointer"
                 onClick={() => setQuantity(quantity + 1)}
               >
                 <Plus className="size-4" />
               </Button>
             </div>
-          </div>
-        </div>
 
-        {/* Add to Cart Button */}
-        <div className="pt-4 border-t">
-          <Button
-            className="w-full h-12 text-base cursor-pointer"
-            onClick={handleAddToCart}
-          >
-            Add to cart — {formatPrice(totalPrice)}
-          </Button>
+            {/* Add to cart button */}
+            <button
+              className="flex-1 h-12 rounded-xl font-semibold text-[15px] cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2"
+              style={{
+                background: "var(--brand-primary, hsl(var(--primary)))",
+                color: "white",
+              }}
+              onClick={handleAddToCart}
+            >
+              Add to cart — {formatPrice(totalPrice)}
+            </button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

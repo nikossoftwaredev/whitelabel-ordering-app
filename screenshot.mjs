@@ -30,8 +30,12 @@ const filepath = path.join(dir, filename);
 
 const browser = await puppeteer.launch({ headless: true });
 const page = await browser.newPage();
-await page.setViewport({ width: 1280, height: 800 });
+const width = process.argv[4] ? parseInt(process.argv[4], 10) : 1280;
+const height = process.argv[5] ? parseInt(process.argv[5], 10) : 800;
+await page.setViewport({ width, height });
 await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+// Wait for React Query data to load (skeleton states to resolve)
+await new Promise((r) => setTimeout(r, 3000));
 await page.screenshot({ path: filepath, fullPage: false });
 await browser.close();
 

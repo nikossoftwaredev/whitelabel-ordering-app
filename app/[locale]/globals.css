@@ -115,3 +115,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide scrollbar for carousels and tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
