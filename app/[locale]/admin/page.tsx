@@ -1,12 +1,11 @@
 import { setRequestLocale } from "next-intl/server";
-
-import { redirect } from "@/lib/i18n/navigation";
 import { BasePageProps } from "@/types/page-props";
+import { Dashboard } from "@/components/admin/dashboard/dashboard";
+import { getCurrentTenant } from "@/lib/tenant/context";
 
-const AdminPage = async ({ params }: BasePageProps) => {
+export default async function AdminDashboardPage({ params }: BasePageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  redirect({ href: "/admin/users", locale });
-};
-
-export default AdminPage;
+  const tenant = getCurrentTenant();
+  return <Dashboard tenantId={tenant?.id || ""} />;
+}

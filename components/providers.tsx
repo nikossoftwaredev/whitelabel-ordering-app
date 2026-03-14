@@ -7,6 +7,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { DialogProvider } from "@/components/dialog-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryProvider } from "@/lib/query/provider";
 
 type Props = {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ type Props = {
 
 export const Providers = ({ children, messages, locale }: Props) => {
   return (
+    <QueryProvider>
     <SessionProvider>
       <NextThemesProvider
         attribute="class"
@@ -32,5 +34,6 @@ export const Providers = ({ children, messages, locale }: Props) => {
         </NextIntlClientProvider>
       </NextThemesProvider>
     </SessionProvider>
+    </QueryProvider>
   );
 };

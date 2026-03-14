@@ -1,68 +1,66 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import EmailProvider from "next-auth/providers/email";
 import type { NextAuthOptions } from "next-auth";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/db";
+import { Resend } from "resend";
+
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code",
-        },
+      allowDangerousEmailAccountLinking: true,
+    }),
+    EmailProvider({
+      server: "", // not used — we use custom sendVerificationRequest
+      from: process.env.EMAIL_FROM || "noreply@example.com",
+      sendVerificationRequest: async ({ identifier: email, url }) => {
+        if (!resend) {
+          console.log(`[Dev] Magic link for ${email}: ${url}`);
+          return;
+        }
+
+        await resend.emails.send({
+          from: process.env.EMAIL_FROM || "noreply@example.com",
+          to: email,
+          subject: "Sign in link",
+          html: `
+            <div style="font-family: sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;">
+              <h2 style="margin-bottom: 16px;">Sign in</h2>
+              <p style="color: #666; margin-bottom: 24px;">Click the button below to sign in to your account.</p>
+              <a href="${url}" style="display: inline-block; background: #000; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
+                Sign in
+              </a>
+              <p style="color: #999; font-size: 12px; margin-top: 24px;">
+                If you didn't request this email, you can safely ignore it.
+              </p>
+            </div>
+          `,
+        });
       },
     }),
   ],
+  session: {
+    strategy: "database",
+  },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      if (account?.provider === "google" && profile?.email) {
-        try {
-          await prisma.user.upsert({
-            where: { email: profile.email },
-            update: {
-              name: profile.name || user.name,
-              image: user.image,
-            },
-            create: {
-              email: profile.email,
-              name: profile.name || user.name,
-              image: user.image,
-              emailVerified: (profile as any).email_verified ? new Date() : null,
-            },
-          });
-          return true;
-        } catch (error) {
-          console.error("Error saving user to database:", error);
-          return false;
-        }
-      }
-      return true;
-    },
-    async session({ session, token }) {
-      if (session.user?.email) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: session.user.email },
-          select: { id: true, email: true, name: true, image: true },
-        });
-        if (dbUser)
-          session.user = {
-            ...session.user,
-            id: dbUser.id,
-          };
+    async session({ session, user }) {
+      if (session.user) {
+        session.user.id = user.id;
       }
       return session;
-    },
-    async jwt({ token, account, profile }) {
-      if (account) token.accessToken = account.access_token;
-      return token;
     },
   },
   pages: {
     signIn: "/auth/signin",
+    verifyRequest: "/auth/verify-request",
     error: "/auth/error",
   },
   secret: process.env.NEXTAUTH_SECRET,

@@ -1,0 +1,106 @@
+export const coffeeShopPreset = {
+  categories: [
+    {
+      name: "Hot Drinks",
+      nameEl: "Ζεστά Ροφήματα",
+      products: [
+        { name: "Espresso", nameEl: "Εσπρέσο", price: 180, description: "Single shot espresso" },
+        { name: "Double Espresso", nameEl: "Διπλό Εσπρέσο", price: 250, description: "Double shot espresso" },
+        { name: "Cappuccino", nameEl: "Καπουτσίνο", price: 350, description: "Espresso with steamed milk foam" },
+        { name: "Latte", nameEl: "Λάτε", price: 380, description: "Espresso with steamed milk" },
+        { name: "Filter Coffee", nameEl: "Φίλτρου", price: 250, description: "Freshly brewed filter coffee" },
+        { name: "Greek Coffee", nameEl: "Ελληνικός", price: 200, description: "Traditional Greek coffee" },
+        { name: "Hot Chocolate", nameEl: "Ζεστή Σοκολάτα", price: 350, description: "Rich hot chocolate", isVegetarian: true },
+        { name: "Tea", nameEl: "Τσάι", price: 250, description: "Selection of teas", isVegan: true },
+      ],
+    },
+    {
+      name: "Cold Drinks",
+      nameEl: "Κρύα Ροφήματα",
+      products: [
+        { name: "Freddo Espresso", nameEl: "Φρέντο Εσπρέσο", price: 300, description: "Iced espresso" },
+        { name: "Freddo Cappuccino", nameEl: "Φρέντο Καπουτσίνο", price: 350, description: "Iced cappuccino" },
+        { name: "Iced Latte", nameEl: "Παγωμένο Λάτε", price: 400, description: "Cold latte with ice" },
+        { name: "Frappe", nameEl: "Φραπέ", price: 250, description: "Classic Greek frappe" },
+        { name: "Fresh Orange Juice", nameEl: "Φυσικός Χυμός Πορτοκάλι", price: 350, description: "Freshly squeezed", isVegan: true },
+        { name: "Lemonade", nameEl: "Λεμονάδα", price: 300, description: "Homemade lemonade", isVegan: true },
+      ],
+    },
+    {
+      name: "Snacks",
+      nameEl: "Σνακ",
+      products: [
+        { name: "Club Sandwich", nameEl: "Κλαμπ Σάντουιτς", price: 550, description: "Triple-decker with chicken, bacon, lettuce" },
+        { name: "Toast", nameEl: "Τοστ", price: 350, description: "Ham and cheese toast" },
+        { name: "Bagel", nameEl: "Μπέιγκελ", price: 450, description: "With cream cheese and smoked salmon" },
+      ],
+    },
+    {
+      name: "Pastries",
+      nameEl: "Γλυκά",
+      products: [
+        { name: "Croissant", nameEl: "Κρουασάν", price: 200, description: "Butter croissant", isVegetarian: true },
+        { name: "Chocolate Croissant", nameEl: "Κρουασάν Σοκολάτα", price: 250, description: "Filled with chocolate", isVegetarian: true },
+        { name: "Cookie", nameEl: "Μπισκότο", price: 150, description: "Chocolate chip cookie", isVegetarian: true },
+        { name: "Muffin", nameEl: "Μάφιν", price: 300, description: "Blueberry muffin", isVegetarian: true },
+        { name: "Cheesecake", nameEl: "Τσίζκεϊκ", price: 450, description: "New York style cheesecake", isVegetarian: true },
+      ],
+    },
+  ],
+  modifierGroups: [
+    {
+      name: "Size",
+      nameEl: "Μέγεθος",
+      required: true,
+      minSelect: 1,
+      maxSelect: 1,
+      applyTo: ["Hot Drinks", "Cold Drinks"],
+      options: [
+        { name: "Small", nameEl: "Μικρό", priceAdjustment: 0, isDefault: true },
+        { name: "Medium", nameEl: "Μεσαίο", priceAdjustment: 50 },
+        { name: "Large", nameEl: "Μεγάλο", priceAdjustment: 100 },
+      ],
+    },
+    {
+      name: "Milk",
+      nameEl: "Γάλα",
+      required: false,
+      minSelect: 0,
+      maxSelect: 1,
+      applyTo: ["Hot Drinks", "Cold Drinks"],
+      options: [
+        { name: "Regular Milk", nameEl: "Κανονικό Γάλα", priceAdjustment: 0, isDefault: true },
+        { name: "Oat Milk", nameEl: "Γάλα Βρώμης", priceAdjustment: 50 },
+        { name: "Almond Milk", nameEl: "Γάλα Αμυγδάλου", priceAdjustment: 50 },
+        { name: "Soy Milk", nameEl: "Γάλα Σόγιας", priceAdjustment: 30 },
+      ],
+    },
+    {
+      name: "Sugar",
+      nameEl: "Ζάχαρη",
+      required: true,
+      minSelect: 1,
+      maxSelect: 1,
+      applyTo: ["Hot Drinks", "Cold Drinks"],
+      options: [
+        { name: "No Sugar", nameEl: "Χωρίς Ζάχαρη", priceAdjustment: 0 },
+        { name: "1 Sugar", nameEl: "1 Ζάχαρη", priceAdjustment: 0, isDefault: true },
+        { name: "2 Sugars", nameEl: "2 Ζάχαρες", priceAdjustment: 0 },
+      ],
+    },
+    {
+      name: "Extras",
+      nameEl: "Έξτρα",
+      required: false,
+      minSelect: 0,
+      maxSelect: 3,
+      applyTo: ["Hot Drinks", "Cold Drinks"],
+      options: [
+        { name: "Extra Shot", nameEl: "Έξτρα Σότ", priceAdjustment: 80 },
+        { name: "Whipped Cream", nameEl: "Σαντιγί", priceAdjustment: 50 },
+        { name: "Vanilla Syrup", nameEl: "Σιρόπι Βανίλια", priceAdjustment: 50 },
+        { name: "Caramel Syrup", nameEl: "Σιρόπι Καραμέλα", priceAdjustment: 50 },
+      ],
+    },
+  ],
+};

@@ -1,6 +1,3 @@
-// This file redirects to the actual schema location
-// The actual schema is at lib/db/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,31 +8,463 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ─── MULTI-TENANCY ───────────────────────────────────────────
+
+model Tenant {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  domain        String?  @unique
+  isActive      Boolean  @default(true) @map("is_active")
+
+  // Stripe Connect (Accounts v2)
+  stripeAccountId  String?  @unique @map("stripe_account_id")
+  stripeOnboarded  Boolean  @default(false) @map("stripe_onboarded")
+
+  // Contact
+  phone         String?
+  email         String?
+  address       String?
+
+  // Ordering config
+  prepTimeMinutes   Int      @default(15) @map("prep_time_minutes")
+  isPaused          Boolean  @default(false) @map("is_paused")
+  currency          String   @default("EUR")
+  timezone          String   @default("Europe/Athens")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  config         TenantConfig?
+  operatingHours OperatingHour[]
+  categories     Category[]
+  products       Product[]
+  modifierGroups ModifierGroup[]
+  orders         Order[]
+  tenantRoles    TenantRole[]
+  customers      Customer[]
+  invoices       Invoice[]
+  invoiceSequences InvoiceSequence[]
+
+  @@index([slug])
+  @@index([domain])
+  @@map("tenants")
+}
+
+model TenantConfig {
+  id              String  @id @default(cuid())
+  tenantId        String  @unique @map("tenant_id")
+  logo            String?
+  logoSmall       String? @map("logo_small")
+  coverImage      String? @map("cover_image")
+  description     String?
+  primaryColor    String  @default("#000000") @map("primary_color")
+  secondaryColor  String  @default("#ffffff") @map("secondary_color")
+  accentColor     String  @default("#3b82f6") @map("accent_color")
+
+  // PWA
+  pwaName         String? @map("pwa_name")
+  pwaShortName    String? @map("pwa_short_name")
+  pwaThemeColor   String? @map("pwa_theme_color")
+  pwaBgColor      String? @map("pwa_bg_color")
+
+  // Social / links
+  website         String?
+  instagram       String?
+  facebook        String?
+  googlePlaceId   String? @map("google_place_id")
+
+  tenant          Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_configs")
+}
+
+model OperatingHour {
+  id        String  @id @default(cuid())
+  tenantId  String  @map("tenant_id")
+  dayOfWeek Int     @map("day_of_week") // 0 = Monday, 6 = Sunday
+  openTime  String  @map("open_time")   // "09:00"
+  closeTime String  @map("close_time")  // "23:00"
+  isClosed  Boolean @default(false) @map("is_closed")
+
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, dayOfWeek])
+  @@map("operating_hours")
+}
+
+// ─── AUTH & ROLES ────────────────────────────────────────────
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
   name          String?
   image         String?
+  phone         String?
   emailVerified DateTime? @map("email_verified")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  todos         Todo[]
+  accounts      Account[]
+  sessions      Session[]
+  tenantRoles   TenantRole[]
+  customers     Customer[]
 
   @@map("users")
 }
 
-model Todo {
-  id          String   @id @default(cuid())
-  title       String
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+enum Role {
+  SUPER_ADMIN
+  OWNER
+  ADMIN
+  CASHIER
+}
+
+model TenantRole {
+  id       String @id @default(cuid())
+  tenantId String @map("tenant_id")
+  userId   String @map("user_id")
+  role     Role   @default(CASHIER)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@map("tenant_roles")
+}
+
+// ─── CUSTOMERS (per-tenant) ──────────────────────────────────
+
+model Customer {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  userId     String   @map("user_id")
+  totalSpent Int      @default(0) @map("total_spent")
+  orderCount Int      @default(0) @map("order_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders    Order[]
+  favorites Favorite[]
+
+  @@unique([tenantId, userId])
+  @@map("customers")
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  customerId String   @map("customer_id")
+  productId  String   @map("product_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productId])
+  @@map("favorites")
+}
+
+// ─── MENU ────────────────────────────────────────────────────
+
+model Category {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  name        String
+  nameEl      String?   @map("name_el")
   description String?
-  completed   Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  image       String?
+  sortOrder   Int       @default(0) @map("sort_order")
+  isActive    Boolean   @default(true) @map("is_active")
 
-  userId      String   @map("user_id")
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
 
-  @@index([userId])
-  @@map("todos")
+  @@index([tenantId, sortOrder])
+  @@map("categories")
+}
+
+model Product {
+  id            String    @id @default(cuid())
+  tenantId      String    @map("tenant_id")
+  categoryId    String    @map("category_id")
+  name          String
+  nameEl        String?   @map("name_el")
+  description   String?
+  descriptionEl String?   @map("description_el")
+  image         String?
+  price         Int       // cents (e.g., 350 = 3.50 EUR)
+  sortOrder     Int       @default(0) @map("sort_order")
+  isActive      Boolean   @default(true) @map("is_active")
+
+  // Dietary/allergen tags
+  isVegan       Boolean   @default(false) @map("is_vegan")
+  isVegetarian  Boolean   @default(false) @map("is_vegetarian")
+  isGlutenFree  Boolean   @default(false) @map("is_gluten_free")
+  isDairyFree   Boolean   @default(false) @map("is_dairy_free")
+  containsNuts  Boolean   @default(false) @map("contains_nuts")
+  isSpicy       Boolean   @default(false) @map("is_spicy")
+  allergens     String?
+
+  tenant         Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category       Category              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  modifierGroups ProductModifierGroup[]
+  orderItems     OrderItem[]
+  favorites      Favorite[]
+
+  @@index([tenantId, categoryId])
+  @@index([tenantId, isActive])
+  @@map("products")
+}
+
+model ModifierGroup {
+  id        String  @id @default(cuid())
+  tenantId  String  @map("tenant_id")
+  name      String
+  nameEl    String? @map("name_el")
+  required  Boolean @default(false)
+  minSelect Int     @default(0) @map("min_select")
+  maxSelect Int     @default(1) @map("max_select")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  tenant   Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  options  ModifierOption[]
+  products ProductModifierGroup[]
+
+  @@index([tenantId])
+  @@map("modifier_groups")
+}
+
+model ProductModifierGroup {
+  id              String @id @default(cuid())
+  productId       String @map("product_id")
+  modifierGroupId String @map("modifier_group_id")
+  sortOrder       Int    @default(0) @map("sort_order")
+
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, modifierGroupId])
+  @@map("product_modifier_groups")
+}
+
+model ModifierOption {
+  id              String  @id @default(cuid())
+  modifierGroupId String  @map("modifier_group_id")
+  name            String
+  nameEl          String? @map("name_el")
+  priceAdjustment Int     @default(0) @map("price_adjustment") // cents
+  isDefault       Boolean @default(false) @map("is_default")
+  isActive        Boolean @default(true) @map("is_active")
+  sortOrder       Int     @default(0) @map("sort_order")
+
+  modifierGroup      ModifierGroup       @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+  orderItemModifiers OrderItemModifier[]
+
+  @@index([modifierGroupId])
+  @@map("modifier_options")
+}
+
+// ─── ORDERS ──────────────────────────────────────────────────
+
+enum OrderStatus {
+  NEW
+  ACCEPTED
+  PREPARING
+  READY
+  COMPLETED
+  REJECTED
+}
+
+enum PaymentMethod {
+  STRIPE
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  tenantId    String      @map("tenant_id")
+  customerId  String?     @map("customer_id")
+  orderNumber String      @map("order_number")
+  status      OrderStatus @default(NEW)
+
+  // Payment
+  paymentMethod PaymentMethod @default(CASH) @map("payment_method")
+  paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+  stripePaymentIntentId String? @unique @map("stripe_payment_intent_id")
+  stripeCheckoutSessionId String? @unique @map("stripe_checkout_session_id")
+  promoCode               String? @map("promo_code")
+
+  // Pricing (cents)
+  subtotal Int
+  discount Int @default(0)
+  total    Int
+
+  // Pickup
+  estimatedReadyAt DateTime? @map("estimated_ready_at")
+  customerNote     String?   @map("customer_note")
+  rejectionReason  String?   @map("rejection_reason")
+
+  // Denormalized customer info
+  customerName  String? @map("customer_name")
+  customerEmail String? @map("customer_email")
+  customerPhone String? @map("customer_phone")
+
+  // Timestamps
+  acceptedAt  DateTime? @map("accepted_at")
+  readyAt     DateTime? @map("ready_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  tenant   Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer?   @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+  invoice  Invoice?
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@index([customerId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String @id @default(cuid())
+  orderId    String @map("order_id")
+  productId  String @map("product_id")
+  quantity   Int    @default(1)
+  unitPrice  Int    @map("unit_price")
+  totalPrice Int    @map("total_price")
+  notes      String?
+
+  productName String @map("product_name")
+
+  order     Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product             @relation(fields: [productId], references: [id])
+  modifiers OrderItemModifier[]
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model OrderItemModifier {
+  id               String @id @default(cuid())
+  orderItemId      String @map("order_item_id")
+  modifierOptionId String @map("modifier_option_id")
+  name             String
+  priceAdjustment  Int    @map("price_adjustment")
+
+  orderItem      OrderItem      @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  modifierOption ModifierOption @relation(fields: [modifierOptionId], references: [id])
+
+  @@index([orderItemId])
+  @@map("order_item_modifiers")
+}
+
+// ─── INVOICING (AADE myDATA) ─────────────────────────────────
+
+model Invoice {
+  id              String   @id @default(cuid())
+  tenantId        String   @map("tenant_id")
+  orderId         String?  @unique @map("order_id")
+
+  // AADE response
+  mark            String?  @unique
+  uid             String?  @unique
+  authCode        String?  @map("auth_code")
+  qrUrl           String?  @map("qr_url")
+
+  // Invoice details
+  series          String
+  sequenceNumber  Int      @map("sequence_number")
+  invoiceType     String   @map("invoice_type")
+  issueDate       DateTime @map("issue_date")
+  netAmount       Float    @map("net_amount")
+  vatAmount       Float    @map("vat_amount")
+  grossAmount     Float    @map("gross_amount")
+  vatCategory     Int      @map("vat_category")
+  paymentMethodCode Int    @map("payment_method_code")
+
+  // Status tracking
+  status          String   @default("pending")
+  aadeErrors      String?  @map("aade_errors")
+  retryCount      Int      @default(0) @map("retry_count")
+  lastRetryAt     DateTime? @map("last_retry_at")
+  submittedAt     DateTime? @map("submitted_at")
+  cancelledAt     DateTime? @map("cancelled_at")
+  cancellationMark String? @map("cancellation_mark")
+
+  // Customer info (for B2B invoices)
+  customerName    String?  @map("customer_name")
+  customerVat     String?  @map("customer_vat")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order  Order? @relation(fields: [orderId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("invoices")
+}
+
+model InvoiceSequence {
+  id         String @id @default(cuid())
+  tenantId   String @map("tenant_id")
+  series     String
+  lastNumber Int    @default(0) @map("last_number")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, series])
+  @@map("invoice_sequences")
 }

@@ -1,13 +1,41 @@
-import { LucideIcon, Receipt, Settings, Users } from "lucide-react";
+import {
+  LucideIcon,
+  LayoutDashboard,
+  UtensilsCrossed,
+  ShoppingBag,
+  Receipt,
+  Settings,
+  Users,
+  FileText,
+  Shield,
+} from "lucide-react";
 
 interface AdminNavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  superAdminOnly?: boolean;
 }
 
 export const adminNavItems: Record<string, AdminNavItem[]> = {
-  Management: [{ label: "Users", href: "users", icon: Users }],
-  System: [{ label: "Settings", href: "settings", icon: Settings }],
-  Finance: [{ label: "Expenses", href: "expenses", icon: Receipt }],
+  Store: [
+    { label: "Dashboard", href: "", icon: LayoutDashboard },
+    { label: "Orders", href: "orders", icon: ShoppingBag },
+    { label: "Menu", href: "menu", icon: UtensilsCrossed },
+  ],
+  Management: [
+    { label: "Staff", href: "staff", icon: Users },
+    { label: "Invoices", href: "invoices", icon: FileText },
+  ],
+  System: [
+    { label: "Settings", href: "settings", icon: Settings },
+  ],
+  Platform: [
+    {
+      label: "Tenants",
+      href: "super/tenants",
+      icon: Shield,
+      superAdminOnly: true,
+    },
+  ],
 };

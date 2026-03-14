@@ -11,7 +11,6 @@ import {
 import { ThemeSwitcher } from "@/components/examples/ThemeSwitcher";
 import { LoginButton } from "@/components/examples/login-button";
 import { LanguageSwitcher } from "@/components/examples/language-switcher";
-import { TodoList } from "@/components/examples/todo-list";
 import { BasePageProps } from "@/types/page-props";
 import {
   Shield,
@@ -200,33 +199,6 @@ const Home = async ({ params }: BasePageProps) => {
         {/* Google Reviews */}
         <GoogleReviews placeId={process.env.NEXT_PUBLIC_GOOGLE_PLACE_ID || ""} />
 
-        {/* Todo Demo Section */}
-        {session?.user ? (
-          <TodoList />
-        ) : (
-          <Card className="w-full max-w-2xl">
-            <CardHeader>
-              <CardTitle>Try the Todo Demo</CardTitle>
-              <CardDescription>
-                Sign in with your Google account to see a working example of database integration.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Once you&apos;re signed in, you&apos;ll be able to:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                <li>Create and manage your personal todo list</li>
-                <li>Mark todos as complete</li>
-                <li>Edit and delete your todos</li>
-                <li>All your data is private and secure in Supabase</li>
-              </ul>
-              <div className="mt-6">
-                <LoginButton />
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
       </main>
     </div>
