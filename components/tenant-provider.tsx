@@ -15,6 +15,10 @@ interface TenantContextValue {
   timezone: string;
   prepTimeMinutes: number;
   isPaused: boolean;
+  deliveryEnabled: boolean;
+  deliveryFee: number;
+  freeDeliveryThreshold: number;
+  minOrderAmount: number;
 }
 
 const TenantContext = createContext<TenantContextValue | null>(null);

@@ -1,5 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 import { BaseLayoutProps } from "@/types/page-props";
+import { CustomerHeader } from "@/components/order/customer-header";
 
 export default async function OrderLayout({
   children,
@@ -8,5 +9,10 @@ export default async function OrderLayout({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <>{children}</>;
+  return (
+    <>
+      <CustomerHeader />
+      {children}
+    </>
+  );
 }

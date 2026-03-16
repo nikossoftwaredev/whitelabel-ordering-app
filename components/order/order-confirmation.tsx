@@ -25,13 +25,13 @@ export const OrderConfirmation = () => {
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
-        <Button asChild className="flex-1 cursor-pointer">
+        <Button asChild className="flex-1 ">
           <Link href="/order">
             <ArrowLeft className="size-4 mr-2" />
             Back to Menu
           </Link>
         </Button>
-        <Button variant="outline" asChild className="flex-1 cursor-pointer">
+        <Button variant="outline" asChild className="flex-1 ">
           <Link href="/order/orders">
             <ClipboardList className="size-4 mr-2" />
             Order History

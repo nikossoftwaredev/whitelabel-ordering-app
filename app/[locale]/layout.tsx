@@ -69,6 +69,10 @@ const LocaleLayout = async ({ children, params }: BaseLayoutProps) => {
         timezone: tenant.timezone,
         prepTimeMinutes: tenant.prepTimeMinutes,
         isPaused: tenant.isPaused,
+        deliveryEnabled: tenant.deliveryEnabled,
+        deliveryFee: tenant.deliveryFee,
+        freeDeliveryThreshold: tenant.freeDeliveryThreshold,
+        minOrderAmount: tenant.minOrderAmount,
       }
     : null;
 

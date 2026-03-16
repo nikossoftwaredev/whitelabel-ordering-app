@@ -250,9 +250,10 @@ export const ProductDetailSheet = ({
                       {group.options.map((opt) => {
                         const isSelected = selected.has(opt.id);
                         return (
-                          <button
+                          <Button
                             key={opt.id}
-                            className={`w-full flex items-center justify-between rounded-xl p-3.5 cursor-pointer transition-all duration-200 ${
+                            variant="ghost"
+                            className={`w-full flex items-center justify-between rounded-xl p-3.5 h-auto transition-all duration-200 ${
                               isSelected
                                 ? "bg-[var(--brand-primary,hsl(var(--primary)))]/8 ring-1.5 ring-[var(--brand-primary,hsl(var(--primary)))]"
                                 : "bg-muted/30 hover:bg-muted/50"
@@ -278,7 +279,7 @@ export const ProductDetailSheet = ({
                                 {isSelected && <Check className="size-3" />}
                               </div>
                             </div>
-                          </button>
+                          </Button>
                         );
                       })}
                     </div>
@@ -297,7 +298,7 @@ export const ProductDetailSheet = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-9 rounded-lg cursor-pointer"
+                className="size-9 rounded-lg"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
               >
                 <Minus className="size-4" />
@@ -308,7 +309,7 @@ export const ProductDetailSheet = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-9 rounded-lg cursor-pointer"
+                className="size-9 rounded-lg"
                 onClick={() => setQuantity(quantity + 1)}
               >
                 <Plus className="size-4" />
@@ -316,8 +317,8 @@ export const ProductDetailSheet = ({
             </div>
 
             {/* Add to cart button */}
-            <button
-              className="flex-1 h-12 rounded-xl font-semibold text-[15px] cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2"
+            <Button
+              className="flex-1 h-12 rounded-xl font-semibold text-[15px] active:scale-[0.98]"
               style={{
                 background: "var(--brand-primary, hsl(var(--primary)))",
                 color: "white",
@@ -325,7 +326,7 @@ export const ProductDetailSheet = ({
               onClick={handleAddToCart}
             >
               Add to cart — {formatPrice(totalPrice)}
-            </button>
+            </Button>
           </div>
         </div>
       </SheetContent>

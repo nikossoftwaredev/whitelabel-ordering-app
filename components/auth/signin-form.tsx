@@ -15,21 +15,21 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Mail } from "lucide-react";
 
-export const SignInForm = () => {
+export const SignInForm = ({ callbackUrl = "/" }: { callbackUrl?: string }) => {
   const [email, setEmail] = useState("");
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
 
   const handleGoogleSignIn = async () => {
     setIsLoadingGoogle(true);
-    await signIn("google", { callbackUrl: "/" });
+    await signIn("google", { callbackUrl });
   };
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setIsLoadingEmail(true);
-    await signIn("email", { email, callbackUrl: "/" });
+    await signIn("email", { email, callbackUrl });
   };
 
   return (

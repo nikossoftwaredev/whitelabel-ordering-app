@@ -1,15 +1,25 @@
 "use client";
 
+import { useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { Link } from "@/lib/i18n/navigation";
+import { SignInForm } from "@/components/auth/signin-form";
 
 interface CartSheetProps {
   open: boolean;
@@ -21,8 +31,11 @@ const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
 
 export const CartSheet = ({ open, onOpenChange }: CartSheetProps) => {
   const cart = useCartStore();
+  const { data: session } = useSession();
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[85vh] rounded-t-3xl p-0 gap-0">
         {/* Drag handle */}
@@ -76,19 +89,23 @@ export const CartSheet = ({ open, onOpenChange }: CartSheetProps) => {
                             </p>
                           )}
                         </div>
-                        <button
-                          className="shrink-0 size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors duration-200 cursor-pointer"
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          className="shrink-0 size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           onClick={() => cart.removeItem(item.cartItemId)}
                         >
                           <Trash2 className="size-3.5" />
-                        </button>
+                        </Button>
                       </div>
 
                       <div className="flex items-center justify-between mt-2">
                         {/* Quantity controls */}
                         <div className="flex items-center gap-1 bg-muted/50 rounded-lg">
-                          <button
-                            className="size-7 flex items-center justify-center cursor-pointer hover:bg-muted rounded-lg transition-colors duration-200"
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            className="size-7 rounded-lg hover:bg-muted"
                             onClick={() =>
                               cart.updateQuantity(
                                 item.cartItemId,
@@ -97,12 +114,14 @@ export const CartSheet = ({ open, onOpenChange }: CartSheetProps) => {
                             }
                           >
                             <Minus className="size-3" />
-                          </button>
+                          </Button>
                           <span className="text-sm font-semibold w-5 text-center tabular-nums">
                             {item.quantity}
                           </span>
-                          <button
-                            className="size-7 flex items-center justify-center cursor-pointer hover:bg-muted rounded-lg transition-colors duration-200"
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            className="size-7 rounded-lg hover:bg-muted"
                             onClick={() =>
                               cart.updateQuantity(
                                 item.cartItemId,
@@ -111,7 +130,7 @@ export const CartSheet = ({ open, onOpenChange }: CartSheetProps) => {
                             }
                           >
                             <Plus className="size-3" />
-                          </button>
+                          </Button>
                         </div>
                         <span className="font-semibold text-sm tabular-nums">
                           {formatPrice(item.totalPrice)}
@@ -134,25 +153,57 @@ export const CartSheet = ({ open, onOpenChange }: CartSheetProps) => {
                   {formatPrice(cart.subtotal())}
                 </span>
               </div>
-              <Button
-                className="w-full h-12 rounded-xl text-[15px] font-semibold cursor-pointer"
-                style={{
-                  background: "var(--brand-primary, hsl(var(--primary)))",
-                  color: "white",
-                }}
-                asChild
-              >
-                <Link
-                  href="/order/checkout"
-                  onClick={() => onOpenChange(false)}
+              {session ? (
+                <Button
+                  className="w-full h-12 rounded-xl text-[15px] font-semibold"
+                  style={{
+                    background: "var(--brand-primary, hsl(var(--primary)))",
+                    color: "white",
+                  }}
+                  asChild
+                >
+                  <Link
+                    href="/order/checkout"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    Proceed to checkout
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  className="w-full h-12 rounded-xl text-[15px] font-semibold"
+                  style={{
+                    background: "var(--brand-primary, hsl(var(--primary)))",
+                    color: "white",
+                  }}
+                  onClick={() => {
+                    onOpenChange(false);
+                    setShowAuthDialog(true);
+                  }}
                 >
                   Proceed to checkout
-                </Link>
-              </Button>
+                </Button>
+              )}
             </div>
           </>
         )}
       </SheetContent>
     </Sheet>
+
+    {/* Auth Dialog */}
+    <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+      <DialogContent className="sm:max-w-sm p-6 gap-6">
+        <DialogHeader className="space-y-2">
+          <DialogTitle className="text-2xl font-bold">
+            Create an account or log in
+          </DialogTitle>
+          <DialogDescription>
+            Log in to place your order. Your cart will be saved.
+          </DialogDescription>
+        </DialogHeader>
+        <SignInForm callbackUrl="/order/checkout" />
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };

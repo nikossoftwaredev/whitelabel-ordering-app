@@ -27,10 +27,14 @@ model Tenant {
   address       String?
 
   // Ordering config
-  prepTimeMinutes   Int      @default(15) @map("prep_time_minutes")
-  isPaused          Boolean  @default(false) @map("is_paused")
-  currency          String   @default("EUR")
-  timezone          String   @default("Europe/Athens")
+  prepTimeMinutes       Int      @default(15) @map("prep_time_minutes")
+  isPaused              Boolean  @default(false) @map("is_paused")
+  currency              String   @default("EUR")
+  timezone              String   @default("Europe/Athens")
+  deliveryEnabled       Boolean  @default(false) @map("delivery_enabled")
+  deliveryFee           Int      @default(0) @map("delivery_fee")
+  freeDeliveryThreshold Int      @default(0) @map("free_delivery_threshold")
+  minOrderAmount        Int      @default(0) @map("min_order_amount")
 
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -308,6 +312,12 @@ model ModifierOption {
 
 // ─── ORDERS ──────────────────────────────────────────────────
 
+enum OrderType {
+  PICKUP
+  DELIVERY
+  DINE_IN
+}
+
 enum OrderStatus {
   NEW
   ACCEPTED
@@ -334,6 +344,7 @@ model Order {
   tenantId    String      @map("tenant_id")
   customerId  String?     @map("customer_id")
   orderNumber String      @map("order_number")
+  orderType   OrderType   @default(PICKUP) @map("order_type")
   status      OrderStatus @default(NEW)
 
   // Payment

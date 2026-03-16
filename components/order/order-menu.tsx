@@ -7,6 +7,7 @@ import { useCartStore } from "@/lib/stores/cart-store";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Search,
   Leaf,
@@ -14,14 +15,17 @@ import {
   Store,
   Clock,
   Plus,
-  ChevronRight,
-  MapPin,
-  ChevronDown,
   Info,
 } from "lucide-react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { ProductDetailSheet } from "./product-detail-sheet";
 import { CartSheet } from "./cart-sheet";
-import { LocationPrompt } from "./location-prompt";
 
 /* ─────────────── Types ─────────────── */
 interface ModifierOption {
@@ -105,7 +109,7 @@ function PopularCard({
 }) {
   const hasRequiredModifiers = product.modifierGroups.some((g) => g.required);
   return (
-    <div className="shrink-0 w-[150px] md:w-[180px] cursor-pointer group" onClick={onClick}>
+    <div className="cursor-pointer group" onClick={onClick}>
       <div className="relative overflow-hidden rounded-2xl aspect-square bg-muted">
         {product.image ? (
           <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -114,12 +118,14 @@ function PopularCard({
             <Store className="size-8 text-muted-foreground/30" />
           </div>
         )}
-        <button
+        <Button
+          size="icon-sm"
           onClick={hasRequiredModifiers ? (e: React.MouseEvent) => { e.stopPropagation(); onClick(); } : onQuickAdd}
-          className="absolute bottom-2 right-2 size-8 rounded-full bg-[var(--brand-primary,hsl(var(--primary)))] text-white flex items-center justify-center shadow-lg transition-transform duration-200 hover:scale-110 active:scale-95"
+          className="absolute bottom-2 right-2 size-8 rounded-full shadow-lg hover:scale-110 active:scale-95"
+          style={{ background: "var(--brand-primary, hsl(var(--primary)))", color: "white" }}
         >
           <Plus className="size-4" />
-        </button>
+        </Button>
       </div>
       <div className="mt-2 px-0.5">
         <h3 className="text-[13px] font-semibold leading-tight line-clamp-2">{product.name}</h3>
@@ -162,12 +168,14 @@ function ProductCard({
             <Store className="size-6 text-muted-foreground/20" />
           </div>
         )}
-        <button
+        <Button
+          size="icon-xs"
           onClick={hasRequiredModifiers ? (e: React.MouseEvent) => { e.stopPropagation(); onClick(); } : onQuickAdd}
-          className="absolute bottom-1.5 right-1.5 size-7 rounded-full bg-[var(--brand-primary,hsl(var(--primary)))] text-white flex items-center justify-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95"
+          className="absolute bottom-1.5 right-1.5 size-7 rounded-full shadow-md hover:scale-110 active:scale-95"
+          style={{ background: "var(--brand-primary, hsl(var(--primary)))", color: "white" }}
         >
           <Plus className="size-3.5" />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -212,17 +220,9 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
-  const [userLocation, setUserLocation] = useState<string | null>(null);
-
-  // Load stored location on mount
-  useEffect(() => {
-    const stored = localStorage.getItem("user-location");
-    if (stored) setUserLocation(stored);
-  }, []);
 
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const tabsContainerRef = useRef<HTMLDivElement>(null);
-  const popularScrollRef = useRef<HTMLDivElement>(null);
 
   const cart = useCartStore();
   const itemCount = cart.itemCount();
@@ -342,15 +342,6 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   return (
     <div className="min-h-screen bg-background pb-28">
 
-      {/* ═══ LOCATION BAR — like Wolt top bar ═══ */}
-      <div className="px-4 py-3 flex items-center gap-2">
-        <MapPin className="size-5 text-[var(--brand-primary,hsl(var(--primary)))]" />
-        <button className="flex items-center gap-1 text-sm font-semibold cursor-pointer truncate max-w-[calc(100%-3rem)]">
-          <span className="truncate">{userLocation || "Athens"}</span>
-          <ChevronDown className="size-4 text-muted-foreground shrink-0" />
-        </button>
-      </div>
-
       {/* ═══ HERO — Cover image with centered logo ═══ */}
       <div className="relative">
         {/* Cover image — taller on desktop */}
@@ -398,13 +389,15 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           </div>
 
           {/* Store details link — cyan/brand color */}
-          <button
-            className="flex items-center gap-1 mt-2.5 text-[13px] font-semibold cursor-pointer transition-opacity hover:opacity-80"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2.5 text-[13px] font-semibold hover:opacity-80 h-auto py-1 px-2"
             style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
           >
             <Info className="size-3.5" />
             Store details
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -422,7 +415,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       </div>
 
       {/* ═══ STICKY — dietary filters + category tabs ═══ */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md">
+      <div className="sticky top-14 z-40 bg-background/95 backdrop-blur-md">
         {/* Dietary filter pills */}
         <div className="flex gap-2 px-4 py-2 overflow-x-auto scrollbar-hide max-w-2xl mx-auto">
           {dietaryFilters.map((f) => (
@@ -448,17 +441,18 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
             {filteredCategories.map((cat) => {
               const isActive = activeCategoryId === cat.id;
               return (
-                <button
+                <Button
                   key={cat.id}
                   id={`tab-${cat.id}`}
-                  className={`shrink-0 px-4 py-2.5 text-[13px] font-semibold whitespace-nowrap uppercase tracking-wide transition-colors duration-200 relative cursor-pointer ${
-                    isActive ? "text-[var(--brand-primary,hsl(var(--primary)))]" : "text-muted-foreground hover:text-foreground"
+                  variant="ghost"
+                  className={`shrink-0 px-4 py-2.5 text-[13px] font-semibold whitespace-nowrap uppercase tracking-wide rounded-none h-auto relative ${
+                    isActive ? "text-(--brand-primary,hsl(var(--primary)))" : "text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() => scrollToCategory(cat.id)}
                 >
                   {cat.name}
-                  {isActive && <span className="absolute bottom-0 left-2 right-2 h-[3px] rounded-full bg-[var(--brand-primary,hsl(var(--primary)))]" />}
-                </button>
+                  {isActive && <span className="absolute bottom-0 left-2 right-2 h-0.75 rounded-full bg-(--brand-primary,hsl(var(--primary)))" />}
+                </Button>
               );
             })}
           </div>
@@ -476,25 +470,19 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           <>
             {/* Popular carousel */}
             {!search && activeFilters.size === 0 && popularProducts.length > 0 && (
-              <section className="pt-5 pb-1">
-                <div className="flex items-center justify-between px-4 mb-3">
-                  <h2 className="text-[17px] font-bold">Popular</h2>
-                  <button
-                    className="size-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors duration-200 cursor-pointer"
-                    onClick={() => {
-                      if (popularScrollRef.current) {
-                        popularScrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
-                      }
-                    }}
-                  >
-                    <ChevronRight className="size-5 text-muted-foreground" />
-                  </button>
-                </div>
-                <div ref={popularScrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 px-4">
-                  {popularProducts.map((product) => (
-                    <PopularCard key={product.id} product={product} onClick={() => setSelectedProduct(product)} onQuickAdd={handleQuickAdd(product)} />
-                  ))}
-                </div>
+              <section className="pt-5 pb-1 px-4">
+                <h2 className="text-[17px] font-bold mb-3">Popular</h2>
+                <Carousel opts={{ align: "start", dragFree: true, watchDrag: true }} className="-mx-1.5">
+                  <CarouselContent className="-ml-3">
+                    {popularProducts.map((product) => (
+                      <CarouselItem key={product.id} className="pl-3 basis-37.5 md:basis-45">
+                        <PopularCard product={product} onClick={() => setSelectedProduct(product)} onQuickAdd={handleQuickAdd(product)} />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="hidden md:flex -left-3 size-8" />
+                  <CarouselNext className="hidden md:flex -right-3 size-8" />
+                </Carousel>
               </section>
             )}
 
@@ -521,21 +509,20 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       {/* ═══ FLOATING CART BAR ═══ */}
       {itemCount > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4 animate-in slide-in-from-bottom-4 duration-300">
-          <button
-            className="w-full flex items-center gap-3 h-14 px-5 rounded-2xl shadow-xl cursor-pointer transition-transform duration-200 active:scale-[0.98]"
+          <Button
+            className="w-full flex items-center gap-3 h-14 px-5 rounded-2xl shadow-xl active:scale-[0.98]"
             style={{ background: "var(--brand-primary, hsl(var(--primary)))", color: "white" }}
             onClick={() => setCartOpen(true)}
           >
             <span className="flex items-center justify-center size-7 rounded-lg bg-white/20 text-sm font-bold tabular-nums">{itemCount}</span>
             <span className="flex-1 text-left font-semibold text-[15px]">View Cart</span>
             <span className="font-bold text-[15px] tabular-nums">{formatPrice(subtotal)}</span>
-          </button>
+          </Button>
         </div>
       )}
 
       <ProductDetailSheet product={selectedProduct} onClose={() => setSelectedProduct(null)} />
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} tenantSlug={tenantSlug} />
-      <LocationPrompt onLocationSet={setUserLocation} />
     </div>
   );
 };

@@ -43,7 +43,15 @@ export async function POST(
     );
   }
 
-  const { items, paymentMethod, notes: customerNote } = parsed.data;
+  const {
+    items,
+    paymentMethod,
+    notes: customerNote,
+    customerName,
+    customerPhone,
+    customerEmail,
+    orderType,
+  } = parsed.data;
 
   // Validate cart
   const validation = await validateCart(tenant.id, items);
@@ -78,12 +86,14 @@ export async function POST(
       tenantId: tenant.id,
       customerId: customer.id,
       orderNumber,
+      orderType,
       paymentMethod,
       subtotal: validation.subtotal,
       total: validation.subtotal, // no discount for now
       customerNote,
-      customerName: session.user.name,
-      customerEmail: session.user.email,
+      customerName: customerName || session.user.name,
+      customerPhone: customerPhone || null,
+      customerEmail: customerEmail || session.user.email,
       items: {
         create: validation.items.map((item) => ({
           productId: item.productId,
@@ -117,7 +127,7 @@ export async function POST(
 
   return NextResponse.json(
     {
-      id: order.id,
+      orderId: order.id,
       orderNumber: order.orderNumber,
       status: order.status,
       paymentMethod: order.paymentMethod,

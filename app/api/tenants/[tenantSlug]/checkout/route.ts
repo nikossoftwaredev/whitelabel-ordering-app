@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth";
 import { stripe } from "@/lib/stripe/server";
 import { prisma } from "@/lib/db";
+import type Stripe from "stripe";
 
 const PLATFORM_FEE_PERCENT = 2;
 
@@ -12,6 +13,7 @@ export async function POST(
 ) {
   const { tenantSlug } = await params;
 
+  // ── Auth ──
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,14 +21,14 @@ export async function POST(
 
   const { orderId } = await request.json();
 
-  if (!orderId) {
+  if (!orderId || typeof orderId !== "string") {
     return NextResponse.json(
       { error: "orderId is required" },
       { status: 400 }
     );
   }
 
-  // Find the order with its tenant
+  // ── Fetch order with tenant (server-side source of truth for amount) ──
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { tenant: true },
@@ -36,13 +38,28 @@ export async function POST(
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
+  // Ensure the order belongs to the correct tenant
   if (order.tenant.slug !== tenantSlug) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  if (!order.tenant.stripeAccountId) {
+  // Ensure order belongs to the authenticated user (prevent paying someone else's order)
+  const customer = await prisma.customer.findUnique({
+    where: {
+      tenantId_userId: {
+        tenantId: order.tenantId,
+        userId: session.user.id,
+      },
+    },
+  });
+  if (!customer || order.customerId !== customer.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Only allow payment for STRIPE orders
+  if (order.paymentMethod !== "STRIPE") {
     return NextResponse.json(
-      { error: "This store has not set up payments yet" },
+      { error: "This order does not require online payment" },
       { status: 400 }
     );
   }
@@ -54,24 +71,60 @@ export async function POST(
     );
   }
 
-  // total is already in cents
-  const applicationFee = Math.round(
-    order.total * (PLATFORM_FEE_PERCENT / 100)
-  );
+  // If a PaymentIntent already exists, reuse it (idempotency — user might refresh)
+  if (order.stripePaymentIntentId) {
+    const existing = await stripe.paymentIntents.retrieve(
+      order.stripePaymentIntentId
+    );
+    if (
+      existing.status === "requires_payment_method" ||
+      existing.status === "requires_confirmation" ||
+      existing.status === "requires_action"
+    ) {
+      return NextResponse.json({ clientSecret: existing.client_secret });
+    }
+    // If already succeeded or cancelled, don't allow re-payment
+    return NextResponse.json(
+      { error: "Payment already processed" },
+      { status: 400 }
+    );
+  }
 
-  // Create PaymentIntent with transfer to connected account
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: order.total,
+  // ── Amount comes from DB (server-calculated total), never from client ──
+  const amount = order.total; // already in cents
+
+  if (amount < 50) {
+    return NextResponse.json(
+      { error: "Order total too small for card payment" },
+      { status: 400 }
+    );
+  }
+
+  // ── Build PaymentIntent params ──
+  const intentParams: Stripe.PaymentIntentCreateParams = {
+    amount,
     currency: "eur",
-    application_fee_amount: applicationFee,
-    transfer_data: {
-      destination: order.tenant.stripeAccountId,
-    },
+    payment_method_types: ["card"],
     metadata: {
       orderId: order.id,
       tenantId: order.tenantId,
+      orderNumber: order.orderNumber,
     },
-  });
+  };
+
+  // If tenant has a Stripe Connect account, route funds there with platform fee
+  if (order.tenant.stripeAccountId) {
+    const applicationFee = Math.round(
+      amount * (PLATFORM_FEE_PERCENT / 100)
+    );
+    intentParams.application_fee_amount = applicationFee;
+    intentParams.transfer_data = {
+      destination: order.tenant.stripeAccountId,
+    };
+  }
+
+  // ── Create PaymentIntent ──
+  const paymentIntent = await stripe.paymentIntents.create(intentParams);
 
   // Save the PaymentIntent ID to the order
   await prisma.order.update({

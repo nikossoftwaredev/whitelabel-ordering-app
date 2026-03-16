@@ -130,7 +130,7 @@ export const OrderHistory = () => {
         <div className="mx-auto max-w-2xl px-4 py-3">
           <div className="flex items-center gap-3">
             <Link href="/order">
-              <Button variant="ghost" size="icon" className="shrink-0 cursor-pointer">
+              <Button variant="ghost" size="icon" className="shrink-0">
                 <ArrowLeft className="size-5" />
               </Button>
             </Link>
