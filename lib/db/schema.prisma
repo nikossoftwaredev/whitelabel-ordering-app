@@ -337,6 +337,7 @@ enum PaymentStatus {
   PAID
   REFUNDED
   FAILED
+  DISPUTED
 }
 
 model Order {
