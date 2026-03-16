@@ -149,7 +149,6 @@ export function TenantManagement() {
   const [editEmail, setEditEmail] = useState("");
   const [editAddress, setEditAddress] = useState("");
 
-  // Auto-generate slug from name
   useEffect(() => {
     if (!slugTouched) {
       setNewSlug(slugify(newName));

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireRole, isAuthResult } from "@/lib/auth/require-role";
 import { OrderStatus } from "@prisma/client";
+import { orderEvents } from "@/lib/events/order-events";
 
 type Params = { params: Promise<{ tenantId: string; orderId: string }> };
 
@@ -108,6 +109,16 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     include: {
       items: { include: { modifiers: true } },
     },
+  });
+
+  // Notify via SSE (customer tracking + admin dashboard refresh)
+  orderEvents.emitStatusChange({
+    tenantId,
+    orderId,
+    orderNumber: updated.orderNumber,
+    status: updated.status,
+    total: updated.total,
+    customerName: updated.customerName,
   });
 
   return NextResponse.json(updated);

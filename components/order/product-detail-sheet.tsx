@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Check,Minus, Plus, Store } from "lucide-react";
+import { useCallback,useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Minus, Plus, Store, Check } from "lucide-react";
+import { useFormatPrice } from "@/hooks/use-format-price";
 import { useCartStore } from "@/lib/stores/cart-store";
-import { toast } from "sonner";
 
 interface ModifierOption {
   id: string;
@@ -53,13 +55,12 @@ interface ProductDetailSheetProps {
   onClose: () => void;
 }
 
-const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
-
 export const ProductDetailSheet = ({
   product,
   onClose,
 }: ProductDetailSheetProps) => {
   const cart = useCartStore();
+  const formatPrice = useFormatPrice();
   const [quantity, setQuantity] = useState(1);
   const [selectedModifiers, setSelectedModifiers] = useState<
     Map<string, Set<string>>

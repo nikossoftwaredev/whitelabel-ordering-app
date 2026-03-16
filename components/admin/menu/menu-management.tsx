@@ -1,24 +1,27 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  GripVertical,
+  Loader2,
+  Package,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query/keys";
+import { toast } from "sonner";
+
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  GripVertical,
-  Package,
-  Loader2,
-} from "lucide-react";
+import { useFormatPrice } from "@/hooks/use-format-price";
+import { queryKeys } from "@/lib/query/keys";
+
 import { CategoryFormDialog } from "./category-form-dialog";
 import { ProductFormDialog } from "./product-form-dialog";
-import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -50,6 +53,7 @@ interface MenuManagementProps {
 export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) => {
   const tenant = useTenant();
   const tenantId = propTenantId || tenant.id;
+  const formatPrice = useFormatPrice();
   const queryClient = useQueryClient();
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -118,8 +122,6 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
     },
   });
 
-  const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
-
   // Auto-select first category
   if (categories.length > 0 && !selectedCategoryId) {
     setSelectedCategoryId(categories[0].id);
@@ -155,11 +157,12 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
             </Button>
           </CardHeader>
           <CardContent className="p-0">
-            {loadingCategories ? (
+            {loadingCategories && (
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
               </div>
-            ) : categories.length === 0 ? (
+            )}
+            {!loadingCategories && categories.length === 0 ? (
               <div className="p-6 text-center text-sm text-muted-foreground">
                 No categories yet. Create one to get started.
               </div>
@@ -248,11 +251,12 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
           </CardHeader>
           <Separator />
           <CardContent className="p-0">
-            {loadingProducts ? (
+            {loadingProducts && (
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
               </div>
-            ) : products.length === 0 ? (
+            )}
+            {!loadingProducts && products.length === 0 ? (
               <div className="flex flex-col items-center gap-2 p-12 text-center">
                 <Package className="size-10 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">

@@ -1,22 +1,19 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query/keys";
-import { useCartStore } from "@/lib/stores/cart-store";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import {
-  Search,
-  Leaf,
-  WheatOff,
-  Store,
   Clock,
-  Plus,
   Info,
+  Leaf,
+  Plus,
+  Search,
+  Store,
+  WheatOff,
 } from "lucide-react";
+import { useCallback,useEffect, useMemo, useRef, useState } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Carousel,
   CarouselContent,
@@ -24,8 +21,14 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { ProductDetailSheet } from "./product-detail-sheet";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useFormatPrice } from "@/hooks/use-format-price";
+import { queryKeys } from "@/lib/query/keys";
+import { useCartStore } from "@/lib/stores/cart-store";
+
 import { CartSheet } from "./cart-sheet";
+import { ProductDetailSheet } from "./product-detail-sheet";
 
 /* ─────────────── Types ─────────────── */
 interface ModifierOption {
@@ -95,17 +98,18 @@ const dietaryFilters = [
   { key: "isGlutenFree", label: "Gluten Free", icon: WheatOff },
 ] as const;
 
-const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
 
 /* ─────────────── Popular Carousel Card ─────────────── */
 function PopularCard({
   product,
   onClick,
   onQuickAdd,
+  formatPrice,
 }: {
   product: Product;
   onClick: () => void;
   onQuickAdd: (e: React.MouseEvent) => void;
+  formatPrice: (cents: number) => string;
 }) {
   const hasRequiredModifiers = product.modifierGroups.some((g) => g.required);
   return (
@@ -140,10 +144,12 @@ function ProductCard({
   product,
   onClick,
   onQuickAdd,
+  formatPrice,
 }: {
   product: Product;
   onClick: () => void;
   onQuickAdd: (e: React.MouseEvent) => void;
+  formatPrice: (cents: number) => string;
 }) {
   const hasRequiredModifiers = product.modifierGroups.some((g) => g.required);
   return (
@@ -215,6 +221,7 @@ function MenuSkeleton() {
 
 /* ═══════════════════ MAIN COMPONENT ═══════════════════ */
 export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
+  const formatPrice = useFormatPrice();
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
@@ -476,7 +483,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                   <CarouselContent className="-ml-3">
                     {popularProducts.map((product) => (
                       <CarouselItem key={product.id} className="pl-3 basis-37.5 md:basis-45">
-                        <PopularCard product={product} onClick={() => setSelectedProduct(product)} onQuickAdd={handleQuickAdd(product)} />
+                        <PopularCard product={product} onClick={() => setSelectedProduct(product)} onQuickAdd={handleQuickAdd(product)} formatPrice={formatPrice} />
                       </CarouselItem>
                     ))}
                   </CarouselContent>
@@ -497,7 +504,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                 <h2 className="text-[17px] font-bold mb-1">{cat.name}</h2>
                 <div className="divide-y divide-border/50">
                   {cat.products.map((product) => (
-                    <ProductCard key={product.id} product={product} onClick={() => setSelectedProduct(product)} onQuickAdd={handleQuickAdd(product)} />
+                    <ProductCard key={product.id} product={product} onClick={() => setSelectedProduct(product)} onQuickAdd={handleQuickAdd(product)} formatPrice={formatPrice} />
                   ))}
                 </div>
               </section>

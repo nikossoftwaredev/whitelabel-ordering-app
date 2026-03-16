@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireRole, isAuthResult } from "@/lib/auth/require-role";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/general/status-config";
 
 export async function GET(
   _request: NextRequest,
@@ -31,7 +32,7 @@ export async function GET(
   const activeOrders = await prisma.order.count({
     where: {
       tenantId,
-      status: { in: ["NEW", "ACCEPTED", "PREPARING", "READY"] },
+      status: { in: ACTIVE_ORDER_STATUSES },
     },
   });
 

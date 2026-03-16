@@ -1,13 +1,29 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query/keys";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Ban,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  FileText,
+  Receipt,
+  Search,
+} from "lucide-react";
+import { useCallback,useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -17,26 +33,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Search,
-  FileText,
-  Ban,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Receipt,
-} from "lucide-react";
+import { formatAmount, formatDateShort, formatInvoiceNumber } from "@/lib/general/formatters";
+import { InvoiceStatus,invoiceStatusConfig } from "@/lib/general/status-config";
+import { queryKeys } from "@/lib/query/keys";
 
 // -- Types -------------------------------------------------------------------
-
-type InvoiceStatus = "pending" | "submitted" | "cancelled";
 
 interface InvoiceOrder {
   id: string;
@@ -76,39 +77,6 @@ interface InvoicesResponse {
 // -- Constants ---------------------------------------------------------------
 
 const PAGE_SIZE = 20;
-
-const statusConfig: Record<
-  InvoiceStatus,
-  { label: string; className: string }
-> = {
-  pending: {
-    label: "Pending",
-    className:
-      "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
-  },
-  submitted: {
-    label: "Submitted",
-    className:
-      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  },
-  cancelled: {
-    label: "Cancelled",
-    className:
-      "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  },
-};
-
-const formatInvoiceNumber = (series: string, seq: number) =>
-  `${series}-${String(seq).padStart(4, "0")}`;
-
-const formatPrice = (amount: number) => `\u20AC${amount.toFixed(2)}`;
-
-const formatDate = (dateStr: string) =>
-  new Date(dateStr).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
 
 // -- Component ---------------------------------------------------------------
 
@@ -213,7 +181,7 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
 
   if (selectedInvoice) {
     const inv = invoiceDetail || selectedInvoice;
-    const config = statusConfig[inv.status as InvoiceStatus] || statusConfig.pending;
+    const config = invoiceStatusConfig[inv.status as InvoiceStatus] || invoiceStatusConfig.pending;
 
     return (
       <div className="space-y-6">
@@ -246,7 +214,7 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
                       Invoice {formatInvoiceNumber(inv.series, inv.sequenceNumber)}
                     </h2>
                     <p className="text-muted-foreground mt-1">
-                      Issued: {formatDate(inv.issueDate)}
+                      Issued: {formatDateShort(inv.issueDate)}
                     </p>
                     {inv.order && (
                       <p className="text-sm text-muted-foreground">
@@ -284,7 +252,7 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
                       Net Amount
                     </p>
                     <p className="mt-1 text-lg font-semibold">
-                      {formatPrice(inv.netAmount)}
+                      {formatAmount(inv.netAmount)}
                     </p>
                   </div>
                   <div>
@@ -292,7 +260,7 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
                       VAT
                     </p>
                     <p className="mt-1 text-lg font-semibold">
-                      {formatPrice(inv.vatAmount)}
+                      {formatAmount(inv.vatAmount)}
                     </p>
                   </div>
                   <div>
@@ -300,7 +268,7 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
                       Total
                     </p>
                     <p className="mt-1 text-lg font-semibold">
-                      {formatPrice(inv.grossAmount)}
+                      {formatAmount(inv.grossAmount)}
                     </p>
                   </div>
                 </div>
@@ -419,7 +387,7 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
+          {isLoading && (
             <div className="p-6 space-y-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4">
@@ -434,7 +402,8 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
                 </div>
               ))}
             </div>
-          ) : invoices.length === 0 ? (
+          )}
+          {!isLoading && invoices.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
               <Receipt className="size-12 text-muted-foreground/30" />
               <p className="text-muted-foreground">No invoices found</p>
@@ -462,8 +431,8 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
               <TableBody>
                 {invoices.map((invoice) => {
                   const config =
-                    statusConfig[invoice.status as InvoiceStatus] ||
-                    statusConfig.pending;
+                    invoiceStatusConfig[invoice.status as InvoiceStatus] ||
+                    invoiceStatusConfig.pending;
 
                   return (
                     <TableRow key={invoice.id}>
@@ -481,7 +450,7 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell>{formatDate(invoice.issueDate)}</TableCell>
+                      <TableCell>{formatDateShort(invoice.issueDate)}</TableCell>
                       <TableCell>
                         {invoice.customerName ||
                           invoice.order?.customerName ||
@@ -493,13 +462,13 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatPrice(invoice.netAmount)}
+                        {formatAmount(invoice.netAmount)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatPrice(invoice.vatAmount)}
+                        {formatAmount(invoice.vatAmount)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatPrice(invoice.grossAmount)}
+                        {formatAmount(invoice.grossAmount)}
                       </TableCell>
                       <TableCell>
                         <Badge

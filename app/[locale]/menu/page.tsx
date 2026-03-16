@@ -1,13 +1,18 @@
 import { setRequestLocale } from "next-intl/server";
 import { BasePageProps } from "@/types/page-props";
 import { QrMenu } from "@/components/menu/qr-menu";
-import { getCurrentTenant } from "@/lib/tenant/context";
+import { getRequestTenant } from "@/lib/tenant/resolve";
+import { notFound } from "next/navigation";
 
 export default async function QrMenuPage({ params }: BasePageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const tenant = getCurrentTenant();
+  const tenant = await getRequestTenant();
 
-  return <QrMenu tenantSlug={tenant?.slug || "figata-cafe"} />;
+  if (!tenant) {
+    notFound();
+  }
+
+  return <QrMenu tenantSlug={tenant.slug} />;
 }

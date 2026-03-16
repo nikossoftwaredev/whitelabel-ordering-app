@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2,Save } from "lucide-react";
+import { useEffect,useState } from "react";
 import { toast } from "sonner";
-import { Save, Loader2 } from "lucide-react";
 
-import { queryKeys } from "@/lib/query/keys";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { centsToEuros, eurosToCents } from "@/lib/general/formatters";
+import { queryKeys } from "@/lib/query/keys";
 
 interface OperatingHourData {
   dayOfWeek: number;
@@ -62,14 +63,6 @@ function getDefaultOperatingHours(): OperatingHourData[] {
     closeTime: "22:00",
     isClosed: false,
   }));
-}
-
-function centsToEuros(cents: number): string {
-  return (cents / 100).toFixed(2);
-}
-
-function eurosToCents(euros: string): number {
-  return Math.round(parseFloat(euros || "0") * 100);
 }
 
 function SettingsLoadingSkeleton() {
@@ -128,7 +121,6 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
     enabled: !!resolvedTenantId,
   });
 
-  // Populate form when data loads
   useEffect(() => {
     if (!settings) return;
 

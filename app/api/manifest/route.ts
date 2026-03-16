@@ -19,16 +19,14 @@ export async function GET(request: NextRequest) {
     include: { config: true },
   });
 
-  // Fallback for dev: use first active tenant
-  if (!tenant && process.env.NODE_ENV === "development") {
-    tenant = await prisma.tenant.findFirst({
-      where: { isActive: true },
-      include: { config: true },
-      orderBy: { createdAt: "asc" },
-    });
+  if (!tenant) {
+    return NextResponse.json(
+      { name: "Store Not Found", short_name: "404", start_url: "/", display: "standalone", icons: [] },
+      { status: 404, headers: { "Content-Type": "application/manifest+json" } }
+    );
   }
 
-  const config = tenant?.config;
+  const config = tenant.config;
 
   const manifest = {
     name: config?.pwaName || tenant?.name || "Order App",

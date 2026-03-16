@@ -145,13 +145,8 @@ export const CategoryFormDialog = ({
               disabled={mutation.isPending || !name.trim()}
               className="cursor-pointer"
             >
-              {mutation.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : isEditing ? (
-                "Save"
-              ) : (
-                "Create"
-              )}
+              {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
+              {!mutation.isPending && (isEditing ? "Save" : "Create")}
             </Button>
           </DialogFooter>
         </form>

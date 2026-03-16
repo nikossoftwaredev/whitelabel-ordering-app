@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, DollarSign, Languages, Tag, Leaf } from "lucide-react";
+import { centsToEuros, eurosToCents } from "@/lib/general/formatters";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -88,7 +89,7 @@ export const ProductFormDialog = ({
       setName(product.name);
       setNameEl(product.nameEl || "");
       setDescription(product.description || "");
-      setPrice((product.price / 100).toFixed(2));
+      setPrice(centsToEuros(product.price));
       setSelectedCategoryId(product.categoryId);
       setDietary({
         isVegan: product.isVegan,
@@ -109,7 +110,7 @@ export const ProductFormDialog = ({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const priceInCents = Math.round(parseFloat(price) * 100);
+      const priceInCents = eurosToCents(price);
 
       const url = isEditing
         ? `/api/admin/${tenantId}/products/${product.id}`
@@ -298,13 +299,8 @@ export const ProductFormDialog = ({
                 disabled={mutation.isPending || !name.trim() || !price}
                 className="cursor-pointer"
               >
-                {mutation.isPending ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : isEditing ? (
-                  "Save"
-                ) : (
-                  "Create"
-                )}
+                {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
+                {!mutation.isPending && (isEditing ? "Save" : "Create")}
               </Button>
             </DialogFooter>
           </form>

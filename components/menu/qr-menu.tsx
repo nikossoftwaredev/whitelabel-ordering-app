@@ -1,20 +1,22 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query/keys";
-import { Input } from "@/components/ui/input";
+import {
+  Leaf,
+  QrCode,
+  Search,
+  Store,
+  WheatOff,
+} from "lucide-react";
+import { useMemo,useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import {
-  Search,
-  Leaf,
-  WheatOff,
-  Store,
-  QrCode,
-} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useFormatPrice } from "@/hooks/use-format-price";
+import { queryKeys } from "@/lib/query/keys";
 
 interface ModifierOption {
   id: string;
@@ -74,6 +76,7 @@ const dietaryFilters = [
 ] as const;
 
 export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
+  const formatPrice = useFormatPrice();
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
@@ -121,8 +124,6 @@ export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
     });
   };
 
-  const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
-
   return (
     <div className="min-h-screen bg-background pb-8">
       {/* Header */}
@@ -168,7 +169,7 @@ export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
 
       {/* Menu Content */}
       <main className="mx-auto max-w-2xl px-4 pt-4">
-        {isLoading ? (
+        {isLoading && (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="space-y-2">
@@ -178,11 +179,13 @@ export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
               </div>
             ))}
           </div>
-        ) : filteredCategories.length === 0 ? (
+        )}
+        {!isLoading && filteredCategories.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
             <p className="text-muted-foreground">No products found</p>
           </div>
-        ) : (
+        )}
+        {!isLoading && filteredCategories.length > 0 && (
           filteredCategories.map((cat) => (
             <section key={cat.id} className="mb-6">
               <h2 className="text-lg font-semibold mb-3 sticky top-[140px] z-20 bg-background py-1">

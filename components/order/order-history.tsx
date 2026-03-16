@@ -1,29 +1,25 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query/keys";
-import { useTenant } from "@/components/tenant-provider";
-import { useCartStore } from "@/lib/stores/cart-store";
-import { Link } from "@/lib/i18n/navigation";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
-  ShoppingBag,
-  RotateCcw,
   Package,
+  RotateCcw,
+  ShoppingBag,
 } from "lucide-react";
 
-type OrderStatus =
-  | "NEW"
-  | "ACCEPTED"
-  | "PREPARING"
-  | "READY"
-  | "COMPLETED"
-  | "REJECTED";
+import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useFormatPrice } from "@/hooks/use-format-price";
+import { formatDate } from "@/lib/general/formatters";
+import { OrderStatus,orderStatusConfig } from "@/lib/general/status-config";
+import { Link } from "@/lib/i18n/navigation";
+import { queryKeys } from "@/lib/query/keys";
+import { useCartStore } from "@/lib/stores/cart-store";
 
 interface OrderItem {
   productName: string;
@@ -45,57 +41,9 @@ interface OrderHistoryResponse {
   orders: Order[];
 }
 
-const statusConfig: Record<
-  OrderStatus,
-  { label: string; className: string }
-> = {
-  NEW: {
-    label: "New",
-    className:
-      "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  },
-  ACCEPTED: {
-    label: "Accepted",
-    className:
-      "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-  },
-  PREPARING: {
-    label: "Preparing",
-    className:
-      "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-  },
-  READY: {
-    label: "Ready",
-    className:
-      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  },
-  COMPLETED: {
-    label: "Completed",
-    className:
-      "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
-  },
-  REJECTED: {
-    label: "Rejected",
-    className:
-      "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  },
-};
-
-const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
-
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
 export const OrderHistory = () => {
   const tenant = useTenant();
+  const formatPrice = useFormatPrice();
   const addItem = useCartStore((s) => s.addItem);
 
   const { data, isLoading } = useQuery<OrderHistoryResponse>({
@@ -141,7 +89,7 @@ export const OrderHistory = () => {
 
       {/* Content */}
       <main className="mx-auto max-w-2xl px-4 py-6">
-        {isLoading ? (
+        {isLoading && (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <Card key={i}>
@@ -163,7 +111,8 @@ export const OrderHistory = () => {
               </Card>
             ))}
           </div>
-        ) : !data?.orders?.length ? (
+        )}
+        {!isLoading && !data?.orders?.length && (
           <div className="flex flex-col items-center gap-4 py-20 text-center">
             <Package className="size-16 text-muted-foreground/30" />
             <div>
@@ -179,10 +128,11 @@ export const OrderHistory = () => {
               </Button>
             </Link>
           </div>
-        ) : (
+        )}
+        {!isLoading && (data?.orders?.length ?? 0) > 0 && (
           <div className="space-y-4">
-            {data.orders.map((order) => {
-              const status = statusConfig[order.status];
+            {data!.orders.map((order) => {
+              const status = orderStatusConfig[order.status];
               return (
                 <Card key={order.id}>
                   <CardContent className="p-4">

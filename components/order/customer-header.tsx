@@ -1,18 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useTenant } from "@/components/tenant-provider";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { Link } from "@/lib/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { AuthDialog } from "./auth-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -22,10 +16,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ShoppingBag, LogOut, User, ChevronDown, Sun, Moon } from "lucide-react";
+import { ShoppingBag, LogOut, User, ChevronDown, Sun, Moon, Settings } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { SignInForm } from "@/components/auth/signin-form";
 import { CartSheet } from "./cart-sheet";
 
 export const CustomerHeader = () => {
@@ -37,8 +30,20 @@ export const CustomerHeader = () => {
 
   const [cartOpen, setCartOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const user = session?.user;
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+    fetch("/api/user/role")
+      .then((r) => r.json())
+      .then((data) => setIsAdmin(data.isAdmin))
+      .catch(() => setIsAdmin(false));
+  }, [user]);
   const initials =
     user?.name
       ?.split(" ")
@@ -139,6 +144,17 @@ export const CustomerHeader = () => {
                     My Orders
                   </Link>
                 </DropdownMenuItem>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/admin">
+                        <Settings className="mr-2 size-4" />
+                        Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => signOut({ callbackUrl: "/" })}
@@ -190,20 +206,7 @@ export const CustomerHeader = () => {
         tenantSlug={tenant.slug}
       />
 
-      {/* Auth Dialog */}
-      <Dialog open={authOpen} onOpenChange={setAuthOpen}>
-        <DialogContent className="sm:max-w-sm p-6 gap-6">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-2xl font-bold">
-              Create an account or log in
-            </DialogTitle>
-            <DialogDescription>
-              Log in to place your order. Your cart will be saved.
-            </DialogDescription>
-          </DialogHeader>
-          <SignInForm callbackUrl="/order/checkout" />
-        </DialogContent>
-      </Dialog>
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
     </>
   );
 };

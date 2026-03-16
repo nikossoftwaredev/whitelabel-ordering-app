@@ -1,6 +1,9 @@
 import { setRequestLocale } from "next-intl/server";
+import { notFound } from "next/navigation";
 import { BaseLayoutProps } from "@/types/page-props";
+import { getRequestTenant } from "@/lib/tenant/resolve";
 import { CustomerHeader } from "@/components/order/customer-header";
+import { ActiveOrderBanner } from "@/components/order/active-order-banner";
 
 export default async function OrderLayout({
   children,
@@ -9,10 +12,17 @@ export default async function OrderLayout({
   const { locale } = await params;
   setRequestLocale(locale);
 
+  const tenant = await getRequestTenant();
+
+  if (!tenant) {
+    notFound();
+  }
+
   return (
     <>
       <CustomerHeader />
       {children}
+      <ActiveOrderBanner />
     </>
   );
 }

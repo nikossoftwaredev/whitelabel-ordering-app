@@ -1,21 +1,24 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query/keys";
-import { useTenant } from "@/components/tenant-provider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import {
+  ArrowRight,
+  Clock,
   DollarSign,
   ShoppingBag,
-  Clock,
   TrendingUp,
-  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+
+import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { centsToEuros, timeAgo } from "@/lib/general/formatters";
+import { ORDER_STATUS_COLORS } from "@/lib/general/status-config";
+import { queryKeys } from "@/lib/query/keys";
 
 interface DashboardStats {
   today: { revenue: number; orders: number };
@@ -31,35 +34,6 @@ interface DashboardStats {
     customerName: string | null;
     items: { productName: string; quantity: number }[];
   }[];
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  NEW: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  ACCEPTED:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
-  PREPARING:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
-  READY: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  COMPLETED: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-  REJECTED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-};
-
-function formatCents(cents: number): string {
-  return (cents / 100).toFixed(2);
-}
-
-function timeAgo(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
 }
 
 function StatCardSkeleton() {
@@ -99,7 +73,6 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
       if (!res.ok) throw new Error("Failed to fetch dashboard stats");
       return res.json();
     },
-    refetchInterval: 30000,
     enabled: !!tenantId,
   });
 
@@ -132,7 +105,7 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  &euro;{formatCents(data?.today.revenue ?? 0)}
+                  &euro;{centsToEuros(data?.today.revenue ?? 0)}
                 </div>
               </CardContent>
             </Card>
@@ -184,7 +157,7 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  &euro;{formatCents(data?.weekRevenue ?? 0)}
+                  &euro;{centsToEuros(data?.weekRevenue ?? 0)}
                 </div>
               </CardContent>
             </Card>
@@ -200,13 +173,13 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
             <CardTitle>Popular This Week</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <ListSkeleton />
-            ) : data?.popularProducts.length === 0 ? (
+            {isLoading && <ListSkeleton />}
+            {!isLoading && data?.popularProducts.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 No orders this week yet.
               </p>
-            ) : (
+            )}
+            {!isLoading && (data?.popularProducts.length ?? 0) > 0 && (
               <div className="space-y-3">
                 {data?.popularProducts.map((product, i) => (
                   <div key={i}>
@@ -240,11 +213,11 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
             </Button>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <ListSkeleton />
-            ) : data?.recentOrders.length === 0 ? (
+            {isLoading && <ListSkeleton />}
+            {!isLoading && data?.recentOrders.length === 0 && (
               <p className="text-sm text-muted-foreground">No orders yet.</p>
-            ) : (
+            )}
+            {!isLoading && (data?.recentOrders.length ?? 0) > 0 && (
               <div className="space-y-3">
                 {data?.recentOrders.map((order, i) => (
                   <div key={order.id}>
@@ -257,7 +230,7 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
                           <Badge
                             variant="outline"
                             className={
-                              STATUS_COLORS[order.status] || ""
+                              ORDER_STATUS_COLORS[order.status] || ""
                             }
                           >
                             {order.status}
@@ -275,7 +248,7 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-medium">
-                          &euro;{formatCents(order.total)}
+                          &euro;{centsToEuros(order.total)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {timeAgo(order.createdAt)}

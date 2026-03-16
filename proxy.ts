@@ -31,7 +31,17 @@ export default function middleware(request: NextRequest) {
 
   // For API routes, add CORS and security headers but skip i18n middleware
   if (pathname.startsWith("/api")) {
-    const response = NextResponse.next();
+    // Set NEXTAUTH_URL dynamically so auth callbacks use the correct subdomain
+    const host = request.headers.get("host") || "localhost:3000";
+    const protocol = host.includes("localhost") || host.includes("lvh.me")
+      ? "http"
+      : "https";
+    process.env.NEXTAUTH_URL = `${protocol}://${host}`;
+
+    const response = NextResponse.next({
+      request: { headers: new Headers(request.headers) },
+    });
+    response.headers.set("x-tenant-host", host);
     const cors = corsHeaders(origin);
     for (const [key, value] of Object.entries(cors)) {
       response.headers.set(key, value);
@@ -42,11 +52,17 @@ export default function middleware(request: NextRequest) {
     return response;
   }
 
-  // Non-API routes: run i18n middleware and add security headers
-  const response = intlMiddleware(request);
-  // Forward the host header so the layout can resolve the tenant
+  // Forward host as a request header so server components can read it via headers()
   const host = request.headers.get("host") || "localhost:3000";
-  response.headers.set("x-tenant-host", host);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-tenant-host", host);
+  const modifiedRequest = new NextRequest(request.url, {
+    headers: requestHeaders,
+    method: request.method,
+  });
+
+  // Non-API routes: run i18n middleware and add security headers
+  const response = intlMiddleware(modifiedRequest);
   for (const [key, value] of Object.entries(securityHeaders)) {
     response.headers.set(key, value);
   }

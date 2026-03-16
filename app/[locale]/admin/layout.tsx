@@ -3,10 +3,12 @@ import { setRequestLocale } from "next-intl/server";
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminHeader } from "@/components/admin/admin-header";
+import { OrderNotificationProvider } from "@/components/admin/order-notification-provider";
 import { ErrorPage } from "@/components/error-page";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { authOptions } from "@/lib/auth/auth";
+import { getRequestTenant } from "@/lib/tenant/resolve";
 import { BaseLayoutProps } from "@/types/page-props";
 
 const AdminLayout = async ({ children, params }: BaseLayoutProps) => {
@@ -19,9 +21,14 @@ const AdminLayout = async ({ children, params }: BaseLayoutProps) => {
       <ErrorPage
         title="Access Denied"
         description="You are not authorized to access the admin panel. Please sign in with an admin account."
+        backHref="/auth/signin"
+        backLabel="Sign in"
       />
     );
   }
+
+  const tenant = await getRequestTenant();
+  const tenantId = tenant?.id || "";
 
   return (
     <SidebarProvider>
@@ -34,6 +41,7 @@ const AdminLayout = async ({ children, params }: BaseLayoutProps) => {
           </main>
         </ScrollArea>
       </SidebarInset>
+      {tenantId && <OrderNotificationProvider tenantId={tenantId} />}
     </SidebarProvider>
   );
 };

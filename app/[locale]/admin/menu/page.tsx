@@ -1,13 +1,11 @@
 import { setRequestLocale } from "next-intl/server";
 import { BasePageProps } from "@/types/page-props";
 import { MenuManagement } from "@/components/admin/menu/menu-management";
-import { getCurrentTenant } from "@/lib/tenant/context";
+import { getRequestTenant } from "@/lib/tenant/resolve";
 
 export default async function MenuPage({ params }: BasePageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-
-  const tenant = getCurrentTenant();
-
+  const tenant = await getRequestTenant();
   return <MenuManagement tenantId={tenant?.id || ""} />;
 }

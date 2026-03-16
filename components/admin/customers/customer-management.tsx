@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Users, Mail, Phone, ShoppingBag, X } from "lucide-react";
+import { Mail, Phone, Search, ShoppingBag, Users, X } from "lucide-react";
+import { useState } from "react";
 
-import { queryKeys } from "@/lib/query/keys";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -19,12 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { useFormatPrice } from "@/hooks/use-format-price";
+import { formatDate } from "@/lib/general/formatters";
+import { ORDER_STATUS_COLORS } from "@/lib/general/status-config";
+import { queryKeys } from "@/lib/query/keys";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -57,30 +60,6 @@ interface CustomersResponse {
   limit: number;
   totalPages: number;
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
-
-const formatDate = (dateStr: string) =>
-  new Date(dateStr).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-
-const STATUS_COLORS: Record<string, string> = {
-  NEW: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  ACCEPTED:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-  PREPARING:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-  READY:
-    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  COMPLETED:
-    "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
-  REJECTED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-};
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
@@ -143,6 +122,7 @@ interface CustomerManagementProps {
 }
 
 export function CustomerManagement({ tenantId }: CustomerManagementProps) {
+  const formatPrice = useFormatPrice();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -223,15 +203,15 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
       </div>
 
       {/* Content */}
-      {isLoading ? (
-        <CustomerTableSkeleton />
-      ) : error ? (
+      {isLoading && <CustomerTableSkeleton />}
+      {!isLoading && error && (
         <Card>
           <CardContent className="py-8 text-center text-destructive">
             Failed to load customers. Please try again.
           </CardContent>
         </Card>
-      ) : customers.length === 0 ? (
+      )}
+      {!isLoading && !error && customers.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
             <Users className="h-12 w-12 text-muted-foreground/50" />
@@ -245,7 +225,8 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
             </p>
           </CardContent>
         </Card>
-      ) : (
+      )}
+      {!isLoading && !error && customers.length > 0 && (
         <>
           {/* Results count */}
           <p className="text-sm text-muted-foreground">
@@ -446,7 +427,7 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
                               <Badge
                                 variant="secondary"
                                 className={
-                                  STATUS_COLORS[order.status] || ""
+                                  ORDER_STATUS_COLORS[order.status] || ""
                                 }
                               >
                                 {order.status}

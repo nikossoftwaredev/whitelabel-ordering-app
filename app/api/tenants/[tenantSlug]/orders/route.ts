@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { validateCart } from "@/lib/orders/validate-cart";
 import { generateOrderNumber } from "@/lib/orders/order-number";
 import { createOrderSchema } from "@/lib/validations/order";
+import { orderEvents } from "@/lib/events/order-events";
 
 export async function POST(
   request: NextRequest,
@@ -114,6 +115,16 @@ export async function POST(
     include: {
       items: { include: { modifiers: true } },
     },
+  });
+
+  // Notify admins via SSE
+  orderEvents.emitNewOrder({
+    tenantId: tenant.id,
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    total: order.total,
+    customerName: order.customerName,
   });
 
   // Update customer stats

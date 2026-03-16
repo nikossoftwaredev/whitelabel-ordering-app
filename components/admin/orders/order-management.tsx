@@ -1,37 +1,33 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Bell,
+  Check,
+  CheckCircle2,
+  ChefHat,
+  Clock,
+  Package,
+  Phone,
+  User,
+  X,
+} from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query/keys";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent,TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Clock,
-  Check,
-  X,
-  ChefHat,
-  Bell,
-  CheckCircle2,
-  Package,
-  User,
-  Phone,
-} from "lucide-react";
+import { useFormatPrice } from "@/hooks/use-format-price";
+import { timeAgo } from "@/lib/general/formatters";
+import { ACTIVE_ORDER_STATUSES,OrderStatus, orderStatusConfig } from "@/lib/general/status-config";
+import { queryKeys } from "@/lib/query/keys";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-
-type OrderStatus =
-  | "NEW"
-  | "ACCEPTED"
-  | "PREPARING"
-  | "READY"
-  | "COMPLETED"
-  | "REJECTED";
 
 interface OrderItemModifier {
   name: string;
@@ -68,67 +64,6 @@ interface OrdersResponse {
   total: number;
 }
 
-// ── Constants ──────────────────────────────────────────────────────────────────
-
-const statusConfig: Record<
-  OrderStatus,
-  { label: string; className: string }
-> = {
-  NEW: {
-    label: "New",
-    className:
-      "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  },
-  ACCEPTED: {
-    label: "Accepted",
-    className:
-      "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-  },
-  PREPARING: {
-    label: "Preparing",
-    className:
-      "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-  },
-  READY: {
-    label: "Ready",
-    className:
-      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  },
-  COMPLETED: {
-    label: "Completed",
-    className:
-      "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
-  },
-  REJECTED: {
-    label: "Rejected",
-    className:
-      "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  },
-};
-
-const ACTIVE_STATUSES: OrderStatus[] = [
-  "NEW",
-  "ACCEPTED",
-  "PREPARING",
-  "READY",
-];
-
-const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
-
-const getTimeAgo = (dateStr: string): string => {
-  const now = Date.now();
-  const created = new Date(dateStr).getTime();
-  const diffMs = now - created;
-  const diffMin = Math.floor(diffMs / 60000);
-
-  if (diffMin < 1) return "Just now";
-  if (diffMin < 60) return `${diffMin} min ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-  const diffDays = Math.floor(diffHr / 24);
-  return `${diffDays}d ago`;
-};
-
 // ── Component ──────────────────────────────────────────────────────────────────
 
 interface OrderManagementProps {
@@ -137,6 +72,7 @@ interface OrderManagementProps {
 
 export function OrderManagement({ tenantId }: OrderManagementProps) {
   const queryClient = useQueryClient();
+  const formatPrice = useFormatPrice();
   const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
@@ -151,7 +87,6 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
       if (!res.ok) throw new Error("Failed to fetch orders");
       return res.json();
     },
-    refetchInterval: 10000,
     enabled: !!tenantId,
   });
 
@@ -203,7 +138,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
       return { previous };
     },
     onSuccess: (_data, { status }) => {
-      const label = statusConfig[status].label;
+      const label = orderStatusConfig[status].label;
       toast.success(`Order updated to ${label}`);
       setRejectingOrderId(null);
       setRejectionReason("");
@@ -228,7 +163,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
 
   const orders = data?.orders ?? [];
   const activeOrders = orders.filter((o) =>
-    ACTIVE_STATUSES.includes(o.status)
+    ACTIVE_ORDER_STATUSES.includes(o.status)
   );
   const completedOrders = orders.filter((o) => o.status === "COMPLETED");
   const rejectedOrders = orders.filter((o) => o.status === "REJECTED");
@@ -266,7 +201,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
   // ── Render helpers ─────────────────────────────────────────────────────────
 
   const renderOrderCard = (order: Order) => {
-    const status = statusConfig[order.status];
+    const status = orderStatusConfig[order.status];
     const isRejecting = rejectingOrderId === order.id;
 
     return (
@@ -301,7 +236,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
           {/* Time */}
           <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
             <Clock className="size-3.5" />
-            {getTimeAgo(order.createdAt)}
+            {timeAgo(order.createdAt)}
             <span className="ml-1 text-xs">
               ({new Date(order.createdAt).toLocaleTimeString([], {
                 hour: "2-digit",

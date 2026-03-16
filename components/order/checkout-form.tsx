@@ -1,37 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useCartStore } from "@/lib/stores/cart-store";
-import { useTenant } from "@/components/tenant-provider";
-import { useRouter, Link } from "@/lib/i18n/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft,
-  Loader2,
-  ShoppingBag,
-  CreditCard,
   Banknote,
-  Store,
   Bike,
   Clock,
+  CreditCard,
+  Loader2,
+  MessageSquare,
   Minus,
   Plus,
-  MessageSquare,
+  ShoppingBag,
+  Store,
   Trash2,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect,useState } from "react";
 import { toast } from "sonner";
+
 import { SignInForm } from "@/components/auth/signin-form";
-import { StripePayment } from "./stripe-payment";
+import { useTenant } from "@/components/tenant-provider";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { useFormatPrice } from "@/hooks/use-format-price";
+import { Link,useRouter } from "@/lib/i18n/navigation";
+import { useCartStore } from "@/lib/stores/cart-store";
+
+import { StripePayment } from "./stripe-payment";
 
 type OrderType = "PICKUP" | "DELIVERY";
 
@@ -41,6 +44,7 @@ export const CheckoutForm = () => {
   const tenant = useTenant();
   const router = useRouter();
 
+  const formatPrice = useFormatPrice();
   const [orderType, setOrderType] = useState<OrderType>("PICKUP");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -54,23 +58,22 @@ export const CheckoutForm = () => {
   const [pendingOrderNumber, setPendingOrderNumber] = useState<string | null>(null);
 
   // Prefill from session + saved phone
+  const userId = session?.user?.id;
+  const userName = session?.user?.name;
+  const userEmail = session?.user?.email;
   useEffect(() => {
-    if (session?.user) {
-      if (session.user.name && !customerName)
-        setCustomerName(session.user.name);
-      if (session.user.email && !customerEmail)
-        setCustomerEmail(session.user.email);
+    if (!userId) return;
+    if (userName) setCustomerName((prev) => prev || userName);
+    if (userEmail) setCustomerEmail((prev) => prev || userEmail);
 
-      // Fetch saved phone from profile
-      fetch("/api/user/profile")
-        .then((res) => res.ok ? res.json() : null)
-        .then((data) => {
-          if (data?.phone && !customerPhone)
-            setCustomerPhone(data.phone);
-        })
-        .catch(() => {});
-    }
-  }, [session]);
+    // Fetch saved phone from profile
+    fetch("/api/user/profile")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.phone) setCustomerPhone((prev) => prev || data.phone);
+      })
+      .catch(() => {});
+  }, [userId, userName, userEmail]);
 
   // Save phone to profile on blur
   const handlePhoneBlur = () => {
@@ -82,9 +85,6 @@ export const CheckoutForm = () => {
       }).catch(() => {});
     }
   };
-
-  const formatPrice = (cents: number) =>
-    `€${(cents / 100).toFixed(2)}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

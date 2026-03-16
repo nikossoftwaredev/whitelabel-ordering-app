@@ -38,6 +38,10 @@ const eslintConfig = [
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
 
+      // React Compiler rules — these fire on legitimate patterns (form init from props, async fetch results)
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+
       // Import sorting
       "simple-import-sort/imports": "warn",
       "simple-import-sort/exports": "warn",

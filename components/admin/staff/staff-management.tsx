@@ -259,15 +259,15 @@ export function StaffManagement({ tenantId }: { tenantId: string }) {
       <Separator />
 
       {/* Staff list */}
-      {isLoading ? (
-        <StaffSkeleton />
-      ) : error ? (
+      {isLoading && <StaffSkeleton />}
+      {!isLoading && error && (
         <Card>
           <CardContent className="py-8 text-center text-destructive">
             Failed to load staff members. Please try again.
           </CardContent>
         </Card>
-      ) : !staff || staff.length === 0 ? (
+      )}
+      {!isLoading && !error && (!staff || staff.length === 0) ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
             <Users className="h-12 w-12 text-muted-foreground/50" />
@@ -289,7 +289,7 @@ export function StaffManagement({ tenantId }: { tenantId: string }) {
         </Card>
       ) : (
         <div className="space-y-3">
-          {staff.map((member) => (
+          {staff?.map((member) => (
             <Card key={member.id}>
               <CardContent className="flex items-center gap-4 py-4">
                 <UserAvatar user={member.user} />

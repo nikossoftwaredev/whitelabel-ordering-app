@@ -1,25 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { Minus, Plus, ShoppingBag,Trash2 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
-import { useCartStore } from "@/lib/stores/cart-store";
+import { useFormatPrice } from "@/hooks/use-format-price";
 import { Link } from "@/lib/i18n/navigation";
-import { SignInForm } from "@/components/auth/signin-form";
+import { useCartStore } from "@/lib/stores/cart-store";
+
+import { AuthDialog } from "./auth-dialog";
 
 interface CartSheetProps {
   open: boolean;
@@ -27,11 +23,10 @@ interface CartSheetProps {
   tenantSlug: string;
 }
 
-const formatPrice = (cents: number) => `€${(cents / 100).toFixed(2)}`;
-
 export const CartSheet = ({ open, onOpenChange }: CartSheetProps) => {
   const cart = useCartStore();
   const { data: session } = useSession();
+  const formatPrice = useFormatPrice();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
 
   return (
@@ -190,20 +185,7 @@ export const CartSheet = ({ open, onOpenChange }: CartSheetProps) => {
       </SheetContent>
     </Sheet>
 
-    {/* Auth Dialog */}
-    <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
-      <DialogContent className="sm:max-w-sm p-6 gap-6">
-        <DialogHeader className="space-y-2">
-          <DialogTitle className="text-2xl font-bold">
-            Create an account or log in
-          </DialogTitle>
-          <DialogDescription>
-            Log in to place your order. Your cart will be saved.
-          </DialogDescription>
-        </DialogHeader>
-        <SignInForm callbackUrl="/order/checkout" />
-      </DialogContent>
-    </Dialog>
+    <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
     </>
   );
 };
