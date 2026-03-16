@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useTheme } from "next-themes";
 import {
   Elements,
   PaymentElement,
-  useStripe,
   useElements,
+  useStripe,
 } from "@stripe/react-stripe-js";
-import { getStripePromise } from "@/lib/stripe/client";
-import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { getStripePromise } from "@/lib/stripe/client";
 
 interface StripePaymentProps {
   clientSecret: string;

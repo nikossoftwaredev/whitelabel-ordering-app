@@ -1,5 +1,6 @@
+import { Mail } from "lucide-react";
 import { setRequestLocale } from "next-intl/server";
-import { BasePageProps } from "@/types/page-props";
+
 import {
   Card,
   CardContent,
@@ -7,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail } from "lucide-react";
+import { BasePageProps } from "@/types/page-props";
 
 export default async function VerifyRequestPage({ params }: BasePageProps) {
   const { locale } = await params;

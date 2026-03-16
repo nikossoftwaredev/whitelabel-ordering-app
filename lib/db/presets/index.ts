@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+
 import { coffeeShopPreset } from "./coffee-shop";
 import { souvlakiShopPreset } from "./souvlaki-shop";
 

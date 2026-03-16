@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+declare global {
+  interface Window {
+    __pwaInstallPrompt?: BeforeInstallPromptEvent;
+  }
 }
 
 interface TenantMeta {
@@ -17,57 +24,49 @@ interface TenantMeta {
 const DISMISSED_KEY = "pwa-prompt-dismissed";
 
 export function PwaInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [tenantMeta, setTenantMeta] = useState<TenantMeta | null>(null);
   const [visible, setVisible] = useState(false);
 
-  // Don't show if already installed (standalone mode) or previously dismissed
-  const isStandalone =
-    typeof window !== "undefined" &&
-    window.matchMedia("(display-mode: standalone)").matches;
-
   useEffect(() => {
-    if (isStandalone) return;
-    if (typeof window === "undefined") return;
+    // Already installed
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
+    if ((window.navigator as unknown as { standalone?: boolean }).standalone) return;
+    // Already dismissed this session
     if (sessionStorage.getItem(DISMISSED_KEY)) return;
+    // Always show
+    setVisible(true);
 
-    // Fetch tenant branding from manifest API
+    // Fetch branding (non-blocking — fallback used if this fails)
     fetch("/api/manifest")
       .then((r) => r.json())
       .then((data: TenantMeta) => setTenantMeta(data))
       .catch(() => {});
 
+    // Pick up native install prompt if already captured before mount
+    if (window.__pwaInstallPrompt) {
+      setDeferredPrompt(window.__pwaInstallPrompt);
+      window.__pwaInstallPrompt = undefined;
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setVisible(true);
     };
-
     window.addEventListener("beforeinstallprompt", handler);
-
-    // iOS Safari doesn't fire beforeinstallprompt — show prompt anyway
-    const isIos =
-      /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase()) &&
-      !(window.navigator as unknown as { standalone?: boolean }).standalone;
-
-    if (isIos) {
-      setVisible(true);
-    }
-
     return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, [isStandalone]);
+  }, []);
 
   const handleInstall = async () => {
-    if (deferredPrompt) {
+    if (!deferredPrompt) return;
+    try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        setVisible(false);
-      }
-      setDeferredPrompt(null);
+      if (outcome === "accepted") dismiss();
+      else setDeferredPrompt(null);
+    } catch {
+      // ignore
     }
-    dismiss();
   };
 
   const dismiss = () => {
@@ -75,12 +74,11 @@ export function PwaInstallPrompt() {
     setVisible(false);
   };
 
-  if (!visible || !tenantMeta) return null;
+  if (!visible) return null;
 
-  const iconSrc = tenantMeta.icons?.[0]?.src;
-  const isIos =
-    typeof window !== "undefined" &&
-    /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+  const appName = tenantMeta?.name ?? "App";
+  const iconSrc = tenantMeta?.icons?.[0]?.src;
+  const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
@@ -92,7 +90,6 @@ export function PwaInstallPrompt() {
 
       {/* Sheet */}
       <div className="relative w-full max-w-md pointer-events-auto rounded-t-2xl bg-background shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
-        {/* Dismiss button */}
         <button
           onClick={dismiss}
           className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted transition-colors"
@@ -104,42 +101,37 @@ export function PwaInstallPrompt() {
         <div className="px-6 pt-6 pb-8 flex flex-col items-center text-center gap-4">
           {/* App icon */}
           {iconSrc ? (
-            <img
-              src={iconSrc}
-              alt={tenantMeta.name}
-              className="size-16 rounded-2xl shadow-md object-cover"
-            />
+            <img src={iconSrc} alt={appName} className="size-16 rounded-2xl shadow-md object-cover" />
           ) : (
             <div className="size-16 rounded-2xl bg-primary flex items-center justify-center shadow-md">
               <span className="text-2xl font-bold text-primary-foreground">
-                {tenantMeta.name.slice(0, 1)}
+                {appName.slice(0, 1)}
               </span>
             </div>
           )}
 
-          {/* Text */}
           <div className="space-y-1">
-            <h2 className="text-xl font-bold">{tenantMeta.name}</h2>
-            <p className="text-sm text-muted-foreground">
-              Get the full experience
-            </p>
+            <h2 className="text-xl font-bold">{appName}</h2>
+            <p className="text-sm text-muted-foreground">Get the full experience — install the app</p>
           </div>
 
-          {/* Install button */}
+          {/* Action area — adapts per platform */}
           {deferredPrompt ? (
             <Button className="w-full rounded-xl h-12 text-base font-semibold" onClick={handleInstall}>
               Add to Home Screen
             </Button>
           ) : isIos ? (
-            <div className="w-full rounded-xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground text-left space-y-1">
-              <p>
-                Tap the <strong>Share</strong> button in Safari, then select{" "}
-                <strong>Add to Home Screen</strong>.
-              </p>
+            <div className="w-full rounded-xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground text-left">
+              Tap the <strong>Share</strong> button in Safari, then tap{" "}
+              <strong>Add to Home Screen</strong>.
             </div>
-          ) : null}
+          ) : (
+            <div className="w-full rounded-xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground text-left">
+              Open this page in <strong>Chrome</strong> or <strong>Safari</strong> on your phone
+              and tap <strong>Add to Home Screen</strong>.
+            </div>
+          )}
 
-          {/* Keep using web */}
           <button
             onClick={dismiss}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"

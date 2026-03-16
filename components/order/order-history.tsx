@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  ChevronRight,
   Package,
   RotateCcw,
   ShoppingBag,
@@ -16,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { formatDate } from "@/lib/general/formatters";
-import { OrderStatus,orderStatusConfig } from "@/lib/general/status-config";
+import { ACTIVE_ORDER_STATUSES, OrderStatus, orderStatusConfig } from "@/lib/general/status-config";
 import { Link } from "@/lib/i18n/navigation";
 import { queryKeys } from "@/lib/query/keys";
 import { useCartStore } from "@/lib/stores/cart-store";
@@ -31,7 +32,7 @@ interface Order {
   id: string;
   orderNumber: string;
   status: OrderStatus;
-  totalAmount: number;
+  total: number;
   paymentMethod: string;
   createdAt: string;
   items: OrderItem[];
@@ -133,8 +134,9 @@ export const OrderHistory = () => {
           <div className="space-y-4">
             {data!.orders.map((order) => {
               const status = orderStatusConfig[order.status];
-              return (
-                <Card key={order.id}>
+              const isActive = ACTIVE_ORDER_STATUSES.includes(order.status);
+              const card = (
+                <Card>
                   <CardContent className="p-4">
                     {/* Order header */}
                     <div className="flex items-center justify-between">
@@ -180,20 +182,35 @@ export const OrderHistory = () => {
                     {/* Footer */}
                     <div className="flex items-center justify-between">
                       <span className="font-semibold">
-                        {formatPrice(order.totalAmount)}
+                        {formatPrice(order.total)}
                       </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="cursor-pointer"
-                        onClick={() => handleReorder(order)}
-                      >
-                        <RotateCcw className="size-4" />
-                        Reorder
-                      </Button>
+                      {isActive ? (
+                        <ChevronRight className="size-4 text-muted-foreground" />
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer"
+                          onClick={() => handleReorder(order)}
+                        >
+                          <RotateCcw className="size-4" />
+                          Reorder
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
+              );
+              return isActive ? (
+                <Link
+                  key={order.id}
+                  href={`/order/confirmation?orderId=${order.id}&orderNumber=${encodeURIComponent(order.orderNumber)}`}
+                  className="block"
+                >
+                  {card}
+                </Link>
+              ) : (
+                <div key={order.id}>{card}</div>
               );
             })}
           </div>

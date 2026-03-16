@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { DollarSign, Languages, Leaf,Loader2, Tag } from "lucide-react";
+import { useEffect,useState } from "react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -21,15 +23,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, DollarSign, Languages, Tag, Leaf } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { centsToEuros, eurosToCents } from "@/lib/general/formatters";
-import { toast } from "sonner";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Category {
   id: string;
   name: string;
   nameEl: string | null;
+}
+
+interface ModifierGroupRef {
+  id: string;
+  name: string;
 }
 
 interface Product {
@@ -44,6 +50,7 @@ interface Product {
   isGlutenFree: boolean;
   description: string | null;
   categoryId: string;
+  modifierGroups?: { modifierGroup: ModifierGroupRef }[];
 }
 
 interface ProductFormDialogProps {
@@ -53,6 +60,7 @@ interface ProductFormDialogProps {
   tenantId: string;
   categoryId: string;
   categories: Category[];
+  modifierGroups?: ModifierGroupRef[];
 }
 
 const dietaryFields = [
@@ -71,6 +79,7 @@ export const ProductFormDialog = ({
   tenantId,
   categoryId,
   categories,
+  modifierGroups = [],
 }: ProductFormDialogProps) => {
   const queryClient = useQueryClient();
   const isEditing = !!product;
@@ -83,6 +92,7 @@ export const ProductFormDialog = ({
   const [selectedCategoryId, setSelectedCategoryId] = useState(categoryId);
   const [dietary, setDietary] = useState<Record<string, boolean>>({});
   const [allergens, setAllergens] = useState("");
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (product) {
@@ -96,6 +106,9 @@ export const ProductFormDialog = ({
         isVegetarian: product.isVegetarian,
         isGlutenFree: product.isGlutenFree,
       });
+      setSelectedGroupIds(
+        product.modifierGroups?.map((mg) => mg.modifierGroup.id) ?? []
+      );
     } else {
       setName("");
       setNameEl("");
@@ -105,6 +118,7 @@ export const ProductFormDialog = ({
       setSelectedCategoryId(categoryId);
       setDietary({});
       setAllergens("");
+      setSelectedGroupIds([]);
     }
   }, [product, categoryId, open]);
 
@@ -127,6 +141,7 @@ export const ProductFormDialog = ({
           price: priceInCents,
           categoryId: selectedCategoryId,
           allergens: allergens || null,
+          modifierGroupIds: selectedGroupIds,
           ...dietary,
         }),
       });
@@ -220,7 +235,7 @@ export const ProductFormDialog = ({
               <Input
                 id="prod-price"
                 type="number"
-                step="0.01"
+                step="0.05"
                 min="0"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
@@ -284,6 +299,32 @@ export const ProductFormDialog = ({
                 placeholder="e.g. sesame, soy"
               />
             </div>
+
+            {/* Modifier Groups */}
+            {modifierGroups.length > 0 && (
+              <div className="space-y-2">
+                <Label>Modifier groups</Label>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto border rounded-md p-2">
+                  {modifierGroups.map((group) => (
+                    <label key={group.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded"
+                        checked={selectedGroupIds.includes(group.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedGroupIds([...selectedGroupIds, group.id]);
+                          } else {
+                            setSelectedGroupIds(selectedGroupIds.filter((id) => id !== group.id));
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{group.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <DialogFooter className="pt-4">
               <Button

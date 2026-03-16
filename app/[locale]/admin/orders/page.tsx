@@ -1,7 +1,8 @@
 import { setRequestLocale } from "next-intl/server";
-import { BasePageProps } from "@/types/page-props";
+
 import { OrderManagement } from "@/components/admin/orders/order-management";
 import { getRequestTenant } from "@/lib/tenant/resolve";
+import { BasePageProps } from "@/types/page-props";
 
 export default async function OrdersPage({ params }: BasePageProps) {
   const { locale } = await params;

@@ -1,14 +1,14 @@
 import {
-  LucideIcon,
+  FileText,
   LayoutDashboard,
-  UtensilsCrossed,
-  ShoppingBag,
+  LucideIcon,
   Receipt,
   Settings,
+  Shield,
+  ShoppingBag,
   Users,
   UserSearch,
-  FileText,
-  Shield,
+  UtensilsCrossed,
 } from "lucide-react";
 
 interface AdminNavItem {

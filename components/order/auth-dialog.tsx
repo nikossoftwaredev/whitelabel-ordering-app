@@ -1,5 +1,6 @@
 "use client";
 
+import { SignInForm } from "@/components/auth/signin-form";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { SignInForm } from "@/components/auth/signin-form";
 
 interface AuthDialogProps {
   open: boolean;

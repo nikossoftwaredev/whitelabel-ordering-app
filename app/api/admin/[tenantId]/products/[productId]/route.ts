@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
+import { isAuthResult,requireRole } from "@/lib/auth/require-role";
 import { prisma } from "@/lib/db";
-import { requireRole, isAuthResult } from "@/lib/auth/require-role";
 
 type Params = { params: Promise<{ tenantId: string; productId: string }> };
 

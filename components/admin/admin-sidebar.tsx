@@ -1,7 +1,7 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
 import { ChevronsUpDown, Command, Home, LogOut } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -26,8 +26,8 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Link, usePathname } from "@/lib/i18n/navigation";
 import { adminNavItems } from "@/lib/admin/config";
+import { Link, usePathname } from "@/lib/i18n/navigation";
 
 export const AdminSidebar = () => {
   const pathname = usePathname();

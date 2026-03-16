@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect,test } from "@playwright/test";
 
 test.describe("Admin Panel", () => {
   test("should redirect to login when not authenticated", async ({ page }) => {

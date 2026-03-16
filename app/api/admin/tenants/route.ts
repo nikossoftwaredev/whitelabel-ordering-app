@@ -1,7 +1,8 @@
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
-import { NextRequest, NextResponse } from "next/server";
 
 async function requireSuperAdmin() {
   const session = await getServerSession(authOptions);

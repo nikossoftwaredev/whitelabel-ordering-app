@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Loader2, Mail } from "lucide-react";
 import { signIn } from "next-auth/react";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -12,8 +12,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Mail } from "lucide-react";
 
 export const SignInForm = ({ callbackUrl = "/" }: { callbackUrl?: string }) => {
   const [email, setEmail] = useState("");

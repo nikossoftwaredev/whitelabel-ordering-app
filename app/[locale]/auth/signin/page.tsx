@@ -1,6 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
-import { BasePageProps } from "@/types/page-props";
+
 import { SignInForm } from "@/components/auth/signin-form";
+import { BasePageProps } from "@/types/page-props";
 
 export default async function SignInPage({ params }: BasePageProps) {
   const { locale } = await params;

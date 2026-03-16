@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
-import { orderEvents, OrderEvent } from "@/lib/events/order-events";
+import { OrderEvent,orderEvents } from "@/lib/events/order-events";
 import { createSSEStream } from "@/lib/sse/create-stream";
 
 export const dynamic = "force-dynamic";

@@ -1,20 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useTenant } from "@/components/tenant-provider";
-import { Link } from "@/lib/i18n/navigation";
-import { useFormatPrice } from "@/hooks/use-format-price";
-import { cn } from "@/lib/general/utils";
 import {
   Check,
   ChefHat,
+  ChevronRight,
   Clock,
   HandPlatter,
   Loader2,
-  ChevronRight,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
+
+import { useTenant } from "@/components/tenant-provider";
+import { useFormatPrice } from "@/hooks/use-format-price";
 import type { OrderStatus } from "@/lib/general/status-config";
+import { cn } from "@/lib/general/utils";
+import { Link } from "@/lib/i18n/navigation";
 
 type ActiveOrderStatus = Extract<OrderStatus, "NEW" | "ACCEPTED" | "PREPARING" | "READY">;
 

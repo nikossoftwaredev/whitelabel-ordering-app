@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { LogIn, MapPin, Navigation, X } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useCallback,useEffect, useState } from "react";
+
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { MapPin, Navigation, LogIn, X } from "lucide-react";
 import { Link } from "@/lib/i18n/navigation";
 
 const LOCATION_DISMISSED_KEY = "location-prompt-dismissed";

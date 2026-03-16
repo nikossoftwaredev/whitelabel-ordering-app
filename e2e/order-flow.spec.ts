@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect,test } from "@playwright/test";
 
 test.describe("Order Page", () => {
   test("should load the menu page", async ({ page }) => {

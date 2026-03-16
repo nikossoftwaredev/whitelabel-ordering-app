@@ -1,5 +1,5 @@
-import type { AadeInvoiceInput } from "./types"
 import { AadeValidationError } from "./errors"
+import type { AadeInvoiceInput } from "./types"
 
 export const validateInvoice = (
   invoice: AadeInvoiceInput

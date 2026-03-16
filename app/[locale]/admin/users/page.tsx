@@ -1,5 +1,5 @@
-import { setRequestLocale } from "next-intl/server";
 import { MoreHorizontal } from "lucide-react";
+import { setRequestLocale } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

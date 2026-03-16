@@ -21,6 +21,7 @@ import { useFormatPrice } from "@/hooks/use-format-price";
 import { queryKeys } from "@/lib/query/keys";
 
 import { CategoryFormDialog } from "./category-form-dialog";
+import { ModifierGroupPanel } from "./modifier-group-panel";
 import { ProductFormDialog } from "./product-form-dialog";
 
 interface Category {
@@ -30,6 +31,11 @@ interface Category {
   isActive: boolean;
   sortOrder: number;
   _count: { products: number };
+}
+
+interface ModifierGroupRef {
+  id: string;
+  name: string;
 }
 
 interface Product {
@@ -68,6 +74,17 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
     queryFn: async () => {
       const res = await fetch(`/api/admin/${tenantId}/categories`);
       if (!res.ok) throw new Error("Failed to fetch categories");
+      return res.json();
+    },
+    enabled: !!tenantId,
+  });
+
+  // Fetch modifier groups
+  const { data: modifierGroups = [] } = useQuery<ModifierGroupRef[]>({
+    queryKey: ["modifier-groups", tenantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/${tenantId}/modifier-groups`);
+      if (!res.ok) throw new Error("Failed to fetch modifier groups");
       return res.json();
     },
     enabled: !!tenantId,
@@ -138,7 +155,7 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr_300px]">
         {/* Categories Panel */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -347,6 +364,9 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
             )}
           </CardContent>
         </Card>
+
+        {/* Modifier Groups Panel */}
+        <ModifierGroupPanel tenantId={tenantId} />
       </div>
 
       {/* Category Dialog */}
@@ -365,6 +385,7 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
         tenantId={tenantId}
         categoryId={selectedCategoryId || ""}
         categories={categories}
+        modifierGroups={modifierGroups}
       />
     </div>
   );

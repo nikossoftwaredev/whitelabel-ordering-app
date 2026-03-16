@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { ChevronDown, LogOut, Moon, Settings,ShoppingBag, Sun, User } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
+import { useTheme } from "next-themes";
+import { useEffect,useState } from "react";
+
 import { useTenant } from "@/components/tenant-provider";
-import { useCartStore } from "@/lib/stores/cart-store";
-import { Link } from "@/lib/i18n/navigation";
-import { Button } from "@/components/ui/button";
-import { AuthDialog } from "./auth-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,10 +17,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ShoppingBag, LogOut, User, ChevronDown, Sun, Moon, Settings } from "lucide-react";
-import { signOut } from "next-auth/react";
-import { useTheme } from "next-themes";
+import { Link } from "@/lib/i18n/navigation";
+import { useCartStore } from "@/lib/stores/cart-store";
+
+import { AuthDialog } from "./auth-dialog";
 import { CartSheet } from "./cart-sheet";
+import { ProfilePromptSheet } from "./profile-prompt-sheet";
 
 export const CustomerHeader = () => {
   const { data: session } = useSession();
@@ -90,20 +93,6 @@ export const CustomerHeader = () => {
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() =>
-              setTheme(resolvedTheme === "dark" ? "light" : "dark")
-            }
-            className="size-9 rounded-full hover:bg-muted/50"
-            aria-label="Toggle theme"
-          >
-            <Sun className="size-4.5 rotate-0 scale-100 transition-transform duration-300 dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute size-4.5 rotate-90 scale-0 transition-transform duration-300 dark:rotate-0 dark:scale-100" />
-          </Button>
-
           {/* User Profile */}
           {user ? (
             <DropdownMenu>
@@ -139,6 +128,12 @@ export const CustomerHeader = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/order/profile">
+                    <User className="mr-2 size-4" />
+                    My Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer">
                   <Link href="/order/orders">
                     <ShoppingBag className="mr-2 size-4" />
                     My Orders
@@ -155,9 +150,20 @@ export const CustomerHeader = () => {
                     </DropdownMenuItem>
                   </>
                 )}
+                <DropdownMenuItem
+                  onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                  className="cursor-pointer"
+                >
+                  {resolvedTheme === "dark" ? (
+                    <Sun className="mr-2 size-4" />
+                  ) : (
+                    <Moon className="mr-2 size-4" />
+                  )}
+                  {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={() => signOut({ callbackUrl: "/order" })}
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
                   <LogOut className="mr-2 size-4" />
@@ -207,6 +213,7 @@ export const CustomerHeader = () => {
       />
 
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
+      <ProfilePromptSheet />
     </>
   );
 };

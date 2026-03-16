@@ -1,4 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
+
 import { redirect } from "@/lib/i18n/navigation";
 import { BasePageProps } from "@/types/page-props";
 

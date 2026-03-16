@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
-import { validateCart } from "@/lib/orders/validate-cart";
-import { generateOrderNumber } from "@/lib/orders/order-number";
-import { createOrderSchema } from "@/lib/validations/order";
 import { orderEvents } from "@/lib/events/order-events";
+import { generateOrderNumber } from "@/lib/orders/order-number";
+import { validateCart } from "@/lib/orders/validate-cart";
+import { createOrderSchema } from "@/lib/validations/order";
 
 export async function POST(
   request: NextRequest,

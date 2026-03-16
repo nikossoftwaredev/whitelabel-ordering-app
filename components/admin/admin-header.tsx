@@ -2,10 +2,10 @@
 
 import { Volume2, VolumeX } from "lucide-react";
 
+import { ThemeSwitcher } from "@/components/examples/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ThemeSwitcher } from "@/components/examples/ThemeSwitcher";
 import {
   Tooltip,
   TooltipContent,

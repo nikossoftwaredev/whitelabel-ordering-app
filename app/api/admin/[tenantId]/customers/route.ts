@@ -1,6 +1,8 @@
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+
+import { isAuthResult,requireRole } from "@/lib/auth/require-role";
 import { prisma } from "@/lib/db";
-import { requireRole, isAuthResult } from "@/lib/auth/require-role";
 
 type Params = { params: Promise<{ tenantId: string }> };
 
@@ -17,6 +19,17 @@ export async function GET(request: NextRequest, { params }: Params) {
     Math.max(1, parseInt(url.searchParams.get("limit") || "20", 10))
   );
   const offset = (page - 1) * limit;
+
+  const sort = url.searchParams.get("sort") || "recent";
+
+  let orderBy: Prisma.CustomerOrderByWithRelationInput;
+  if (sort === "name") {
+    orderBy = { user: { name: "asc" } };
+  } else if (sort === "spent") {
+    orderBy = { totalSpent: "desc" };
+  } else {
+    orderBy = { createdAt: "desc" };
+  }
 
   // Build where clause with search across user fields
   const where: Record<string, unknown> = { tenantId };
@@ -56,7 +69,7 @@ export async function GET(request: NextRequest, { params }: Params) {
           take: 5,
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip: offset,
       take: limit,
     }),

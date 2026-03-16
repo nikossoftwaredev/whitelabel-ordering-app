@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { queryKeys } from "@/lib/query/keys";
+
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useNotificationSound } from "@/hooks/use-notification-sound";
 import type { OrderEvent } from "@/lib/events/order-events";
+import { queryKeys } from "@/lib/query/keys";
 
 interface OrderNotificationProviderProps {
   tenantId: string;

@@ -1,6 +1,7 @@
-import createMiddleware from "next-intl/middleware";
-import { routing } from "./lib/i18n/routing";
 import { NextRequest, NextResponse } from "next/server";
+import createMiddleware from "next-intl/middleware";
+
+import { routing } from "./lib/i18n/routing";
 import { corsHeaders } from "./lib/security/cors";
 
 const intlMiddleware = createMiddleware(routing);

@@ -1,8 +1,9 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/auth";
-import { prisma } from "@/lib/db";
 import { Role } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+
+import { authOptions } from "@/lib/auth/auth";
+import { prisma } from "@/lib/db";
 
 interface AuthResult {
   userId: string;

@@ -1,15 +1,16 @@
 "use client";
 
+import { Globe } from "lucide-react";
 import { useLocale } from "next-intl";
-import { usePathname, useRouter } from "@/lib/i18n/navigation";
+
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Globe } from "lucide-react";
+import { usePathname, useRouter } from "@/lib/i18n/navigation";
 
 const languages = [
   {

@@ -1,8 +1,9 @@
-import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { BasePageProps } from "@/types/page-props";
+import { setRequestLocale } from "next-intl/server";
+
 import { OrderMenu } from "@/components/order/order-menu";
 import { getRequestTenant } from "@/lib/tenant/resolve";
+import { BasePageProps } from "@/types/page-props";
 
 export default async function OrderPage({ params }: BasePageProps) {
   const { locale } = await params;

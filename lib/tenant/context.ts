@@ -1,5 +1,5 @@
-import { cache } from "react";
 import type { Tenant, TenantConfig } from "@prisma/client";
+import { cache } from "react";
 
 export type TenantWithConfig = Tenant & { config: TenantConfig | null };
 

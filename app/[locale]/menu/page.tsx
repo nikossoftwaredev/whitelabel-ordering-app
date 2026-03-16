@@ -1,8 +1,9 @@
+import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-import { BasePageProps } from "@/types/page-props";
+
 import { QrMenu } from "@/components/menu/qr-menu";
 import { getRequestTenant } from "@/lib/tenant/resolve";
-import { notFound } from "next/navigation";
+import { BasePageProps } from "@/types/page-props";
 
 export default async function QrMenuPage({ params }: BasePageProps) {
   const { locale } = await params;

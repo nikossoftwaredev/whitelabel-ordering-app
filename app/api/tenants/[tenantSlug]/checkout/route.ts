@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/auth";
-import { stripe } from "@/lib/stripe/server";
-import { prisma } from "@/lib/db";
 import type Stripe from "stripe";
+
+import { authOptions } from "@/lib/auth/auth";
+import { prisma } from "@/lib/db";
+import { stripe } from "@/lib/stripe/server";
 
 const PLATFORM_FEE_PERCENT = 2;
 

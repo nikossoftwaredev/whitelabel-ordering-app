@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
 
@@ -26,16 +27,20 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { phone } = body;
+  const { phone, name } = body;
 
   if (phone !== undefined && typeof phone !== "string") {
     return NextResponse.json({ error: "Invalid phone" }, { status: 400 });
+  }
+  if (name !== undefined && typeof name !== "string") {
+    return NextResponse.json({ error: "Invalid name" }, { status: 400 });
   }
 
   const user = await prisma.user.update({
     where: { id: session.user.id },
     data: {
       ...(phone !== undefined && { phone: phone.trim() || null }),
+      ...(name !== undefined && { name: name.trim() || null }),
     },
     select: { name: true, email: true, phone: true },
   });

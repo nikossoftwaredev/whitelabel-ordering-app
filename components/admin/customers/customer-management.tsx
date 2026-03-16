@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -126,6 +133,7 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState("recent");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
@@ -147,11 +155,12 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
 
   // Fetch customers
   const { data, isLoading, error } = useQuery<CustomersResponse>({
-    queryKey: [...queryKeys.customers.all(tenantId), debouncedSearch, page],
+    queryKey: [...queryKeys.customers.all(tenantId), debouncedSearch, page, sort],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: "20",
+        sort,
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
       const res = await fetch(`/api/admin/${tenantId}/customers?${params}`);
@@ -177,8 +186,9 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
         </p>
       </div>
 
-      {/* Search bar */}
-      <div className="relative max-w-sm">
+      {/* Search bar + sort */}
+      <div className="flex flex-wrap items-center gap-3">
+      <div className="relative max-w-sm flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search by name, email, or phone..."
@@ -200,6 +210,23 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
             <X className="h-4 w-4" />
           </Button>
         )}
+      </div>
+      <Select
+        value={sort}
+        onValueChange={(v) => {
+          setSort(v);
+          setPage(1);
+        }}
+      >
+        <SelectTrigger className="w-40">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="recent">Most Recent</SelectItem>
+          <SelectItem value="name">Name (A–Z)</SelectItem>
+          <SelectItem value="spent">Total Spent</SelectItem>
+        </SelectContent>
+      </Select>
       </div>
 
       {/* Content */}

@@ -1,9 +1,10 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
-import { useDialogStore } from "@/lib/stores/dialog-store";
 import { toast } from "sonner";
+
+import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
+import { Button } from "@/components/ui/button";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 export const ConfirmDialogExample = () => {
   const { openDialog } = useDialogStore();

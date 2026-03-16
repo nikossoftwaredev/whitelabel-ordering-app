@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+
 import { useTenant } from "@/components/tenant-provider";
 import { formatPrice } from "@/lib/general/formatters";
 

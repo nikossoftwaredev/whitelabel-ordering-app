@@ -1,10 +1,10 @@
-import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { BaseLayoutProps } from "@/types/page-props";
-import { getRequestTenant } from "@/lib/tenant/resolve";
-import { CustomerHeader } from "@/components/order/customer-header";
+import { setRequestLocale } from "next-intl/server";
+
 import { ActiveOrderBanner } from "@/components/order/active-order-banner";
-import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
+import { CustomerHeader } from "@/components/order/customer-header";
+import { getRequestTenant } from "@/lib/tenant/resolve";
+import { BaseLayoutProps } from "@/types/page-props";
 
 export default async function OrderLayout({
   children,
@@ -24,7 +24,6 @@ export default async function OrderLayout({
       <CustomerHeader />
       {children}
       <ActiveOrderBanner />
-      <PwaInstallPrompt />
     </>
   );
 }

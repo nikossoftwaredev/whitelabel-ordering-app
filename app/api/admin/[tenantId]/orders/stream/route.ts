@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { requireRole, isAuthResult } from "@/lib/auth/require-role";
-import { orderEvents, OrderEvent } from "@/lib/events/order-events";
+
+import { isAuthResult,requireRole } from "@/lib/auth/require-role";
+import { OrderEvent,orderEvents } from "@/lib/events/order-events";
 import { createSSEStream } from "@/lib/sse/create-stream";
 
 export const dynamic = "force-dynamic";

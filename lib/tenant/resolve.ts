@@ -1,5 +1,6 @@
-import { cache } from "react";
 import { headers } from "next/headers";
+import { cache } from "react";
+
 import { prisma } from "@/lib/db";
 
 /**
