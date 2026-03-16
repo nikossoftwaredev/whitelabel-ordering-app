@@ -8,6 +8,7 @@ import {
   RotateCcw,
   ShoppingBag,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,8 @@ interface OrderHistoryResponse {
 }
 
 export const OrderHistory = () => {
+  const t = useTranslations("OrderHistory");
+  const tStatus = useTranslations("OrderStatus");
   const tenant = useTenant();
   const formatPrice = useFormatPrice();
   const addItem = useCartStore((s) => s.addItem);
@@ -83,7 +86,7 @@ export const OrderHistory = () => {
                 <ArrowLeft className="size-5" />
               </Button>
             </Link>
-            <h1 className="text-lg font-bold">Order History</h1>
+            <h1 className="text-lg font-bold">{t("title")}</h1>
           </div>
         </div>
       </header>
@@ -117,15 +120,15 @@ export const OrderHistory = () => {
           <div className="flex flex-col items-center gap-4 py-20 text-center">
             <Package className="size-16 text-muted-foreground/30" />
             <div>
-              <h2 className="text-xl font-semibold">No orders yet</h2>
+              <h2 className="text-xl font-semibold">{t("noOrders")}</h2>
               <p className="text-muted-foreground mt-1">
-                Your order history will appear here once you place an order.
+                {t("noOrdersDesc")}
               </p>
             </div>
             <Link href="/order">
               <Button className="cursor-pointer">
                 <ShoppingBag className="size-4" />
-                Browse Menu
+                {t("browseMenu")}
               </Button>
             </Link>
           </div>
@@ -133,7 +136,7 @@ export const OrderHistory = () => {
         {!isLoading && (data?.orders?.length ?? 0) > 0 && (
           <div className="space-y-4">
             {data!.orders.map((order) => {
-              const status = orderStatusConfig[order.status];
+              const statusCfg = orderStatusConfig[order.status];
               const isActive = ACTIVE_ORDER_STATUSES.includes(order.status);
               const card = (
                 <Card>
@@ -145,9 +148,9 @@ export const OrderHistory = () => {
                       </span>
                       <Badge
                         variant="secondary"
-                        className={status.className}
+                        className={statusCfg.className}
                       >
-                        {status.label}
+                        {tStatus(order.status)}
                       </Badge>
                     </div>
 
@@ -194,7 +197,7 @@ export const OrderHistory = () => {
                           onClick={() => handleReorder(order)}
                         >
                           <RotateCcw className="size-4" />
-                          Reorder
+                          {t("reorder")}
                         </Button>
                       )}
                     </div>

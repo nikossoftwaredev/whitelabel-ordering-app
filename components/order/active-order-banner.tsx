@@ -7,8 +7,10 @@ import {
   Clock,
   HandPlatter,
   Loader2,
+  X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
@@ -28,17 +30,22 @@ interface ActiveOrder {
   estimatedReadyAt: string | null;
 }
 
-const STATUS_CONFIG: Record<
-  ActiveOrderStatus,
-  { label: string; icon: typeof Clock; color: string }
-> = {
-  NEW: { label: "Placed", icon: Clock, color: "text-amber-500" },
-  ACCEPTED: { label: "Accepted", icon: Check, color: "text-blue-500" },
-  PREPARING: { label: "Preparing", icon: ChefHat, color: "text-orange-500" },
-  READY: { label: "Ready!", icon: HandPlatter, color: "text-green-500" },
+const STATUS_ICONS: Record<ActiveOrderStatus, typeof Clock> = {
+  NEW: Clock,
+  ACCEPTED: Check,
+  PREPARING: ChefHat,
+  READY: HandPlatter,
+};
+
+const STATUS_COLORS: Record<ActiveOrderStatus, string> = {
+  NEW: "text-amber-500",
+  ACCEPTED: "text-blue-500",
+  PREPARING: "text-orange-500",
+  READY: "text-green-500",
 };
 
 export function ActiveOrderBanner() {
+  const t = useTranslations("ActiveOrderBanner");
   const { data: session } = useSession();
   const tenant = useTenant();
   const formatPrice = useFormatPrice();
@@ -114,8 +121,22 @@ export function ActiveOrderBanner() {
 
   if (!order) return null;
 
-  const config = STATUS_CONFIG[order.status];
-  const Icon = config.icon;
+  const Icon = STATUS_ICONS[order.status];
+  const color = STATUS_COLORS[order.status];
+
+  const statusLabel: Record<ActiveOrderStatus, string> = {
+    NEW: t("statusPlaced"),
+    ACCEPTED: t("statusAccepted"),
+    PREPARING: t("statusPreparing"),
+    READY: t("statusReady"),
+  };
+
+  const statusMessage: Record<ActiveOrderStatus, string> = {
+    NEW: t("waitingConfirmation"),
+    ACCEPTED: t("storeConfirmed"),
+    PREPARING: t("almostReady"),
+    READY: t("pickUpNow"),
+  };
 
   return (
     <Link
@@ -141,7 +162,7 @@ export function ActiveOrderBanner() {
         {order.status === "READY" ? (
           <Icon className="size-5 text-green-500" />
         ) : (
-          <Loader2 className={cn("size-5 animate-spin", config.color)} />
+          <Loader2 className={cn("size-5 animate-spin", color)} />
         )}
       </div>
 
@@ -151,21 +172,30 @@ export function ActiveOrderBanner() {
           <span className="text-sm font-semibold">
             Order #{order.orderNumber}
           </span>
-          <span className={cn("text-xs font-medium", config.color)}>
-            {config.label}
+          <span className={cn("text-xs font-medium", color)}>
+            {statusLabel[order.status]}
           </span>
         </div>
         <p className="text-xs text-muted-foreground">
-          {formatPrice(order.total)}
-          {order.status === "READY" && " — Pick up now!"}
-          {order.status === "PREPARING" && " — Almost ready..."}
-          {order.status === "NEW" && " — Waiting for confirmation..."}
-          {order.status === "ACCEPTED" && " — Store confirmed your order"}
+          {formatPrice(order.total)} — {statusMessage[order.status]}
         </p>
       </div>
 
       {/* Arrow */}
       <ChevronRight className="size-4 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform duration-200" />
+
+      {/* Dismiss */}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setVisible(false);
+          setTimeout(() => setOrder(null), 300);
+        }}
+        className="shrink-0 size-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200"
+      >
+        <X className="size-3.5" />
+      </button>
     </Link>
   );
 }

@@ -28,14 +28,16 @@ export const CustomerHeader = () => {
   const { data: session } = useSession();
   const tenant = useTenant();
   const cart = useCartStore();
-  const itemCount = cart.itemCount();
   const { resolvedTheme, setTheme } = useTheme();
 
+  const [mounted, setMounted] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const user = session?.user;
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!user) {
@@ -191,7 +193,7 @@ export const CustomerHeader = () => {
             onClick={() => setCartOpen(true)}
           >
             <ShoppingBag className="size-5" />
-            {itemCount > 0 && (
+            {mounted && cart.itemCount() > 0 && (
               <span
                 className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-5 h-5 rounded-full text-[11px] font-bold text-white px-1 tabular-nums"
                 style={{
@@ -199,7 +201,7 @@ export const CustomerHeader = () => {
                     "var(--brand-primary, hsl(var(--primary)))",
                 }}
               >
-                {itemCount}
+                {cart.itemCount()}
               </span>
             )}
           </Button>

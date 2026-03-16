@@ -2,6 +2,7 @@
 
 import { Loader2, Mail } from "lucide-react";
 import { signIn } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 export const SignInForm = ({ callbackUrl = "/" }: { callbackUrl?: string }) => {
+  const t = useTranslations("Auth");
   const [email, setEmail] = useState("");
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
@@ -36,9 +38,9 @@ export const SignInForm = ({ callbackUrl = "/" }: { callbackUrl?: string }) => {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Sign in</CardTitle>
+        <CardTitle className="text-2xl">{t("signIn")}</CardTitle>
         <CardDescription>
-          Choose your preferred sign-in method
+          {t("chooseMethod")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -70,26 +72,26 @@ export const SignInForm = ({ callbackUrl = "/" }: { callbackUrl?: string }) => {
                   fill="#EA4335"
                 />
               </svg>
-              Continue with Google
+              {t("continueWithGoogle")}
             </>
           )}
         </Button>
 
         <div className="flex items-center gap-3">
           <Separator className="flex-1" />
-          <span className="text-xs text-muted-foreground">or</span>
+          <span className="text-xs text-muted-foreground">{t("or")}</span>
           <Separator className="flex-1" />
         </div>
 
         <form onSubmit={handleEmailSignIn} className="space-y-3">
           <div className="space-y-2">
             <Label htmlFor="email">
-              <Mail className="inline size-3.5" /> Email
+              <Mail className="inline size-3.5" /> {t("email")}
             </Label>
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder={t("emailPlaceholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -103,7 +105,7 @@ export const SignInForm = ({ callbackUrl = "/" }: { callbackUrl?: string }) => {
             {isLoadingEmail ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
-              "Send magic link"
+              t("sendMagicLink")
             )}
           </Button>
         </form>

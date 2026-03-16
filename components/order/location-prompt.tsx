@@ -2,6 +2,7 @@
 
 import { LogIn, MapPin, Navigation, X } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useCallback,useEffect, useState } from "react";
 
 import {
@@ -20,6 +21,7 @@ interface LocationPromptProps {
 }
 
 export function LocationPrompt({ onLocationSet }: LocationPromptProps) {
+  const t = useTranslations("LocationPrompt");
   const { status } = useSession();
   const [open, setOpen] = useState(false);
   const [address, setAddress] = useState("");
@@ -55,7 +57,7 @@ export function LocationPrompt({ onLocationSet }: LocationPromptProps) {
 
   const handleShareLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser");
+      setLocationError(t("geolocationNotSupported"));
       return;
     }
 
@@ -99,18 +101,18 @@ export function LocationPrompt({ onLocationSet }: LocationPromptProps) {
         setLocating(false);
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setLocationError("Location access denied. Please enter your address manually.");
+            setLocationError(t("locationDenied"));
             break;
           case error.POSITION_UNAVAILABLE:
-            setLocationError("Location unavailable. Please enter your address manually.");
+            setLocationError(t("locationUnavailable"));
             break;
           default:
-            setLocationError("Could not get location. Please enter your address manually.");
+            setLocationError(t("locationError"));
         }
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, [onLocationSet]);
+  }, [onLocationSet, t]);
 
   // Don't render for authenticated users
   if (status === "authenticated") return null;
@@ -137,10 +139,10 @@ export function LocationPrompt({ onLocationSet }: LocationPromptProps) {
 
         <SheetHeader className="px-6 pt-3 pb-2">
           <SheetTitle className="text-[18px] font-bold text-left leading-tight">
-            Tell us where you are
+            {t("title")}
           </SheetTitle>
           <p className="text-[14px] text-muted-foreground text-left leading-snug mt-1">
-            Help us confirm availability and delivery fees.
+            {t("description")}
           </p>
         </SheetHeader>
 
@@ -153,7 +155,7 @@ export function LocationPrompt({ onLocationSet }: LocationPromptProps) {
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddressSubmit()}
-              placeholder="Enter street and number"
+              placeholder={t("addressPlaceholder")}
               className="w-full h-12 pl-11 pr-4 rounded-xl bg-muted/50 border border-border/60 text-[15px] placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary,hsl(var(--ring)))] focus:border-transparent transition-all duration-200"
             />
           </div>
@@ -169,7 +171,7 @@ export function LocationPrompt({ onLocationSet }: LocationPromptProps) {
             }}
           >
             <Navigation className={`size-[18px] ${locating ? "animate-pulse" : ""}`} />
-            {locating ? "Locating..." : "Share your location"}
+            {locating ? t("locating") : t("shareLocation")}
           </button>
 
           {/* Error message */}
@@ -185,7 +187,7 @@ export function LocationPrompt({ onLocationSet }: LocationPromptProps) {
             className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 border border-border/80 text-foreground hover:bg-muted/50 transition-colors duration-200"
           >
             <LogIn className="size-[18px]" />
-            Sign in for saved addresses
+            {t("signInForAddresses")}
           </Link>
         </div>
       </SheetContent>

@@ -15,6 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useEffect,useState } from "react";
 import { toast } from "sonner";
 
@@ -39,6 +40,7 @@ import { StripePayment } from "./stripe-payment";
 type OrderType = "PICKUP" | "DELIVERY";
 
 export const CheckoutForm = () => {
+  const t = useTranslations("Checkout");
   const { data: session, status } = useSession();
   const cart = useCartStore();
   const tenant = useTenant();
@@ -90,11 +92,11 @@ export const CheckoutForm = () => {
     e.preventDefault();
 
     if (!customerName.trim()) {
-      toast.error("Please enter your name");
+      toast.error(t("enterName"));
       return;
     }
     if (!customerPhone.trim()) {
-      toast.error("Please enter your phone number");
+      toast.error(t("enterPhone"));
       return;
     }
 
@@ -127,7 +129,7 @@ export const CheckoutForm = () => {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error || "Failed to place order");
+        throw new Error(data?.error || t("somethingWentWrong"));
       }
 
       const { orderId, orderNumber } = await res.json();
@@ -146,7 +148,7 @@ export const CheckoutForm = () => {
         if (!checkoutRes.ok) {
           const data = await checkoutRes.json().catch(() => null);
           throw new Error(
-            data?.error || "Failed to initialize payment"
+            data?.error || t("somethingWentWrong")
           );
         }
 
@@ -159,13 +161,13 @@ export const CheckoutForm = () => {
 
       // Step 3: For cash, complete immediately
       cart.clearCart();
-      toast.success("Order placed successfully!");
+      toast.success(t("orderPlacedSuccess"));
       router.push(
         `/order/confirmation?orderId=${orderId}&orderNumber=${encodeURIComponent(orderNumber)}`
       );
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Something went wrong"
+        err instanceof Error ? err.message : t("somethingWentWrong")
       );
     } finally {
       setIsSubmitting(false);
@@ -177,12 +179,12 @@ export const CheckoutForm = () => {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4">
         <ShoppingBag className="size-16 text-muted-foreground/30" />
-        <h2 className="text-xl font-semibold">Your cart is empty</h2>
+        <h2 className="text-xl font-semibold">{t("cartEmpty")}</h2>
         <p className="text-muted-foreground text-sm">
-          Add some items before checking out.
+          {t("cartEmptyDesc")}
         </p>
         <Button asChild>
-          <Link href="/order">Back to Menu</Link>
+          <Link href="/order">{t("backToMenu")}</Link>
         </Button>
       </div>
     );
@@ -202,16 +204,16 @@ export const CheckoutForm = () => {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 px-4">
         <div className="text-center space-y-2">
-          <h2 className="text-xl font-semibold">Sign in to continue</h2>
+          <h2 className="text-xl font-semibold">{t("signInToContinue")}</h2>
           <p className="text-muted-foreground text-sm">
-            Sign in to place your order. Your cart will be saved.
+            {t("signInDesc")}
           </p>
         </div>
         <SignInForm callbackUrl="/order" />
         <Button variant="ghost" asChild>
           <Link href="/order">
             <ArrowLeft className="size-4 mr-2" />
-            Back to Menu
+            {t("backToMenu")}
           </Link>
         </Button>
       </div>
@@ -232,7 +234,7 @@ export const CheckoutForm = () => {
             <ArrowLeft className="size-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold leading-tight">Checkout</h1>
+            <h1 className="text-2xl font-bold leading-tight">{t("title")}</h1>
             <p className="text-sm text-muted-foreground">{tenant.name}</p>
           </div>
         </div>
@@ -254,7 +256,7 @@ export const CheckoutForm = () => {
                 }`}
               >
                 <Bike className="size-4" />
-                Delivery
+                {t("delivery")}
               </Button>
               <Button
                 type="button"
@@ -267,7 +269,7 @@ export const CheckoutForm = () => {
                 }`}
               >
                 <Store className="size-4" />
-                Pickup
+                {t("pickup")}
               </Button>
             </div>
           </div>
@@ -277,7 +279,7 @@ export const CheckoutForm = () => {
         {orderType === "PICKUP" && (
           <div className="px-4 pb-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Pickup location
+              {t("pickupLocation")}
             </h3>
             <div className="flex items-center gap-3 p-3.5 rounded-xl bg-muted/30 border border-border/50">
               <div
@@ -292,7 +294,7 @@ export const CheckoutForm = () => {
               <div className="min-w-0">
                 <p className="text-sm font-semibold">{tenant.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  Ready in ~{tenant.prepTimeMinutes} min
+                  {t("readyIn", { minutes: tenant.prepTimeMinutes })}
                 </p>
               </div>
             </div>
@@ -302,12 +304,12 @@ export const CheckoutForm = () => {
         {/* ═══ Estimated Time ═══ */}
         <div className="px-4 pb-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            When?
+            {t("when")}
           </h3>
           <div className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-[var(--brand-primary,hsl(var(--primary)))] bg-[var(--brand-primary,hsl(var(--primary)))]/5">
             <Clock className="size-5 text-[var(--brand-primary,hsl(var(--primary)))]" />
             <div>
-              <p className="text-sm font-semibold">Standard</p>
+              <p className="text-sm font-semibold">{t("standard")}</p>
               <p className="text-xs text-muted-foreground">
                 {tenant.prepTimeMinutes}-{tenant.prepTimeMinutes + 10} min
               </p>
@@ -323,7 +325,7 @@ export const CheckoutForm = () => {
         <div className="px-4 pb-2">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Order items
+              {t("orderItems")}
             </h3>
             <Link
               href="/order"
@@ -332,7 +334,7 @@ export const CheckoutForm = () => {
                 color: "var(--brand-primary, hsl(var(--primary)))",
               }}
             >
-              + Add more
+              {t("addMore")}
             </Link>
           </div>
 
@@ -431,11 +433,11 @@ export const CheckoutForm = () => {
         {/* ═══ Your Details ═══ */}
         <div className="px-4 pb-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Your details
+            {t("yourDetails")}
           </h3>
           <div className="space-y-3">
             <Input
-              placeholder="Full name *"
+              placeholder={t("fullNamePlaceholder")}
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               required
@@ -443,7 +445,7 @@ export const CheckoutForm = () => {
             />
             <Input
               type="tel"
-              placeholder="Phone number *"
+              placeholder={t("phonePlaceholder")}
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
               onBlur={handlePhoneBlur}
@@ -452,7 +454,7 @@ export const CheckoutForm = () => {
             />
             <Input
               type="email"
-              placeholder="Email (optional)"
+              placeholder={t("emailOptionalPlaceholder")}
               value={customerEmail}
               onChange={(e) => setCustomerEmail(e.target.value)}
               className="h-11 rounded-xl bg-muted/30 border-border/50"
@@ -475,9 +477,9 @@ export const CheckoutForm = () => {
             >
               <MessageSquare className="size-5 text-muted-foreground" />
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold">Add comment for venue</p>
+                <p className="text-sm font-semibold">{t("addCommentForVenue")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Special requests, allergies, dietary restrictions...
+                  {t("specialRequests")}
                 </p>
               </div>
               <span
@@ -486,13 +488,13 @@ export const CheckoutForm = () => {
                   color: "var(--brand-primary, hsl(var(--primary)))",
                 }}
               >
-                Edit
+                {t("edit")}
               </span>
             </Button>
           ) : (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">Comment for venue</p>
+                <p className="text-sm font-semibold">{t("commentForVenue")}</p>
                 <Button
                   type="button"
                   variant="ghost"
@@ -503,11 +505,11 @@ export const CheckoutForm = () => {
                   }}
                   className="text-xs text-muted-foreground hover:text-foreground h-auto py-0.5 px-1"
                 >
-                  Remove
+                  {t("remove")}
                 </Button>
               </div>
               <Textarea
-                placeholder="Any special instructions for your order..."
+                placeholder={t("specialInstructions")}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
@@ -525,7 +527,7 @@ export const CheckoutForm = () => {
         {/* ═══ Payment ═══ */}
         <div className="px-4 pb-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Payment
+            {t("payment")}
           </h3>
           <div className="space-y-2">
             <label
@@ -547,9 +549,9 @@ export const CheckoutForm = () => {
                 <Banknote className="size-5 text-green-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold">Cash</p>
+                <p className="text-sm font-semibold">{t("cash")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Pay at pickup
+                  {t("payAtPickup")}
                 </p>
               </div>
             </label>
@@ -573,9 +575,9 @@ export const CheckoutForm = () => {
                 <CreditCard className="size-5 text-blue-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold">Card</p>
+                <p className="text-sm font-semibold">{t("card")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Visa, Mastercard, etc.
+                  {t("cardBrands")}
                 </p>
               </div>
             </label>
@@ -589,20 +591,20 @@ export const CheckoutForm = () => {
         {/* ═══ Summary ═══ */}
         <div className="px-4 pb-6">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Summary
+            {t("summary")}
           </h3>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Item subtotal</span>
+              <span className="text-muted-foreground">{t("itemSubtotal")}</span>
               <span className="tabular-nums font-medium">
                 {formatPrice(subtotal)}
               </span>
             </div>
             {orderType === "DELIVERY" && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Delivery fee</span>
+                <span className="text-muted-foreground">{t("deliveryFee")}</span>
                 <span className="tabular-nums font-medium text-muted-foreground">
-                  TBD
+                  {t("tbd")}
                 </span>
               </div>
             )}
@@ -625,11 +627,11 @@ export const CheckoutForm = () => {
               {isSubmitting ? (
                 <div className="flex items-center justify-center w-full gap-2">
                   <Loader2 className="size-4 animate-spin" />
-                  <span>Placing order...</span>
+                  <span>{t("placingOrder")}</span>
                 </div>
               ) : (
                 <>
-                  <span className="flex-1 text-left">{paymentMethod === "STRIPE" ? "Pay with card" : "Place order"}</span>
+                  <span className="flex-1 text-left">{paymentMethod === "STRIPE" ? t("payWithCard") : t("placeOrder")}</span>
                   <span className="font-bold tabular-nums">
                     {formatPrice(subtotal)}
                   </span>
@@ -652,7 +654,7 @@ export const CheckoutForm = () => {
         <DialogContent className="sm:max-w-md p-6 gap-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
-              Pay {formatPrice(subtotal)}
+              {t("pay", { amount: formatPrice(subtotal) })}
             </DialogTitle>
           </DialogHeader>
           {stripeClientSecret && pendingOrderId && (
@@ -667,7 +669,7 @@ export const CheckoutForm = () => {
                 setStripeClientSecret(null);
                 setPendingOrderId(null);
                 setPendingOrderNumber(null);
-                toast.success("Payment successful!");
+                toast.success(t("paymentSuccessful"));
                 router.push(
                   `/order/confirmation?orderId=${oid}&orderNumber=${encodeURIComponent(onum || "")}`
                 );

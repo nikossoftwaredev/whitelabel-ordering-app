@@ -11,6 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
@@ -18,13 +19,6 @@ import { Button } from "@/components/ui/button";
 import type { OrderStatus } from "@/lib/general/status-config";
 import { cn } from "@/lib/general/utils";
 import { Link } from "@/lib/i18n/navigation";
-
-const STEPS = [
-  { status: "NEW" as const, label: "Received", icon: Clock },
-  { status: "ACCEPTED" as const, label: "Accepted", icon: Check },
-  { status: "PREPARING" as const, label: "Preparing", icon: ChefHat },
-  { status: "READY" as const, label: "Ready", icon: HandPlatter },
-] as const;
 
 const STATUS_ORDER: Record<OrderStatus, number> = {
   NEW: 0,
@@ -36,6 +30,7 @@ const STATUS_ORDER: Record<OrderStatus, number> = {
 };
 
 export const OrderConfirmation = () => {
+  const t = useTranslations("OrderConfirmation");
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId") || "";
   const orderNumber = searchParams.get("orderNumber") || "---";
@@ -43,6 +38,13 @@ export const OrderConfirmation = () => {
   const [status, setStatus] = useState<OrderStatus>("NEW");
   const [connected, setConnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
+
+  const STEPS = [
+    { status: "NEW" as const, label: t("stepReceived"), icon: Clock },
+    { status: "ACCEPTED" as const, label: t("stepAccepted"), icon: Check },
+    { status: "PREPARING" as const, label: t("stepPreparing"), icon: ChefHat },
+    { status: "READY" as const, label: t("stepReady"), icon: HandPlatter },
+  ] as const;
 
   useEffect(() => {
     if (!orderId || !tenant.slug) return;
@@ -104,16 +106,15 @@ export const OrderConfirmation = () => {
           <XCircle className="size-20 text-red-500" />
         </div>
         <h1 className="text-2xl font-bold mb-2">
-          Order {displayNumber} Declined
+          {t("orderDeclined", { number: displayNumber })}
         </h1>
         <p className="text-muted-foreground max-w-sm mb-8">
-          Unfortunately, the store was unable to accept your order. Please try
-          again or contact the store.
+          {t("declinedDesc")}
         </p>
         <Button asChild>
           <Link href="/order">
             <ArrowLeft className="size-4 mr-2" />
-            Back to Menu
+            {t("backToMenu")}
           </Link>
         </Button>
       </div>
@@ -123,11 +124,9 @@ export const OrderConfirmation = () => {
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
       {/* Header */}
-      <h1 className="text-2xl font-bold mb-1">Order {displayNumber}</h1>
+      <h1 className="text-2xl font-bold mb-1">{t("orderTitle", { number: displayNumber })}</h1>
       <p className="text-muted-foreground mb-8">
-        {isCompleted
-          ? "Your order is complete! Thank you."
-          : "Tracking your order live..."}
+        {isCompleted ? t("orderComplete") : t("trackingLive")}
       </p>
 
       {/* Status stepper */}
@@ -190,15 +189,15 @@ export const OrderConfirmation = () => {
           <>
             <Loader2 className="size-4 animate-spin" />
             <span>
-              {status === "NEW" && "Waiting for the store to accept..."}
-              {status === "ACCEPTED" && "The store accepted your order!"}
-              {status === "PREPARING" && "Your order is being prepared..."}
-              {status === "READY" && "Your order is ready for pickup!"}
+              {status === "NEW" && t("waitingForStore")}
+              {status === "ACCEPTED" && t("storeAccepted")}
+              {status === "PREPARING" && t("preparing")}
+              {status === "READY" && t("readyForPickup")}
             </span>
           </>
         )}
         {!isCompleted && !connected && !orderId && (
-          <span>Order submitted successfully.</span>
+          <span>{t("orderSubmitted")}</span>
         )}
       </div>
 
@@ -207,13 +206,13 @@ export const OrderConfirmation = () => {
         <Button asChild className="flex-1">
           <Link href="/order">
             <ArrowLeft className="size-4 mr-2" />
-            Back to Menu
+            {t("backToMenu")}
           </Link>
         </Button>
         <Button variant="outline" asChild className="flex-1">
           <Link href="/order/orders">
             <ClipboardList className="size-4 mr-2" />
-            Order History
+            {t("orderHistory")}
           </Link>
         </Button>
       </div>

@@ -127,8 +127,8 @@ const LocaleLayout = async ({ children, params }: BaseLayoutProps) => {
       </head>
       <body className={`${roboto.variable} font-sans antialiased`}>
         <SwRegister />
-        <PwaInstallPrompt />
         <Providers messages={messages} locale={locale} session={session}>
+          <PwaInstallPrompt />
           {tenantContextValue ? (
             <TenantProvider value={tenantContextValue}>
               {children}

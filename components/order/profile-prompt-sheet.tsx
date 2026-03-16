@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
 const PROMPT_KEY = "profile-prompt-shown";
 
 export function ProfilePromptSheet() {
+  const t = useTranslations("ProfilePrompt");
   const { data: session, update } = useSession();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -80,37 +82,37 @@ export function ProfilePromptSheet() {
         className="rounded-t-2xl max-w-lg mx-auto px-6 pb-10"
       >
         <SheetHeader className="text-left">
-          <SheetTitle>Complete your profile</SheetTitle>
+          <SheetTitle>{t("title")}</SheetTitle>
           <SheetDescription>
-            Add your name and phone number for a faster checkout experience.
+            {t("description")}
           </SheetDescription>
         </SheetHeader>
         <div className="mt-4 space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="profile-name">Full name</Label>
+            <Label htmlFor="profile-name">{t("fullName")}</Label>
             <Input
               id="profile-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
+              placeholder={t("namePlaceholder")}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="profile-phone">Phone number</Label>
+            <Label htmlFor="profile-phone">{t("phone")}</Label>
             <Input
               id="profile-phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="699 000 0000"
+              placeholder={t("phonePlaceholder")}
             />
           </div>
           <div className="flex gap-2 pt-2">
             <Button variant="outline" className="flex-1" onClick={handleSkip}>
-              Skip for now
+              {t("skipForNow")}
             </Button>
             <Button className="flex-1" onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </div>

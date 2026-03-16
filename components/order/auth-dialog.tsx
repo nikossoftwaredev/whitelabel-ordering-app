@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { SignInForm } from "@/components/auth/signin-form";
 import {
   Dialog,
@@ -15,15 +17,17 @@ interface AuthDialogProps {
 }
 
 export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
+  const t = useTranslations("AuthDialog");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm p-6 gap-6">
         <DialogHeader className="space-y-2">
           <DialogTitle className="text-2xl font-bold">
-            Create an account or log in
+            {t("title")}
           </DialogTitle>
           <DialogDescription>
-            Log in to place your order. Your cart will be saved.
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
         <SignInForm callbackUrl="/order" />

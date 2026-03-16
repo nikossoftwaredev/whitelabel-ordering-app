@@ -2,15 +2,25 @@
 
 import { ArrowLeft, User } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link } from "@/lib/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/lib/i18n/navigation";
+
+const LANGUAGES = [
+  { code: "el", label: "Ελληνικά", flag: "🇬🇷" },
+  { code: "en", label: "English", flag: "🇬🇧" },
+] as const;
 
 export function ProfilePage() {
+  const t = useTranslations("Profile");
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
   const { data: session, update } = useSession();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -45,7 +55,7 @@ export function ProfilePage() {
     }
   };
 
-  const saveLabel = saving ? "Saving..." : "Save changes";
+  const saveLabel = saving ? t("saving") : saved ? t("saved") : t("saveChanges");
 
   return (
     <div className="min-h-screen bg-background">
@@ -57,7 +67,7 @@ export function ProfilePage() {
                 <ArrowLeft className="size-5" />
               </Button>
             </Link>
-            <h1 className="text-lg font-bold">My Profile</h1>
+            <h1 className="text-lg font-bold">{t("title")}</h1>
           </div>
         </div>
       </header>
@@ -78,30 +88,53 @@ export function ProfilePage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="edit-name">Full name</Label>
+              <Label htmlFor="edit-name">{t("fullName")}</Label>
               <Input
                 id="edit-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
+                placeholder={t("namePlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="edit-email">Email</Label>
+              <Label htmlFor="edit-email">{t("email")}</Label>
               <Input id="edit-email" value={email} disabled className="opacity-60" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="edit-phone">Phone number</Label>
+              <Label htmlFor="edit-phone">{t("phone")}</Label>
               <Input
                 id="edit-phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="699 000 0000"
+                placeholder={t("phonePlaceholder")}
               />
             </div>
+
+            {/* Language switcher */}
+            <div className="space-y-1.5">
+              <Label>{t("language")}</Label>
+              <div className="flex gap-2">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    type="button"
+                    onClick={() => router.replace(pathname, { locale: lang.code })}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                      locale === lang.code
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
+                    }`}
+                  >
+                    <span>{lang.flag}</span>
+                    <span>{lang.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <Button onClick={handleSave} disabled={saving} className="w-full">
-              {saved ? "Saved!" : saveLabel}
+              {saveLabel}
             </Button>
           </CardContent>
         </Card>

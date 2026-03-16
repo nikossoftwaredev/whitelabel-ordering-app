@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ interface TenantMeta {
 const DISMISSED_KEY = "pwa-prompt-dismissed";
 
 export function PwaInstallPrompt() {
+  const t = useTranslations("Pwa");
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [tenantMeta, setTenantMeta] = useState<TenantMeta | null>(null);
   const [visible, setVisible] = useState(false);
@@ -112,23 +114,21 @@ export function PwaInstallPrompt() {
 
           <div className="space-y-1">
             <h2 className="text-xl font-bold">{appName}</h2>
-            <p className="text-sm text-muted-foreground">Get the full experience — install the app</p>
+            <p className="text-sm text-muted-foreground">{t("getFullExperience")}</p>
           </div>
 
           {/* Action area — adapts per platform */}
           {deferredPrompt ? (
             <Button className="w-full rounded-xl h-12 text-base font-semibold" onClick={handleInstall}>
-              Add to Home Screen
+              {t("addToHomeScreen")}
             </Button>
           ) : isIos ? (
             <div className="w-full rounded-xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground text-left">
-              Tap the <strong>Share</strong> button in Safari, then tap{" "}
-              <strong>Add to Home Screen</strong>.
+              {t("iosTip")}
             </div>
           ) : (
             <div className="w-full rounded-xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground text-left">
-              Open this page in <strong>Chrome</strong> or <strong>Safari</strong> on your phone
-              and tap <strong>Add to Home Screen</strong>.
+              {t("androidTip")}
             </div>
           )}
 
@@ -136,7 +136,7 @@ export function PwaInstallPrompt() {
             onClick={dismiss}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            Keep using web
+            {t("keepUsingWeb")}
           </button>
         </div>
       </div>

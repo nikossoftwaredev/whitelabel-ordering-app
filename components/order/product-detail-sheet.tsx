@@ -2,6 +2,7 @@
 
 import { Check,Minus, Plus, Store } from "lucide-react";
 import { useCallback,useEffect, useState } from "react";
+
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useCartStore } from "@/lib/stores/cart-store";
 
 interface ModifierOption {
@@ -61,6 +63,7 @@ export const ProductDetailSheet = ({
 }: ProductDetailSheetProps) => {
   const cart = useCartStore();
   const formatPrice = useFormatPrice();
+  const isMobile = useIsMobile();
   const [quantity, setQuantity] = useState(1);
   const [selectedModifiers, setSelectedModifiers] = useState<
     Map<string, Set<string>>
@@ -144,16 +147,24 @@ export const ProductDetailSheet = ({
 
   return (
     <Sheet open={!!product} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="max-h-[90vh] rounded-t-3xl p-0 gap-0">
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-2">
-          <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
-        </div>
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={
+          isMobile
+            ? "max-h-[90vh] rounded-t-3xl p-0 gap-0 flex flex-col"
+            : "flex flex-col w-120 p-0 gap-0"
+        }
+      >
+        {isMobile && (
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+          </div>
+        )}
 
-        <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className={`overflow-y-auto ${isMobile ? "max-h-[calc(90vh-140px)]" : "flex-1"}`}>
           {/* Hero image */}
           {product.image ? (
-            <div className="relative mx-4 rounded-2xl overflow-hidden aspect-[16/10] bg-muted">
+            <div className="relative mx-4 rounded-2xl overflow-hidden aspect-16/10 bg-muted">
               <img
                 src={product.image}
                 alt={product.name}
@@ -256,7 +267,7 @@ export const ProductDetailSheet = ({
                             variant="ghost"
                             className={`w-full flex items-center justify-between rounded-xl p-3.5 h-auto transition-all duration-200 ${
                               isSelected
-                                ? "bg-[var(--brand-primary,hsl(var(--primary)))]/8 ring-1.5 ring-[var(--brand-primary,hsl(var(--primary)))]"
+                                ? "bg-(--brand-primary,hsl(var(--primary)))/8 ring-1.5 ring-(--brand-primary,hsl(var(--primary)))"
                                 : "bg-muted/30 hover:bg-muted/50"
                             }`}
                             onClick={() =>
@@ -273,7 +284,7 @@ export const ProductDetailSheet = ({
                               <div
                                 className={`size-5 rounded-full flex items-center justify-center transition-all duration-200 ${
                                   isSelected
-                                    ? "bg-[var(--brand-primary,hsl(var(--primary)))] text-white"
+                                    ? "bg-(--brand-primary,hsl(var(--primary))) text-white"
                                     : "border-2 border-muted-foreground/20"
                                 }`}
                               >
