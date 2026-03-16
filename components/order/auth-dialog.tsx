@@ -26,7 +26,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
             Log in to place your order. Your cart will be saved.
           </DialogDescription>
         </DialogHeader>
-        <SignInForm callbackUrl="/order/checkout" />
+        <SignInForm callbackUrl="/order" />
       </DialogContent>
     </Dialog>
   );

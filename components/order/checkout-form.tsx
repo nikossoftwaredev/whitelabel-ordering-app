@@ -207,7 +207,7 @@ export const CheckoutForm = () => {
             Sign in to place your order. Your cart will be saved.
           </p>
         </div>
-        <SignInForm callbackUrl="/order/checkout" />
+        <SignInForm callbackUrl="/order" />
         <Button variant="ghost" asChild>
           <Link href="/order">
             <ArrowLeft className="size-4 mr-2" />

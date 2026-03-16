@@ -31,7 +31,7 @@ import { queryKeys } from "@/lib/query/keys";
 
 interface OrderItemModifier {
   name: string;
-  price: number;
+  priceAdjustment: number;
 }
 
 interface OrderItem {
@@ -51,7 +51,7 @@ interface Order {
   id: string;
   orderNumber: string;
   status: OrderStatus;
-  totalAmount: number;
+  total: number;
   createdAt: string;
   estimatedReadyAt: string | null;
   rejectionReason: string | null;
@@ -265,7 +265,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
                     {item.modifiers
                       .map(
                         (m) =>
-                          `+ ${m.name}${m.price > 0 ? ` (${formatPrice(m.price)})` : ""}`
+                          `+ ${m.name}${m.priceAdjustment > 0 ? ` (${formatPrice(m.priceAdjustment)})` : ""}`
                       )
                       .join(", ")}
                   </div>
@@ -279,7 +279,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
           {/* Total */}
           <div className="flex items-center justify-between">
             <span className="font-semibold text-base">
-              {formatPrice(order.totalAmount)}
+              {formatPrice(order.total)}
             </span>
           </div>
 

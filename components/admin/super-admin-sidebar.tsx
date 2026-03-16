@@ -1,7 +1,7 @@
 "use client";
 
 import { signOut, useSession } from "next-auth/react";
-import { ChevronsUpDown, Command, Home, LogOut } from "lucide-react";
+import { ChevronsUpDown, Home, LogOut, Shield } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -27,15 +27,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Link, usePathname } from "@/lib/i18n/navigation";
-import { adminNavItems } from "@/lib/admin/config";
 
-export const AdminSidebar = () => {
+export const SuperAdminSidebar = () => {
   const pathname = usePathname();
   const { setOpenMobile, isMobile } = useSidebar();
   const { data: session } = useSession();
 
-  const userName = session?.user?.name || "Admin User";
-  const userEmail = session?.user?.email || "admin@example.com";
+  const userName = session?.user?.name || "Super Admin";
+  const userEmail = session?.user?.email || "";
   const userImage = session?.user?.image;
   const userInitials = userName
     .split(" ")
@@ -44,19 +43,22 @@ export const AdminSidebar = () => {
     .toUpperCase()
     .slice(0, 2);
 
+  const href = "/admin/super/tenants";
+  const active = pathname === href || pathname.startsWith(`${href}/`);
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/admin" onClick={() => setOpenMobile(false)}>
+              <Link href="/admin/super/tenants" onClick={() => setOpenMobile(false)}>
                 <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Command className="size-4" />
+                  <Shield className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Admin Panel</span>
-                  <span className="truncate text-xs">Dashboard</span>
+                  <span className="truncate font-semibold">Super Admin</span>
+                  <span className="truncate text-xs">Platform</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -65,39 +67,21 @@ export const AdminSidebar = () => {
       </SidebarHeader>
 
       <SidebarContent>
-        {Object.entries(adminNavItems).map(([group, buttons]) => {
-          const visibleButtons = buttons.filter((b) => !b.superAdminOnly);
-          if (visibleButtons.length === 0) return null;
-          return (
-          <SidebarGroup key={group}>
-            <SidebarGroupLabel>{group}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {visibleButtons.map((button) => {
-                  const href = `/admin/${button.href}`;
-                  const active =
-                    pathname === href || pathname.startsWith(`${href}/`);
-
-                  return (
-                    <SidebarMenuItem key={button.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={active}
-                        tooltip={button.label}
-                      >
-                        <Link href={href} onClick={() => setOpenMobile(false)}>
-                          <button.icon className="size-4" />
-                          <span>{button.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-          );
-        })}
+        <SidebarGroup>
+          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={active} tooltip="Tenants">
+                  <Link href={href} onClick={() => setOpenMobile(false)}>
+                    <Shield className="size-4" />
+                    <span>Tenants</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
