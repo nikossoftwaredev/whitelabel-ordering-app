@@ -11,7 +11,7 @@ function getStripe(): Stripe {
       );
     }
     _stripe = new Stripe(key, {
-      apiVersion: "2025-04-30.basil" as Stripe.LatestApiVersion,
+      apiVersion: "2026-02-25.clover" as Stripe.LatestApiVersion,
     });
   }
   return _stripe;
