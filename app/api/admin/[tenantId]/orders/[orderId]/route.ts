@@ -14,6 +14,7 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   READY: ["COMPLETED"],
   COMPLETED: [],
   REJECTED: [],
+  CANCELLED: [],
 };
 
 export async function GET(_request: Request, { params }: Params) {
