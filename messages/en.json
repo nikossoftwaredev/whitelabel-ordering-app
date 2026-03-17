@@ -111,7 +111,13 @@
     "stepReceived": "Received",
     "stepAccepted": "Accepted",
     "stepPreparing": "Preparing",
-    "stepReady": "Ready"
+    "stepReady": "Ready",
+    "cancelOrder": "Cancel Order",
+    "cancelConfirm": "Are you sure you want to cancel this order?",
+    "cancelSuccess": "Order cancelled successfully.",
+    "cancelError": "Failed to cancel order. Please try again.",
+    "orderCancelled": "Order {number} Cancelled",
+    "cancelledDesc": "Your order has been cancelled."
   },
   "ActiveOrderBanner": {
     "statusPlaced": "Placed",
@@ -128,7 +134,11 @@
     "noOrders": "No orders yet",
     "noOrdersDesc": "Your order history will appear here once you place an order.",
     "browseMenu": "Browse Menu",
-    "reorder": "Reorder"
+    "reorder": "Reorder",
+    "cancel": "Cancel",
+    "cancelConfirm": "Are you sure you want to cancel this order?",
+    "cancelSuccess": "Order cancelled successfully.",
+    "cancelError": "Failed to cancel order. Please try again."
   },
   "OrderStatus": {
     "NEW": "New",
@@ -136,7 +146,8 @@
     "PREPARING": "Preparing",
     "READY": "Ready",
     "COMPLETED": "Completed",
-    "REJECTED": "Rejected"
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled"
   },
   "Profile": {
     "title": "My Profile",

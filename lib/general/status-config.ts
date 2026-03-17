@@ -11,7 +11,8 @@ export type OrderStatus =
   | "PREPARING"
   | "READY"
   | "COMPLETED"
-  | "REJECTED";
+  | "REJECTED"
+  | "CANCELLED";
 
 export const orderStatusConfig: Record<
   OrderStatus,
@@ -46,6 +47,11 @@ export const orderStatusConfig: Record<
     label: "Rejected",
     className:
       "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  },
+  CANCELLED: {
+    label: "Cancelled",
+    className:
+      "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
   },
 };
 

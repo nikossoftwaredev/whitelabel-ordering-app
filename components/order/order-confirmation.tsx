@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Check,
@@ -13,6 +14,7 @@ import {
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ const STATUS_ORDER: Record<OrderStatus, number> = {
   READY: 3,
   COMPLETED: 4,
   REJECTED: -1,
+  CANCELLED: -1,
 };
 
 export const OrderConfirmation = () => {
@@ -38,6 +41,29 @@ export const OrderConfirmation = () => {
   const [status, setStatus] = useState<OrderStatus>("NEW");
   const [connected, setConnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(
+        `/api/tenants/${tenant.slug}/orders/${orderId}/cancel`,
+        { method: "POST" }
+      );
+      if (!res.ok) throw new Error("Failed to cancel order");
+    },
+    onSuccess: () => {
+      setStatus("CANCELLED");
+      toast.success(t("cancelSuccess"));
+    },
+    onError: () => {
+      toast.error(t("cancelError"));
+    },
+  });
+
+  const handleCancel = () => {
+    if (window.confirm(t("cancelConfirm"))) {
+      cancelMutation.mutate();
+    }
+  };
 
   const STEPS = [
     { status: "NEW" as const, label: t("stepReceived"), icon: Clock },
@@ -92,6 +118,7 @@ export const OrderConfirmation = () => {
   }, [orderId, tenant.slug]);
 
   const isRejected = status === "REJECTED";
+  const isCancelled = status === "CANCELLED";
   const isCompleted = status === "COMPLETED";
   const currentStepIndex = STATUS_ORDER[status];
 
@@ -110,6 +137,28 @@ export const OrderConfirmation = () => {
         </h1>
         <p className="text-muted-foreground max-w-sm mb-8">
           {t("declinedDesc")}
+        </p>
+        <Button asChild>
+          <Link href="/order">
+            <ArrowLeft className="size-4 mr-2" />
+            {t("backToMenu")}
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (isCancelled) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
+        <div className="relative mb-6">
+          <XCircle className="size-20 text-orange-500" />
+        </div>
+        <h1 className="text-2xl font-bold mb-2">
+          {t("orderCancelled", { number: displayNumber })}
+        </h1>
+        <p className="text-muted-foreground max-w-sm mb-8">
+          {t("cancelledDesc")}
         </p>
         <Button asChild>
           <Link href="/order">
@@ -216,6 +265,25 @@ export const OrderConfirmation = () => {
           </Link>
         </Button>
       </div>
+
+      {/* Cancel button - only for NEW orders */}
+      {status === "NEW" && (
+        <div className="mt-4 w-full max-w-xs">
+          <Button
+            variant="outline"
+            className="w-full text-destructive border-destructive/50 hover:bg-destructive/10 cursor-pointer"
+            onClick={handleCancel}
+            disabled={cancelMutation.isPending}
+          >
+            {cancelMutation.isPending ? (
+              <Loader2 className="size-4 mr-2 animate-spin" />
+            ) : (
+              <XCircle className="size-4 mr-2" />
+            )}
+            {t("cancelOrder")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

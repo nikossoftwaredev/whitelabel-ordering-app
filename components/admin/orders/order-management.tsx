@@ -166,7 +166,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
     ACTIVE_ORDER_STATUSES.includes(o.status)
   );
   const completedOrders = orders.filter((o) => o.status === "COMPLETED");
-  const rejectedOrders = orders.filter((o) => o.status === "REJECTED");
+  const rejectedOrders = orders.filter((o) => o.status === "REJECTED" || o.status === "CANCELLED");
 
   const countByStatus = (status: OrderStatus) =>
     orders.filter((o) => o.status === status).length;
@@ -287,6 +287,13 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
           {order.status === "REJECTED" && order.rejectionReason && (
             <p className="mt-2 text-sm text-red-600 dark:text-red-400">
               Reason: {order.rejectionReason}
+            </p>
+          )}
+
+          {/* Cancelled by customer display */}
+          {order.status === "CANCELLED" && (
+            <p className="mt-2 text-sm text-orange-600 dark:text-orange-400">
+              Cancelled by customer
             </p>
           )}
 
@@ -510,7 +517,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
             )}
           </TabsTrigger>
           <TabsTrigger value="rejected" className="cursor-pointer">
-            Rejected
+            Rejected / Cancelled
             {rejectedOrders.length > 0 && (
               <Badge
                 variant="secondary"

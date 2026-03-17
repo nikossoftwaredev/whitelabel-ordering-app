@@ -192,9 +192,30 @@ model Customer {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders    Order[]
   favorites Favorite[]
+  addresses Address[]
 
   @@unique([tenantId, userId])
   @@map("customers")
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  customerId String   @map("customer_id")
+  label      String   @default("Home")
+  street     String
+  city       String?
+  postalCode String?  @map("postal_code")
+  country    String?
+  lat        Float?
+  lng        Float?
+  isDefault  Boolean  @default(false) @map("is_default")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("addresses")
 }
 
 model Favorite {
@@ -325,6 +346,7 @@ enum OrderStatus {
   READY
   COMPLETED
   REJECTED
+  CANCELLED
 }
 
 enum PaymentMethod {
@@ -370,10 +392,14 @@ model Order {
   customerEmail String? @map("customer_email")
   customerPhone String? @map("customer_phone")
 
+  // Delivery
+  deliveryAddress String? @map("delivery_address")
+
   // Timestamps
-  acceptedAt  DateTime? @map("accepted_at")
-  readyAt     DateTime? @map("ready_at")
-  completedAt DateTime? @map("completed_at")
+  acceptedAt   DateTime? @map("accepted_at")
+  readyAt      DateTime? @map("ready_at")
+  completedAt  DateTime? @map("completed_at")
+  cancelledAt  DateTime? @map("cancelled_at")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 

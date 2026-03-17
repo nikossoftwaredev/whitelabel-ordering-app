@@ -1,14 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ChevronRight,
+  Loader2,
   Package,
   RotateCcw,
   ShoppingBag,
+  XCircle,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +52,7 @@ export const OrderHistory = () => {
   const tenant = useTenant();
   const formatPrice = useFormatPrice();
   const addItem = useCartStore((s) => s.addItem);
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery<OrderHistoryResponse>({
     queryKey: queryKeys.orders.history(tenant.slug),
@@ -60,6 +64,31 @@ export const OrderHistory = () => {
       return res.json();
     },
   });
+
+  const cancelMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const res = await fetch(
+        `/api/tenants/${tenant.slug}/orders/${orderId}/cancel`,
+        { method: "POST" }
+      );
+      if (!res.ok) throw new Error("Failed to cancel order");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.orders.history(tenant.slug),
+      });
+      toast.success(t("cancelSuccess"));
+    },
+    onError: () => {
+      toast.error(t("cancelError"));
+    },
+  });
+
+  const handleCancel = (orderId: string) => {
+    if (window.confirm(t("cancelConfirm"))) {
+      cancelMutation.mutate(orderId);
+    }
+  };
 
   const handleReorder = (order: Order) => {
     for (const item of order.items) {
@@ -138,6 +167,10 @@ export const OrderHistory = () => {
             {data!.orders.map((order) => {
               const statusCfg = orderStatusConfig[order.status];
               const isActive = ACTIVE_ORDER_STATUSES.includes(order.status);
+              const isNew = order.status === "NEW";
+              const isCancelling =
+                cancelMutation.isPending &&
+                cancelMutation.variables === order.id;
               const card = (
                 <Card>
                   <CardContent className="p-4">
@@ -188,7 +221,28 @@ export const OrderHistory = () => {
                         {formatPrice(order.total)}
                       </span>
                       {isActive ? (
-                        <ChevronRight className="size-4 text-muted-foreground" />
+                        isNew ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="cursor-pointer text-destructive border-destructive/50 hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleCancel(order.id);
+                            }}
+                            disabled={isCancelling}
+                          >
+                            {isCancelling ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <XCircle className="size-4" />
+                            )}
+                            {t("cancel")}
+                          </Button>
+                        ) : (
+                          <ChevronRight className="size-4 text-muted-foreground" />
+                        )
                       ) : (
                         <Button
                           variant="outline"
