@@ -1,5 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
+/**
+ * Default tenant slug used for E2E tests.
+ * Tests hit {slug}.lvh.me:3000 so the tenant middleware resolves correctly.
+ * Override with E2E_TENANT_SLUG env var if you want a different tenant.
+ */
+const tenantSlug = process.env.E2E_TENANT_SLUG || "figata-cafe";
+const baseURL = `http://${tenantSlug}.lvh.me:3000`;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -8,7 +16,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
