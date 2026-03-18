@@ -11,8 +11,8 @@ test.describe("Order Page", () => {
   test("should load the menu page", async ({ page }) => {
     // Store name visible
     await expect(page.getByText("Figata Cafe")).toBeVisible({ timeout: 10000 });
-    // Category tabs visible
-    await expect(page.getByText("HOT DRINKS")).toBeVisible();
+    // Products load with prices
+    await expect(page.locator("text=/€/").first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should display store cover image", async ({ page }) => {

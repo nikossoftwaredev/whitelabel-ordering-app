@@ -22,9 +22,11 @@ test.describe("API Route Guards", () => {
     const res = await request.get(`/api/tenants/${TENANT_SLUG}/menu`);
     expect(res.ok()).toBeTruthy();
     const data = await res.json();
-    expect(Array.isArray(data)).toBeTruthy();
-    expect(data.length).toBeGreaterThan(0);
-    for (const cat of data) {
+    // Response is { tenant, categories }
+    expect(data).toHaveProperty("categories");
+    expect(Array.isArray(data.categories)).toBeTruthy();
+    expect(data.categories.length).toBeGreaterThan(0);
+    for (const cat of data.categories) {
       expect(cat).toHaveProperty("name");
       expect(cat).toHaveProperty("products");
       expect(Array.isArray(cat.products)).toBeTruthy();
