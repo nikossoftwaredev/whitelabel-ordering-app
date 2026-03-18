@@ -2,7 +2,7 @@
 
 import { Volume2, VolumeX } from "lucide-react";
 
-import { ThemeSwitcher } from "@/components/examples/ThemeSwitcher";
+import { UserAvatarMenu } from "@/components/user-avatar-menu";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -23,6 +23,8 @@ export const AdminHeader = () => {
         <SidebarTrigger className="max-md:scale-125" />
         <Separator orientation="vertical" className="h-6" />
         <div className="flex-1" />
+
+        {/* Sound toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -42,7 +44,8 @@ export const AdminHeader = () => {
             {muted ? "Unmute notifications" : "Mute notifications"}
           </TooltipContent>
         </Tooltip>
-        <ThemeSwitcher />
+
+        <UserAvatarMenu />
       </div>
     </header>
   );

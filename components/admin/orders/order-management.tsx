@@ -9,15 +9,19 @@ import {
   Clock,
   Package,
   Phone,
+  Truck,
   User,
   X,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent,TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -51,6 +55,7 @@ interface Order {
   id: string;
   orderNumber: string;
   status: OrderStatus;
+  orderType: "PICKUP" | "DELIVERY" | "DINE_IN";
   total: number;
   createdAt: string;
   estimatedReadyAt: string | null;
@@ -73,8 +78,11 @@ interface OrderManagementProps {
 export function OrderManagement({ tenantId }: OrderManagementProps) {
   const queryClient = useQueryClient();
   const formatPrice = useFormatPrice();
+  const tenant = useTenant();
   const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
+  const [estimatedMinutes, setEstimatedMinutes] = useState(15);
 
   // ── Query ──────────────────────────────────────────────────────────────────
 
@@ -97,13 +105,16 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
       orderId,
       status,
       rejectionReason: reason,
+      estimatedMinutes: minutes,
     }: {
       orderId: string;
       status: OrderStatus;
       rejectionReason?: string;
+      estimatedMinutes?: number;
     }) => {
       const body: Record<string, unknown> = { status };
       if (reason) body.rejectionReason = reason;
+      if (minutes) body.estimatedMinutes = minutes;
 
       const res = await fetch(`/api/admin/${tenantId}/orders/${orderId}`, {
         method: "PATCH",
@@ -142,6 +153,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
       toast.success(`Order updated to ${label}`);
       setRejectingOrderId(null);
       setRejectionReason("");
+      setAcceptingOrderId(null);
     },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
@@ -173,8 +185,20 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
-  const handleAccept = (orderId: string) =>
-    updateStatus.mutate({ orderId, status: "ACCEPTED" });
+  const handleAccept = (orderId: string) => {
+    if (acceptingOrderId === orderId) {
+      // Confirm accept with the set time
+      updateStatus.mutate({
+        orderId,
+        status: "ACCEPTED",
+        estimatedMinutes,
+      });
+    } else {
+      // Show time input
+      setAcceptingOrderId(orderId);
+      setEstimatedMinutes(tenant.prepTimeMinutes || 15);
+    }
+  };
 
   const handleReject = (orderId: string) => {
     if (rejectingOrderId === orderId && rejectionReason.trim()) {
@@ -195,6 +219,9 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
   const handleMarkReady = (orderId: string) =>
     updateStatus.mutate({ orderId, status: "READY" });
 
+  const handleOutForDelivery = (orderId: string) =>
+    updateStatus.mutate({ orderId, status: "DELIVERING" });
+
   const handleComplete = (orderId: string) =>
     updateStatus.mutate({ orderId, status: "COMPLETED" });
 
@@ -203,6 +230,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
   const renderOrderCard = (order: Order) => {
     const status = orderStatusConfig[order.status];
     const isRejecting = rejectingOrderId === order.id;
+    const isAccepting = acceptingOrderId === order.id;
 
     return (
       <Card key={order.id} className="overflow-hidden">
@@ -334,8 +362,48 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
             </div>
           )}
 
+          {/* Accept with time input */}
+          {isAccepting && (
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor={`time-${order.id}`} className="text-sm whitespace-nowrap">
+                  Prep time (min)
+                </Label>
+                <Input
+                  id={`time-${order.id}`}
+                  type="number"
+                  min={1}
+                  max={180}
+                  value={estimatedMinutes}
+                  onChange={(e) => setEstimatedMinutes(parseInt(e.target.value) || 15)}
+                  className="w-20 h-8"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1 cursor-pointer bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => handleAccept(order.id)}
+                  disabled={updateStatus.isPending}
+                >
+                  <Check className="size-4" />
+                  Confirm Accept
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="cursor-pointer"
+                  onClick={() => setAcceptingOrderId(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Action buttons */}
-          {!isRejecting && (
+          {!isRejecting && !isAccepting && (
             <div className="flex gap-2 mt-3">
               {order.status === "NEW" && (
                 <>
@@ -383,14 +451,38 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
                 </Button>
               )}
               {order.status === "READY" && (
+                <div className="flex gap-2 w-full">
+                  {order.orderType === "DELIVERY" && (
+                    <Button
+                      size="sm"
+                      className="flex-1 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white"
+                      onClick={() => handleOutForDelivery(order.id)}
+                      disabled={updateStatus.isPending}
+                    >
+                      <Truck className="size-4" />
+                      Out for Delivery
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    className="flex-1 cursor-pointer"
+                    onClick={() => handleComplete(order.id)}
+                    disabled={updateStatus.isPending}
+                  >
+                    <CheckCircle2 className="size-4" />
+                    Complete
+                  </Button>
+                </div>
+              )}
+              {order.status === "DELIVERING" && (
                 <Button
                   size="sm"
-                  className="flex-1 cursor-pointer"
+                  className="flex-1 cursor-pointer bg-green-600 hover:bg-green-700 text-white"
                   onClick={() => handleComplete(order.id)}
                   disabled={updateStatus.isPending}
                 >
                   <CheckCircle2 className="size-4" />
-                  Complete
+                  Delivered
                 </Button>
               )}
             </div>
@@ -431,7 +523,8 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
       { status: "NEW", label: "New Orders", icon: <Clock className="size-4" /> },
       { status: "ACCEPTED", label: "Accepted", icon: <Check className="size-4" /> },
       { status: "PREPARING", label: "Preparing", icon: <ChefHat className="size-4" /> },
-      { status: "READY", label: "Ready for Pickup", icon: <Bell className="size-4" /> },
+      { status: "READY", label: "Ready", icon: <Bell className="size-4" /> },
+      { status: "DELIVERING", label: "Out for Delivery", icon: <Truck className="size-4" /> },
     ];
 
     return (

@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
 import { orderEvents } from "@/lib/events/order-events";
 import { generateOrderNumber } from "@/lib/orders/order-number";
+import { isStoreOpen } from "@/lib/orders/store-hours";
 import { validateCart } from "@/lib/orders/validate-cart";
 import { createOrderSchema } from "@/lib/validations/order";
 
@@ -21,6 +22,7 @@ export async function POST(
 
   const tenant = await prisma.tenant.findUnique({
     where: { slug: tenantSlug, isActive: true },
+    include: { operatingHours: true },
   });
 
   if (!tenant) {
@@ -31,6 +33,15 @@ export async function POST(
     return NextResponse.json(
       { error: "Ordering is temporarily paused" },
       { status: 503 }
+    );
+  }
+
+  // Check if store is currently open
+  const storeStatus = isStoreOpen(tenant.operatingHours, tenant.timezone);
+  if (!storeStatus.isOpen) {
+    return NextResponse.json(
+      { error: "The store is currently closed. Please try again during operating hours." },
+      { status: 403 }
     );
   }
 
@@ -53,6 +64,7 @@ export async function POST(
     customerPhone,
     customerEmail,
     orderType,
+    deliveryAddress,
   } = parsed.data;
 
   // Validate cart
@@ -90,6 +102,7 @@ export async function POST(
       orderNumber,
       orderType,
       paymentMethod,
+      deliveryAddress: deliveryAddress || null,
       subtotal: validation.subtotal,
       total: validation.subtotal, // no discount for now
       customerNote,

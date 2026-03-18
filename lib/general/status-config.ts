@@ -10,6 +10,7 @@ export type OrderStatus =
   | "ACCEPTED"
   | "PREPARING"
   | "READY"
+  | "DELIVERING"
   | "COMPLETED"
   | "REJECTED"
   | "CANCELLED";
@@ -38,6 +39,11 @@ export const orderStatusConfig: Record<
     className:
       "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
   },
+  DELIVERING: {
+    label: "Delivering",
+    className:
+      "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+  },
   COMPLETED: {
     label: "Completed",
     className:
@@ -65,6 +71,7 @@ export const ACTIVE_ORDER_STATUSES: OrderStatus[] = [
   "ACCEPTED",
   "PREPARING",
   "READY",
+  "DELIVERING",
 ];
 
 // ── Invoice Status ───────────────────────────────────────────────────────────

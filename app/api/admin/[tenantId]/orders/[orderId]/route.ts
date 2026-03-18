@@ -1,9 +1,9 @@
-import { OrderStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 import { isAuthResult,requireRole } from "@/lib/auth/require-role";
 import { prisma } from "@/lib/db";
 import { orderEvents } from "@/lib/events/order-events";
+import type { OrderStatus } from "@/lib/general/status-config";
 
 type Params = { params: Promise<{ tenantId: string; orderId: string }> };
 
@@ -11,7 +11,8 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   NEW: ["ACCEPTED", "REJECTED"],
   ACCEPTED: ["PREPARING"],
   PREPARING: ["READY"],
-  READY: ["COMPLETED"],
+  READY: ["DELIVERING", "COMPLETED"],
+  DELIVERING: ["COMPLETED"],
   COMPLETED: [],
   REJECTED: [],
   CANCELLED: [],
@@ -54,7 +55,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
-  const { status, estimatedReadyAt, rejectionReason } = body;
+  const { status, estimatedReadyAt, estimatedMinutes, rejectionReason } = body;
 
   if (!status) {
     return NextResponse.json({ error: "Status is required" }, { status: 400 });
@@ -75,9 +76,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const updateData: Record<string, unknown> = { status };
 
   switch (status) {
-    case "ACCEPTED":
+    case "ACCEPTED": {
       updateData.acceptedAt = now;
-      if (estimatedReadyAt) {
+      if (estimatedMinutes) {
+        // Admin provided a custom prep time in minutes
+        updateData.estimatedReadyAt = new Date(
+          now.getTime() + estimatedMinutes * 60 * 1000
+        );
+      } else if (estimatedReadyAt) {
         updateData.estimatedReadyAt = new Date(estimatedReadyAt);
       } else {
         // Default: now + prepTimeMinutes
@@ -90,6 +96,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         );
       }
       break;
+    }
     case "REJECTED":
       updateData.rejectionReason = rejectionReason || "No reason provided";
       break;

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useStoreStatus } from "@/hooks/use-store-status";
 import { Link } from "@/lib/i18n/navigation";
 import { useCartStore } from "@/lib/stores/cart-store";
 
@@ -36,6 +37,7 @@ const CartContents = ({
   const cart = useCartStore();
   const { data: session } = useSession();
   const formatPrice = useFormatPrice();
+  const { isClosed: storeClosed } = useStoreStatus();
 
   return (
     <>
@@ -140,7 +142,14 @@ const CartContents = ({
                 {formatPrice(cart.subtotal())}
               </span>
             </div>
-            {session ? (
+            {storeClosed ? (
+              <Button
+                className="w-full h-12 rounded-xl text-[15px] font-semibold"
+                disabled
+              >
+                Store is closed
+              </Button>
+            ) : session ? (
               <Button
                 className="w-full h-12 rounded-xl text-[15px] font-semibold"
                 style={{

@@ -299,32 +299,6 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="delivery-fee">Delivery Fee (EUR)</Label>
-              <Input
-                id="delivery-fee"
-                type="number"
-                min={0}
-                step="0.01"
-                value={deliveryFee}
-                onChange={(e) => setDeliveryFee(e.target.value)}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="free-delivery">
-                Free Delivery Threshold (EUR)
-              </Label>
-              <Input
-                id="free-delivery"
-                type="number"
-                min={0}
-                step="0.01"
-                value={freeDeliveryThreshold}
-                onChange={(e) => setFreeDeliveryThreshold(e.target.value)}
-              />
-            </div>
-
-            <div className="grid gap-2">
               <Label htmlFor="tax-rate">Tax Rate (%)</Label>
               <Input
                 id="tax-rate"

@@ -1,10 +1,11 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { DollarSign, Languages, Leaf,Loader2, Tag } from "lucide-react";
-import { useEffect,useState } from "react";
+import { DollarSign, Languages, Leaf, Loader2, Tag } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { ImageUpload } from "@/components/image-upload";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -89,6 +90,7 @@ export const ProductFormDialog = ({
   const [description, setDescription] = useState("");
   const [descriptionEl, setDescriptionEl] = useState("");
   const [price, setPrice] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState(categoryId);
   const [dietary, setDietary] = useState<Record<string, boolean>>({});
   const [allergens, setAllergens] = useState("");
@@ -100,6 +102,7 @@ export const ProductFormDialog = ({
       setNameEl(product.nameEl || "");
       setDescription(product.description || "");
       setPrice(centsToEuros(product.price));
+      setImageUrl(product.image || null);
       setSelectedCategoryId(product.categoryId);
       setDietary({
         isVegan: product.isVegan,
@@ -115,6 +118,7 @@ export const ProductFormDialog = ({
       setDescription("");
       setDescriptionEl("");
       setPrice("");
+      setImageUrl(null);
       setSelectedCategoryId(categoryId);
       setDietary({});
       setAllergens("");
@@ -139,6 +143,7 @@ export const ProductFormDialog = ({
           description: description || null,
           descriptionEl: descriptionEl || null,
           price: priceInCents,
+          image: imageUrl,
           categoryId: selectedCategoryId,
           allergens: allergens || null,
           modifierGroupIds: selectedGroupIds,
@@ -198,6 +203,16 @@ export const ProductFormDialog = ({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Image */}
+            <div className="space-y-2">
+              <Label>Product Image</Label>
+              <ImageUpload
+                value={imageUrl || undefined}
+                onChange={(url) => setImageUrl(url || null)}
+                uploadUrl={`/api/admin/${tenantId}/upload`}
+              />
             </div>
 
             {/* Name */}

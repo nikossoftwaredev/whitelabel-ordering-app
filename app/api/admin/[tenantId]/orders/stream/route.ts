@@ -5,6 +5,7 @@ import { OrderEvent,orderEvents } from "@/lib/events/order-events";
 import { createSSEStream } from "@/lib/sse/create-stream";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   request: NextRequest,

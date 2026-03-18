@@ -1,17 +1,9 @@
 "use client";
 
-import { ChevronsUpDown, Command, Home, LogOut } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
+import { Command, Eye } from "lucide-react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useTenant } from "@/components/tenant-provider";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -31,18 +23,8 @@ import { Link, usePathname } from "@/lib/i18n/navigation";
 
 export const AdminSidebar = () => {
   const pathname = usePathname();
-  const { setOpenMobile, isMobile } = useSidebar();
-  const { data: session } = useSession();
-
-  const userName = session?.user?.name || "Admin User";
-  const userEmail = session?.user?.email || "admin@example.com";
-  const userImage = session?.user?.image;
-  const userInitials = userName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const { setOpenMobile } = useSidebar();
+  const tenant = useTenant();
 
   return (
     <Sidebar collapsible="icon">
@@ -103,55 +85,42 @@ export const AdminSidebar = () => {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            <SidebarMenuButton size="lg" asChild tooltip="View Store">
+              <div className="flex items-center gap-2">
+                {/* Store logo */}
+                {tenant.logo ? (
+                  <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-muted">
+                    <img
+                      src={tenant.logo}
+                      alt={tenant.name}
+                      className="size-full object-contain p-0.5"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: "var(--brand-primary, hsl(var(--primary)))" }}
+                  >
+                    <span className="text-white text-sm font-bold">
+                      {tenant.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">{tenant.name}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 shrink-0"
+                  asChild
                 >
-                  <Avatar className="size-8 rounded-lg">
-                    {userImage && <AvatarImage src={userImage} alt={userName} />}
-                    <AvatarFallback className="rounded-lg text-xs">{userInitials}</AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{userName}</span>
-                    <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
-                  </div>
-                  <ChevronsUpDown className="ms-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side={isMobile ? "bottom" : "right"}
-                align="end"
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="size-8 rounded-lg">
-                      {userImage && <AvatarImage src={userImage} alt={userName} />}
-                      <AvatarFallback className="rounded-lg text-xs">{userInitials}</AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">{userName}</span>
-                      <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/" onClick={() => setOpenMobile(false)}>
-                    <Home className="size-4" />
-                    Back to Home
+                  <Link href="/order" target="_blank">
+                    <Eye className="size-3.5" />
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
-                  <LogOut className="size-4" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </Button>
+              </div>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

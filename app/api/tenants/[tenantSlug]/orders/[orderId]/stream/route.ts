@@ -7,6 +7,7 @@ import { OrderEvent,orderEvents } from "@/lib/events/order-events";
 import { createSSEStream } from "@/lib/sse/create-stream";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   request: NextRequest,
@@ -25,7 +26,7 @@ export async function GET(
       tenant: { slug: tenantSlug },
       customer: { userId: session.user.id },
     },
-    select: { id: true, tenantId: true, status: true },
+    select: { id: true, tenantId: true, status: true, orderType: true },
   });
 
   if (!order) {
@@ -45,7 +46,7 @@ export async function GET(
 
     orderEvents.on("order:status", onStatusChange);
 
-    send("connected", { orderId, status: order.status });
+    send("connected", { orderId, status: order.status, orderType: order.orderType });
 
     onAbort(() => {
       orderEvents.off("order:status", onStatusChange);

@@ -7,6 +7,7 @@ import {
   Clock,
   CreditCard,
   Loader2,
+  MapPin,
   MessageSquare,
   Minus,
   Plus,
@@ -22,6 +23,7 @@ import { toast } from "sonner";
 import { SignInForm } from "@/components/auth/signin-form";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -32,9 +34,12 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { useStoreStatus } from "@/hooks/use-store-status";
 import { Link,useRouter } from "@/lib/i18n/navigation";
+import { useAddressStore } from "@/lib/stores/address-store";
 import { useCartStore } from "@/lib/stores/cart-store";
 
+import { AddressManagerSheet } from "./address-manager-sheet";
 import { StripePayment } from "./stripe-payment";
 
 type OrderType = "PICKUP" | "DELIVERY";
@@ -47,6 +52,9 @@ export const CheckoutForm = () => {
   const router = useRouter();
 
   const formatPrice = useFormatPrice();
+  const { isClosed: storeClosed } = useStoreStatus();
+  const selectedAddress = useAddressStore((s) => s.selectedAddress);
+  const [addressSheetOpen, setAddressSheetOpen] = useState(false);
   const [orderType, setOrderType] = useState<OrderType>("PICKUP");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -91,6 +99,10 @@ export const CheckoutForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (orderType === "DELIVERY" && !selectedAddress) {
+      toast.error(t("selectAddress"));
+      return;
+    }
     if (!customerName.trim()) {
       toast.error(t("enterName"));
       return;
@@ -119,6 +131,10 @@ export const CheckoutForm = () => {
         customerPhone: customerPhone.trim(),
         customerEmail: customerEmail.trim() || undefined,
         notes: notes.trim() || undefined,
+        deliveryAddress:
+          orderType === "DELIVERY" && selectedAddress
+            ? `${selectedAddress.street}${selectedAddress.city ? `, ${selectedAddress.city}` : ""}${selectedAddress.postalCode ? ` ${selectedAddress.postalCode}` : ""}`
+            : undefined,
       };
 
       const res = await fetch(`/api/tenants/${tenant.slug}/orders`, {
@@ -301,12 +317,67 @@ export const CheckoutForm = () => {
           </div>
         )}
 
+        {/* ═══ Delivery Address ═══ */}
+        {orderType === "DELIVERY" && (
+          <div className="px-4 pb-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              {t("deliveryAddress")}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setAddressSheetOpen(true)}
+              className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all duration-200 text-left ${
+                selectedAddress
+                  ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
+                  : "border-destructive/50 bg-destructive/5"
+              }`}
+            >
+              <div
+                className="size-10 rounded-full flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: selectedAddress
+                    ? "var(--brand-primary, hsl(var(--primary)))"
+                    : "hsl(var(--destructive))",
+                }}
+              >
+                <MapPin className="size-5 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                {selectedAddress ? (
+                  <>
+                    <p className="text-sm font-semibold">{selectedAddress.label}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {selectedAddress.street}
+                      {selectedAddress.city ? `, ${selectedAddress.city}` : ""}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-destructive">
+                      {t("noAddressSelected")}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("tapToSelectAddress")}
+                    </p>
+                  </>
+                )}
+              </div>
+              <span
+                className="text-xs font-semibold shrink-0"
+                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+              >
+                {selectedAddress ? t("change") : t("select")}
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* ═══ Estimated Time ═══ */}
         <div className="px-4 pb-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
             {t("when")}
           </h3>
-          <div className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-[var(--brand-primary,hsl(var(--primary)))] bg-[var(--brand-primary,hsl(var(--primary)))]/5">
+          <div className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5">
             <Clock className="size-5 text-[var(--brand-primary,hsl(var(--primary)))]" />
             <div>
               <p className="text-sm font-semibold">{t("standard")}</p>
@@ -611,12 +682,24 @@ export const CheckoutForm = () => {
           </div>
         </div>
 
+        {/* ═══ Store Closed Warning ═══ */}
+        {storeClosed && (
+          <div className="px-4 pb-4">
+            <Alert variant="destructive">
+              <Clock className="size-4" />
+              <AlertDescription>
+                {t("storeClosed")}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {/* ═══ Fixed Bottom CTA ═══ */}
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t border-border">
           <div className="max-w-2xl mx-auto px-4 py-4">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || storeClosed}
               className="w-full flex items-center h-13 px-5 rounded-2xl font-semibold text-[15px] active:scale-[0.98]"
               style={{
                 background:
@@ -641,6 +724,12 @@ export const CheckoutForm = () => {
           </div>
         </div>
       </form>
+
+      {/* Address Manager Sheet */}
+      <AddressManagerSheet
+        open={addressSheetOpen}
+        onOpenChange={setAddressSheetOpen}
+      />
 
       {/* Stripe Payment Dialog */}
       <Dialog

@@ -41,9 +41,10 @@ export async function PUT(
     isPaused,
     prepTimeMinutes,
     minOrderAmount,
+    deliveryEnabled,
     deliveryFee,
     freeDeliveryThreshold,
-    taxRate,
+    deliveryRangeKm,
     config,
     operatingHours,
   } = body;
@@ -56,57 +57,66 @@ export async function PUT(
     return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
   }
 
-  // Update tenant fields
-  const updatedTenant = await prisma.tenant.update({
-    where: { id: tenantId },
-    data: {
-      ...(name !== undefined && { name }),
-      ...(isPaused !== undefined && { isPaused }),
-      ...(prepTimeMinutes !== undefined && { prepTimeMinutes }),
-      ...(minOrderAmount !== undefined && { minOrderAmount }),
-      ...(deliveryFee !== undefined && { deliveryFee }),
-      ...(freeDeliveryThreshold !== undefined && { freeDeliveryThreshold }),
-      ...(taxRate !== undefined && { taxRate }),
-    },
-  });
+  // Build tenant update data (including currency from config if present)
+  const tenantData: Record<string, unknown> = {
+    ...(name !== undefined && { name }),
+    ...(isPaused !== undefined && { isPaused }),
+    ...(prepTimeMinutes !== undefined && { prepTimeMinutes }),
+    ...(minOrderAmount !== undefined && { minOrderAmount }),
+    ...(deliveryEnabled !== undefined && { deliveryEnabled }),
+    ...(deliveryFee !== undefined && { deliveryFee }),
+    ...(freeDeliveryThreshold !== undefined && { freeDeliveryThreshold }),
+    ...(deliveryRangeKm !== undefined && { deliveryRangeKm }),
+  };
 
-  // Update config if provided
-  if (config) {
-    await prisma.tenantConfig.upsert({
-      where: { tenantId },
-      create: {
-        tenantId,
-        ...config,
-      },
-      update: config,
-    });
+  // currency lives on Tenant, not TenantConfig
+  const configFields = config ? { ...config } : null;
+  if (configFields?.currency !== undefined) {
+    tenantData.currency = configFields.currency;
+    delete configFields.currency;
   }
 
-  // Upsert operating hours if provided
+  // Batch all writes in a single transaction
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const operations: any[] = [
+    prisma.tenant.update({ where: { id: tenantId }, data: tenantData }),
+  ];
+
+  if (configFields && Object.keys(configFields).length > 0) {
+    operations.push(
+      prisma.tenantConfig.upsert({
+        where: { tenantId },
+        create: { tenantId, ...configFields },
+        update: configFields,
+      })
+    );
+  }
+
   if (operatingHours && Array.isArray(operatingHours)) {
     for (const hour of operatingHours) {
-      await prisma.operatingHour.upsert({
-        where: {
-          tenantId_dayOfWeek: {
+      operations.push(
+        prisma.operatingHour.upsert({
+          where: {
+            tenantId_dayOfWeek: { tenantId, dayOfWeek: hour.dayOfWeek },
+          },
+          create: {
             tenantId,
             dayOfWeek: hour.dayOfWeek,
+            openTime: hour.openTime,
+            closeTime: hour.closeTime,
+            isClosed: hour.isClosed,
           },
-        },
-        create: {
-          tenantId,
-          dayOfWeek: hour.dayOfWeek,
-          openTime: hour.openTime,
-          closeTime: hour.closeTime,
-          isClosed: hour.isClosed,
-        },
-        update: {
-          openTime: hour.openTime,
-          closeTime: hour.closeTime,
-          isClosed: hour.isClosed,
-        },
-      });
+          update: {
+            openTime: hour.openTime,
+            closeTime: hour.closeTime,
+            isClosed: hour.isClosed,
+          },
+        })
+      );
     }
   }
+
+  await prisma.$transaction(operations);
 
   // Return updated tenant with relations
   const result = await prisma.tenant.findUnique({

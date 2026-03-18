@@ -32,4 +32,5 @@ export const queryKeys = {
     all: () => ["tenants"] as const,
     detail: (tenantId: string) => ["tenants", tenantId] as const,
   },
+  storeStatus: (tenantSlug: string) => ["store-status", tenantSlug] as const,
 };

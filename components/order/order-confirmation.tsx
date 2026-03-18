@@ -9,6 +9,7 @@ import {
   Clock,
   HandPlatter,
   Loader2,
+  Truck,
   XCircle,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -22,12 +23,26 @@ import type { OrderStatus } from "@/lib/general/status-config";
 import { cn } from "@/lib/general/utils";
 import { Link } from "@/lib/i18n/navigation";
 
-const STATUS_ORDER: Record<OrderStatus, number> = {
+// Step indices for pickup orders (4 steps)
+const PICKUP_STATUS_ORDER: Record<OrderStatus, number> = {
   NEW: 0,
   ACCEPTED: 1,
   PREPARING: 2,
   READY: 3,
+  DELIVERING: 3,
   COMPLETED: 4,
+  REJECTED: -1,
+  CANCELLED: -1,
+};
+
+// Step indices for delivery orders (5 steps)
+const DELIVERY_STATUS_ORDER: Record<OrderStatus, number> = {
+  NEW: 0,
+  ACCEPTED: 1,
+  PREPARING: 2,
+  READY: 3,
+  DELIVERING: 4,
+  COMPLETED: 5,
   REJECTED: -1,
   CANCELLED: -1,
 };
@@ -39,6 +54,7 @@ export const OrderConfirmation = () => {
   const orderNumber = searchParams.get("orderNumber") || "---";
   const tenant = useTenant();
   const [status, setStatus] = useState<OrderStatus>("NEW");
+  const [orderType, setOrderType] = useState<"PICKUP" | "DELIVERY" | "DINE_IN">("PICKUP");
   const [connected, setConnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -65,12 +81,23 @@ export const OrderConfirmation = () => {
     }
   };
 
-  const STEPS = [
-    { status: "NEW" as const, label: t("stepReceived"), icon: Clock },
-    { status: "ACCEPTED" as const, label: t("stepAccepted"), icon: Check },
-    { status: "PREPARING" as const, label: t("stepPreparing"), icon: ChefHat },
-    { status: "READY" as const, label: t("stepReady"), icon: HandPlatter },
-  ] as const;
+  const isDelivery = orderType === "DELIVERY";
+  const STATUS_ORDER = isDelivery ? DELIVERY_STATUS_ORDER : PICKUP_STATUS_ORDER;
+
+  const STEPS = isDelivery
+    ? [
+        { status: "NEW" as const, label: t("stepReceived"), icon: Clock },
+        { status: "ACCEPTED" as const, label: t("stepAccepted"), icon: Check },
+        { status: "PREPARING" as const, label: t("stepPreparing"), icon: ChefHat },
+        { status: "READY" as const, label: t("stepReady"), icon: HandPlatter },
+        { status: "DELIVERING" as const, label: t("stepDelivering"), icon: Truck },
+      ]
+    : [
+        { status: "NEW" as const, label: t("stepReceived"), icon: Clock },
+        { status: "ACCEPTED" as const, label: t("stepAccepted"), icon: Check },
+        { status: "PREPARING" as const, label: t("stepPreparing"), icon: ChefHat },
+        { status: "READY" as const, label: t("stepReady"), icon: HandPlatter },
+      ];
 
   useEffect(() => {
     if (!orderId || !tenant.slug) return;
@@ -91,6 +118,7 @@ export const OrderConfirmation = () => {
       es.addEventListener("connected", (e) => {
         const data = JSON.parse(e.data);
         setStatus(data.status);
+        if (data.orderType) setOrderType(data.orderType);
         setConnected(true);
       });
 
@@ -241,7 +269,8 @@ export const OrderConfirmation = () => {
               {status === "NEW" && t("waitingForStore")}
               {status === "ACCEPTED" && t("storeAccepted")}
               {status === "PREPARING" && t("preparing")}
-              {status === "READY" && t("readyForPickup")}
+              {status === "READY" && (isDelivery ? t("readyForDelivery") : t("readyForPickup"))}
+              {status === "DELIVERING" && t("outForDelivery")}
             </span>
           </>
         )}

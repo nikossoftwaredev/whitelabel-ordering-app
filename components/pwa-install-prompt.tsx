@@ -31,13 +31,21 @@ export function PwaInstallPrompt() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) return;
-    if ((window.navigator as unknown as { standalone?: boolean }).standalone) return;
-    // Already dismissed this session
-    if (sessionStorage.getItem(DISMISSED_KEY)) return;
-    // Always show
-    setVisible(true);
+    const isInstalled =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+
+    if (isInstalled) return;
+
+    // Only show on mobile/tablet — not desktop
+    const isMobileOrTablet = /android|iphone|ipad|ipod|mobile|tablet/i.test(navigator.userAgent) ||
+      (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+    if (!isMobileOrTablet) return;
+
+    // Show on first load if not dismissed
+    if (!sessionStorage.getItem(DISMISSED_KEY)) {
+      setVisible(true);
+    }
 
     // Fetch branding (non-blocking — fallback used if this fails)
     fetch("/api/manifest")
@@ -56,7 +64,18 @@ export function PwaInstallPrompt() {
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+
+    // Allow re-showing from other components (e.g. dropdown menu "Download App")
+    const showHandler = () => {
+      sessionStorage.removeItem(DISMISSED_KEY);
+      setVisible(true);
+    };
+    window.addEventListener("show-pwa-prompt", showHandler);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("show-pwa-prompt", showHandler);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -65,9 +84,12 @@ export function PwaInstallPrompt() {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") dismiss();
-      else setDeferredPrompt(null);
     } catch {
-      // ignore
+      // prompt() can only be called once — ignore errors
+    } finally {
+      // Clear regardless — prompt is one-shot
+      setDeferredPrompt(null);
+      window.__pwaInstallPrompt = undefined;
     }
   };
 

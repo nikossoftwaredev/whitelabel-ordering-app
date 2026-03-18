@@ -33,7 +33,8 @@ export async function GET(
   const activeOrders = await prisma.order.count({
     where: {
       tenantId,
-      status: { in: ACTIVE_ORDER_STATUSES },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- app OrderStatus includes DELIVERING, Prisma's doesn't until next `prisma generate`
+      status: { in: ACTIVE_ORDER_STATUSES as any },
     },
   });
 

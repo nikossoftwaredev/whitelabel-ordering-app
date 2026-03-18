@@ -13,6 +13,8 @@ import { isSuperAdmin } from "@/lib/auth/is-super-admin";
 import { getRequestTenant } from "@/lib/tenant/resolve";
 import { BaseLayoutProps } from "@/types/page-props";
 
+export const dynamic = "force-dynamic";
+
 const AdminLayout = async ({ children, params }: BaseLayoutProps) => {
   const { locale } = await params;
   setRequestLocale(locale);

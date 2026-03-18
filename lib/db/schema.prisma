@@ -34,6 +34,7 @@ model Tenant {
   deliveryEnabled       Boolean  @default(false) @map("delivery_enabled")
   deliveryFee           Int      @default(0) @map("delivery_fee")
   freeDeliveryThreshold Int      @default(0) @map("free_delivery_threshold")
+  deliveryRangeKm       Float    @default(5) @map("delivery_range_km")
   minOrderAmount        Int      @default(0) @map("min_order_amount")
 
   createdAt     DateTime @default(now()) @map("created_at")
@@ -86,7 +87,7 @@ model TenantConfig {
 model OperatingHour {
   id        String  @id @default(cuid())
   tenantId  String  @map("tenant_id")
-  dayOfWeek Int     @map("day_of_week") // 0 = Monday, 6 = Sunday
+  dayOfWeek Int     @map("day_of_week") // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   openTime  String  @map("open_time")   // "09:00"
   closeTime String  @map("close_time")  // "23:00"
   isClosed  Boolean @default(false) @map("is_closed")
@@ -344,6 +345,7 @@ enum OrderStatus {
   ACCEPTED
   PREPARING
   READY
+  DELIVERING
   COMPLETED
   REJECTED
   CANCELLED

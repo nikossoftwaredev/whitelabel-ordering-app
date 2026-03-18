@@ -191,19 +191,31 @@ function ProductCard({
 function MenuSkeleton() {
   return (
     <div>
-      <div className="px-4 py-3 flex items-center gap-2">
-        <Skeleton className="size-5 rounded-full" />
-        <Skeleton className="h-4 w-24" />
-      </div>
-      <Skeleton className="w-full h-52 rounded-none" />
+      {/* Cover image skeleton */}
+      <Skeleton className="w-full h-56 md:h-72 lg:h-80 rounded-none" />
+
+      {/* Logo + store info */}
       <div className="flex flex-col items-center -mt-12 relative z-10 pb-4">
         <Skeleton className="size-24 rounded-2xl border-4 border-background" />
         <Skeleton className="h-7 w-44 mt-3" />
         <Skeleton className="h-4 w-56 mt-2" />
         <Skeleton className="h-4 w-32 mt-2" />
       </div>
-      <div className="px-4"><Skeleton className="w-full h-12 rounded-xl" /></div>
-      <div className="px-4 mt-5 space-y-1">
+
+      {/* Search bar */}
+      <div className="px-4 max-w-2xl mx-auto">
+        <Skeleton className="w-full h-12 rounded-xl" />
+      </div>
+
+      {/* Filter pills */}
+      <div className="flex gap-2 px-4 py-3 max-w-2xl mx-auto">
+        <Skeleton className="h-8 w-20 rounded-full" />
+        <Skeleton className="h-8 w-24 rounded-full" />
+        <Skeleton className="h-8 w-28 rounded-full" />
+      </div>
+
+      {/* Product list */}
+      <div className="px-4 mt-2 max-w-2xl mx-auto space-y-1">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="flex gap-3 py-3">
             <div className="flex-1 space-y-2">
@@ -211,7 +223,7 @@ function MenuSkeleton() {
               <Skeleton className="h-3 w-full" />
               <Skeleton className="h-4 w-16 mt-1" />
             </div>
-            <Skeleton className="shrink-0 w-[100px] h-[100px] rounded-xl" />
+            <Skeleton className="shrink-0 w-25 h-25 md:w-32.5 md:h-32.5 rounded-xl" />
           </div>
         ))}
       </div>
