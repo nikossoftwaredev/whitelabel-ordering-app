@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { addProductToCart, clearCart, dismissLocationPrompt, suppressPwaPrompt } from "./helpers";
+import { addProductToCart, clearCart, dismissLocationPrompt, suppressPwaPromptGlobally } from "./helpers";
 
 test.describe("Page Navigation", () => {
   test("order page loads without errors", async ({ page }) => {
@@ -33,8 +33,8 @@ test.describe("Cart → Checkout Navigation", () => {
   test("view cart → proceed to checkout navigates correctly", async ({
     page,
   }) => {
+    await suppressPwaPromptGlobally(page);
     await page.goto("/en/order");
-    await suppressPwaPrompt(page);
     await dismissLocationPrompt(page);
     await clearCart(page);
     await page.reload();

@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-import { addProductToCart, clearCart, dismissLocationPrompt, suppressPwaPrompt } from "./helpers";
+import { addProductToCart, clearCart, dismissLocationPrompt, suppressPwaPromptGlobally } from "./helpers";
 
 test.describe("Checkout — Unauthenticated", () => {
   test("checkout page shows sign-in or empty cart", async ({ page }) => {
     await page.goto("/en/order");
-    await suppressPwaPrompt(page);
+    await suppressPwaPromptGlobally(page);
     await dismissLocationPrompt(page);
     await clearCart(page);
     await page.reload();
@@ -26,7 +26,7 @@ test.describe("Checkout — Unauthenticated", () => {
   test("empty cart on checkout shows empty state", async ({ page }) => {
     // Clear cart and go to checkout
     await page.goto("/en/order");
-    await suppressPwaPrompt(page);
+    await suppressPwaPromptGlobally(page);
     await clearCart(page);
     await page.goto("/en/order/checkout");
     await dismissLocationPrompt(page);
@@ -43,7 +43,7 @@ test.describe("Checkout — Delivery UI", () => {
     page,
   }) => {
     await page.goto("/en/order");
-    await suppressPwaPrompt(page);
+    await suppressPwaPromptGlobally(page);
     await dismissLocationPrompt(page);
     await clearCart(page);
     await page.reload();

@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-import { addProductToCart, clearCart, dismissLocationPrompt, suppressPwaPrompt } from "./helpers";
+import { addProductToCart, clearCart, dismissLocationPrompt, suppressPwaPrompt, suppressPwaPromptGlobally } from "./helpers";
 
 test.describe("Menu Browsing", () => {
   test.beforeEach(async ({ page }) => {
+    await suppressPwaPromptGlobally(page);
     await page.goto("/en/order");
     await dismissLocationPrompt(page);
   });

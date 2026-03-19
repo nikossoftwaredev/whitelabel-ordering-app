@@ -5,10 +5,20 @@ export const TENANT_SLUG = process.env.E2E_TENANT_SLUG || "figata-cafe";
 
 /**
  * Suppress the PWA install prompt by setting the sessionStorage flag.
- * Must be called after page.goto() but before page.reload() to persist.
+ * Call after page.goto() — persists through reloads in the same session.
  */
 export async function suppressPwaPrompt(page: Page) {
   await page.evaluate(() => sessionStorage.setItem("pwa-prompt-dismissed", "1"));
+}
+
+/**
+ * Register a script that runs before every page load to suppress the PWA prompt.
+ * Call this ONCE at the start of a test (before any goto).
+ */
+export async function suppressPwaPromptGlobally(page: Page) {
+  await page.addInitScript(() => {
+    sessionStorage.setItem("pwa-prompt-dismissed", "1");
+  });
 }
 
 /**
@@ -18,7 +28,7 @@ export async function suppressPwaPrompt(page: Page) {
 export async function dismissLocationPrompt(page: Page) {
   // Suppress PWA prompt in case it appears (mobile)
   const keepUsingWeb = page.getByText(/Keep using web|Συνέχεια μέσω web/);
-  if (await keepUsingWeb.isVisible({ timeout: 2000 }).catch(() => false)) {
+  if (await keepUsingWeb.isVisible({ timeout: 4000 }).catch(() => false)) {
     await keepUsingWeb.click();
     await keepUsingWeb.waitFor({ state: "hidden", timeout: 3000 }).catch(() => {});
   }

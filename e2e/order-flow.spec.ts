@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-import { dismissLocationPrompt, suppressPwaPrompt } from "./helpers";
+import { dismissLocationPrompt, suppressPwaPromptGlobally } from "./helpers";
 
 test.describe("Order Page", () => {
   test.beforeEach(async ({ page }) => {
+    await suppressPwaPromptGlobally(page);
     await page.goto("/en/order");
     await dismissLocationPrompt(page);
   });
@@ -51,11 +52,9 @@ test.describe("Order Page", () => {
 
 test.describe("Location Prompt", () => {
   test("should show location prompt for new users", async ({ page }) => {
+    await suppressPwaPromptGlobally(page);
     await page.goto("/en/order");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.setItem("pwa-prompt-dismissed", "1");
-    });
+    await page.evaluate(() => localStorage.clear());
     await page.reload();
 
     // Location prompt may or may not appear depending on state
