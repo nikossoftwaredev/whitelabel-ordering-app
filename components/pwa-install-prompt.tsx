@@ -140,17 +140,14 @@ export function PwaInstallPrompt() {
           </div>
 
           {/* Action area — adapts per platform */}
-          {deferredPrompt ? (
+          {deferredPrompt && (
             <Button className="w-full rounded-xl h-12 text-base font-semibold" onClick={handleInstall}>
               {t("addToHomeScreen")}
             </Button>
-          ) : isIos ? (
+          )}
+          {!deferredPrompt && (
             <div className="w-full rounded-xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground text-left">
-              {t("iosTip")}
-            </div>
-          ) : (
-            <div className="w-full rounded-xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground text-left">
-              {t("androidTip")}
+              {isIos ? t("iosTip") : t("androidTip")}
             </div>
           )}
 

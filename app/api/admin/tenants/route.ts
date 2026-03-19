@@ -1,6 +1,13 @@
+import { Role } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
+import {
+  assignOwnerRole,
+  buildDomainRecords,
+  flattenOwnerEmail,
+  normalizeDomains,
+} from "@/lib/admin/tenant-helpers";
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
 
@@ -8,7 +15,7 @@ async function requireSuperAdmin() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return null;
   const role = await prisma.tenantRole.findFirst({
-    where: { userId: session.user.id, role: "SUPER_ADMIN" },
+    where: { userId: session.user.id, role: Role.SUPER_ADMIN },
   });
   return role ? session.user.id : null;
 }
@@ -22,6 +29,12 @@ export async function GET() {
   const tenants = await prisma.tenant.findMany({
     include: {
       config: true,
+      domains: { orderBy: { isPrimary: "desc" } },
+      tenantRoles: {
+        where: { role: Role.OWNER },
+        include: { user: { select: { email: true } } },
+        take: 1,
+      },
       _count: {
         select: { orders: true },
       },
@@ -29,7 +42,12 @@ export async function GET() {
     orderBy: { name: "asc" },
   });
 
-  return NextResponse.json(tenants);
+  const result = tenants.map(({ tenantRoles, ...rest }) => ({
+    ...rest,
+    ownerEmail: flattenOwnerEmail(tenantRoles),
+  }));
+
+  return NextResponse.json(result);
 }
 
 export async function POST(req: NextRequest) {
@@ -39,7 +57,13 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, slug, domain } = body;
+  const { name, slug, domain, domains, ownerEmail } = body as {
+    name?: string;
+    slug?: string;
+    domain?: string;
+    domains?: string[];
+    ownerEmail?: string;
+  };
 
   if (!name || !slug) {
     return NextResponse.json(
@@ -57,6 +81,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Build domain records from either new `domains` array or legacy `domain` field
+  let normalized: string[] = [];
+  if (domains?.length) {
+    normalized = normalizeDomains(domains);
+  } else if (domain) {
+    normalized = [domain.toLowerCase().trim()];
+  }
+  const domainList = buildDomainRecords(normalized);
+
   const tenant = await prisma.tenant.create({
     data: {
       name,
@@ -65,14 +98,28 @@ export async function POST(req: NextRequest) {
       config: {
         create: {},
       },
+      ...(domainList.length > 0 && {
+        domains: { create: domainList },
+      }),
     },
     include: {
       config: true,
+      domains: { orderBy: { isPrimary: "desc" } },
       _count: {
         select: { orders: true },
       },
     },
   });
 
-  return NextResponse.json(tenant, { status: 201 });
+  // Assign owner role if email provided
+  let resolvedOwnerEmail: string | null = null;
+  if (ownerEmail) {
+    try {
+      resolvedOwnerEmail = await assignOwnerRole(tenant.id, ownerEmail);
+    } catch {
+      // User not found — silently skip on create (tenant still created)
+    }
+  }
+
+  return NextResponse.json({ ...tenant, ownerEmail: resolvedOwnerEmail }, { status: 201 });
 }

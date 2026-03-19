@@ -220,30 +220,30 @@ export const OrderHistory = () => {
                       <span className="font-semibold">
                         {formatPrice(order.total)}
                       </span>
-                      {isActive ? (
-                        isNew ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="cursor-pointer text-destructive border-destructive/50 hover:bg-destructive/10"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleCancel(order.id);
-                            }}
-                            disabled={isCancelling}
-                          >
-                            {isCancelling ? (
-                              <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                              <XCircle className="size-4" />
-                            )}
-                            {t("cancel")}
-                          </Button>
-                        ) : (
-                          <ChevronRight className="size-4 text-muted-foreground" />
-                        )
-                      ) : (
+                      {isActive && isNew && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer text-destructive border-destructive/50 hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleCancel(order.id);
+                          }}
+                          disabled={isCancelling}
+                        >
+                          {isCancelling ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <XCircle className="size-4" />
+                          )}
+                          {t("cancel")}
+                        </Button>
+                      )}
+                      {isActive && !isNew && (
+                        <ChevronRight className="size-4 text-muted-foreground" />
+                      )}
+                      {!isActive && (
                         <Button
                           variant="outline"
                           size="sm"

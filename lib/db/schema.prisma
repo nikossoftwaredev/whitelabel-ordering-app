@@ -41,6 +41,7 @@ model Tenant {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   config         TenantConfig?
+  domains        TenantDomain[]
   operatingHours OperatingHour[]
   categories     Category[]
   products       Product[]
@@ -96,6 +97,20 @@ model OperatingHour {
 
   @@unique([tenantId, dayOfWeek])
   @@map("operating_hours")
+}
+
+model TenantDomain {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  domain    String   @unique
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([domain])
+  @@map("tenant_domains")
 }
 
 // ─── AUTH & ROLES ────────────────────────────────────────────

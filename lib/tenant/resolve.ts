@@ -7,8 +7,9 @@ import { prisma } from "@/lib/db";
  * Resolve a tenant from the request hostname.
  *
  * Resolution order:
- *  1. Exact domain match (e.g. custom domain "app.figata.gr")
- *  2. Subdomain slug match (e.g. "figata.lvh.me" → slug "figata")
+ *  1. Exact domain match via TenantDomain table (supports multiple domains per tenant)
+ *  2. Legacy single-domain field on Tenant (backward compat)
+ *  3. Subdomain slug match (e.g. "figata.lvh.me" → slug "figata")
  */
 export const getTenantByDomain = cache(async (host: string) => {
   // Strip port (e.g. "figata.lvh.me:3000" → "figata.lvh.me")
@@ -16,6 +17,14 @@ export const getTenantByDomain = cache(async (host: string) => {
   // Extract subdomain slug (e.g. "figata.lvh.me" → "figata")
   const slug = domain.split(".")[0];
 
+  // 1. Check TenantDomain table (multiple domains per tenant)
+  const domainRecord = await prisma.tenantDomain.findUnique({
+    where: { domain },
+    include: { tenant: { include: { config: true } } },
+  });
+  if (domainRecord?.tenant.isActive) return domainRecord.tenant;
+
+  // 2. Fallback: legacy single domain field or subdomain slug
   return prisma.tenant.findFirst({
     where: {
       OR: [{ domain }, { slug }],

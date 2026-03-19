@@ -24,6 +24,7 @@ interface CartStore {
   tenantSlug: string;
   addItem: (item: Omit<CartItem, "cartItemId" | "totalPrice">) => void;
   removeItem: (cartItemId: string) => void;
+  updateItem: (cartItemId: string, updates: Partial<Pick<CartItem, "quantity" | "modifiers" | "notes">>) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
   clearCart: () => void;
   setTenantSlug: (slug: string) => void;
@@ -56,6 +57,15 @@ export const useCartStore = create<CartStore>()(
       removeItem: (cartItemId) => {
         set((state) => ({
           items: state.items.filter((i) => i.cartItemId !== cartItemId),
+        }));
+      },
+      updateItem: (cartItemId, updates) => {
+        set((state) => ({
+          items: state.items.map((item) => {
+            if (item.cartItemId !== cartItemId) return item;
+            const updated = { ...item, ...updates };
+            return { ...updated, totalPrice: calcTotal(updated) };
+          }),
         }));
       },
       updateQuantity: (cartItemId, quantity) => {

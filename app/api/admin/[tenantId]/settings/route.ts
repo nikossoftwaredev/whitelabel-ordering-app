@@ -15,6 +15,7 @@ export async function GET(
     where: { id: tenantId },
     include: {
       config: true,
+      domains: { orderBy: { isPrimary: "desc" } },
       operatingHours: { orderBy: { dayOfWeek: "asc" } },
     },
   });
@@ -123,6 +124,7 @@ export async function PUT(
     where: { id: tenantId },
     include: {
       config: true,
+      domains: { orderBy: { isPrimary: "desc" } },
       operatingHours: { orderBy: { dayOfWeek: "asc" } },
     },
   });

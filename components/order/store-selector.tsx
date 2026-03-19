@@ -1,7 +1,7 @@
 "use client";
 
 import { MapPin, Store } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +27,7 @@ export function StoreSelector() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleSelect = (slug: string) => {
+  const handleSelect = useCallback((slug: string) => {
     const host = window.location.hostname;
     const isSubdomainCapable =
       host.includes("lvh.me") || host.includes("localhost");
@@ -36,13 +36,13 @@ export function StoreSelector() {
       // Local dev: redirect to subdomain
       const { protocol, port } = window.location;
       const portSuffix = port ? `:${port}` : "";
-      window.location.href = `${protocol}//${slug}.lvh.me${portSuffix}/order`;
+      window.location.assign(`${protocol}//${slug}.lvh.me${portSuffix}/order`);
     } else {
       // Vercel / environments without wildcard subdomains: use cookie fallback
       document.cookie = `__tenant=${slug};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
       window.location.reload();
     }
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">

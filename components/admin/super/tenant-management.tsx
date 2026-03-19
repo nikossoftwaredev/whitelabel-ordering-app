@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Edit,
   Globe,
+  Mail,
   Pause,
   Play,
   Plus,
@@ -11,14 +12,15 @@ import {
   ShoppingCart,
   Store,
   Trash2,
+  User,
   X,
 } from "lucide-react";
-import { useCallback,useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -43,11 +45,18 @@ interface TenantConfig {
   logo: string | null;
 }
 
+interface TenantDomain {
+  id: string;
+  domain: string;
+  isPrimary: boolean;
+}
+
 interface Tenant {
   id: string;
   name: string;
   slug: string;
   domain: string | null;
+  domains: TenantDomain[];
   isActive: boolean;
   isPaused: boolean;
   currency: string;
@@ -56,6 +65,7 @@ interface Tenant {
   phone: string | null;
   email: string | null;
   address: string | null;
+  ownerEmail: string | null;
   createdAt: string;
   updatedAt: string;
   config: TenantConfig | null;
@@ -75,7 +85,8 @@ async function fetchTenants(): Promise<Tenant[]> {
 async function createTenant(data: {
   name: string;
   slug: string;
-  domain: string;
+  domains: string[];
+  ownerEmail?: string;
 }): Promise<Tenant> {
   const res = await fetch("/api/admin/tenants", {
     method: "POST",
@@ -115,13 +126,179 @@ async function deleteTenant(id: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to deactivate tenant");
 }
 
-// ─── Slugify helper ─────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────
 
 function slugify(text: string): string {
   return text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+/** Validates a bare domain: no protocol, no slashes, no port, just host + optional subdomains */
+const DOMAIN_REGEX = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
+
+function isValidDomain(value: string): boolean {
+  return DOMAIN_REGEX.test(value);
+}
+
+/** Strips protocol, trailing slashes, paths -- keeps just the hostname */
+function cleanDomain(raw: string): string {
+  let d = raw.trim().toLowerCase();
+  d = d.replace(/^https?:\/\//, "");
+  d = d.split("/")[0]; // strip path
+  d = d.split(":")[0]; // strip port
+  return d;
+}
+
+function tryAddDomain(
+  raw: string,
+  currentDomains: string[],
+  setDomains: (d: string[]) => void,
+  setInput: (v: string) => void,
+  setError: (v: string) => void
+) {
+  const d = cleanDomain(raw);
+  if (!d) return;
+  if (!isValidDomain(d)) {
+    setError("Enter a valid domain (e.g. orders.example.com)");
+    return;
+  }
+  if (currentDomains.includes(d)) {
+    setError("Domain already added");
+    return;
+  }
+  setDomains([...currentDomains, d]);
+  setInput("");
+  setError("");
+}
+
+// ─── Shared UI pieces ────────────────────────────────────────
+
+function SectionHeader({ icon: Icon, title }: { icon: typeof Globe; title: string }) {
+  return (
+    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+      <Icon className="h-4 w-4" />
+      <span>{title}</span>
+    </div>
+  );
+}
+
+function DomainField({
+  domains,
+  setDomains,
+  inputValue,
+  setInputValue,
+  domainError,
+  setDomainError,
+  onAdd,
+}: {
+  domains: string[];
+  setDomains: (d: string[]) => void;
+  inputValue: string;
+  setInputValue: (v: string) => void;
+  domainError: string;
+  setDomainError: (v: string) => void;
+  onAdd: () => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <SectionHeader icon={Globe} title="Custom Domains" />
+      <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-3">
+        {domains.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {domains.map((d) => (
+              <span
+                key={d}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-mono transition-colors duration-300"
+              >
+                {d}
+                <button
+                  type="button"
+                  onClick={() => setDomains(domains.filter((x) => x !== d))}
+                  className="rounded-sm p-0.5 hover:bg-destructive/10 hover:text-destructive cursor-pointer transition-colors duration-300"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Input
+              value={inputValue}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                if (domainError) setDomainError("");
+              }}
+              placeholder="orders.example.com"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onAdd();
+                }
+              }}
+              className={domainError ? "border-destructive" : ""}
+            />
+            {domainError && (
+              <p className="mt-1 text-xs text-destructive">{domainError}</p>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 h-9"
+            onClick={onAdd}
+          >
+            <Plus className="mr-1 h-3 w-3" />
+            Add
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Bare domains only — no http:// or paths.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Form state ─────────────────────────────────────────────
+
+interface TenantFormState {
+  name: string;
+  slug: string;
+  ownerEmail: string;
+  domains: string[];
+  domainInput: string;
+  domainError: string;
+}
+
+const EMPTY_FORM: TenantFormState = {
+  name: "",
+  slug: "",
+  ownerEmail: "",
+  domains: [],
+  domainInput: "",
+  domainError: "",
+};
+
+function useTenantForm(initial: TenantFormState = EMPTY_FORM) {
+  const [form, setForm] = useState(initial);
+
+  const updateField = useCallback(
+    <K extends keyof TenantFormState>(key: K, value: TenantFormState[K]) => {
+      setForm((prev) => ({ ...prev, [key]: value }));
+    },
+    []
+  );
+
+  const reset = useCallback((values: TenantFormState = EMPTY_FORM) => {
+    setForm(values);
+  }, []);
+
+  return { form, updateField, reset, setForm } as const;
 }
 
 // ─── Component ──────────────────────────────────────────────
@@ -132,41 +309,27 @@ export function TenantManagement() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editTenant, setEditTenant] = useState<Tenant | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  // Create form state
-  const [newName, setNewName] = useState("");
-  const [newSlug, setNewSlug] = useState("");
-  const [newDomain, setNewDomain] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
 
-  // Edit form state
-  const [editName, setEditName] = useState("");
-  const [editSlug, setEditSlug] = useState("");
-  const [editDomain, setEditDomain] = useState("");
-  const [editCurrency, setEditCurrency] = useState("");
-  const [editTimezone, setEditTimezone] = useState("");
-  const [editPrepTime, setEditPrepTime] = useState(15);
-  const [editPhone, setEditPhone] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editAddress, setEditAddress] = useState("");
+  const cf = useTenantForm();
+  const ef = useTenantForm();
 
   useEffect(() => {
     if (!slugTouched) {
-      setNewSlug(slugify(newName));
+      cf.updateField("slug", slugify(cf.form.name));
     }
-  }, [newName, slugTouched]);
+  }, [cf.form.name, slugTouched, cf.updateField]);
 
   const populateEditForm = useCallback((tenant: Tenant) => {
-    setEditName(tenant.name);
-    setEditSlug(tenant.slug);
-    setEditDomain(tenant.domain || "");
-    setEditCurrency(tenant.currency);
-    setEditTimezone(tenant.timezone);
-    setEditPrepTime(tenant.prepTimeMinutes);
-    setEditPhone(tenant.phone || "");
-    setEditEmail(tenant.email || "");
-    setEditAddress(tenant.address || "");
-  }, []);
+    ef.reset({
+      name: tenant.name,
+      slug: tenant.slug,
+      ownerEmail: tenant.ownerEmail || "",
+      domains: tenant.domains?.map((d) => d.domain) || [],
+      domainInput: "",
+      domainError: "",
+    });
+  }, [ef.reset]);
 
   // Queries
   const {
@@ -185,9 +348,7 @@ export function TenantManagement() {
       queryClient.invalidateQueries({ queryKey: queryKeys.tenants.all() });
       toast.success("Tenant created successfully");
       setCreateOpen(false);
-      setNewName("");
-      setNewSlug("");
-      setNewDomain("");
+      cf.reset();
       setSlugTouched(false);
     },
     onError: (err: Error) => {
@@ -231,12 +392,14 @@ export function TenantManagement() {
   });
 
   // Filtered tenants
-  const filtered = tenants.filter(
-    (t) =>
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.slug.toLowerCase().includes(search.toLowerCase()) ||
-      (t.domain && t.domain.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filtered = tenants.filter((t) => {
+    const q = search.toLowerCase();
+    return (
+      t.name.toLowerCase().includes(q) ||
+      t.slug.toLowerCase().includes(q) ||
+      t.domains?.some((d) => d.domain.toLowerCase().includes(q))
+    );
+  });
 
   function getStatusBadge(tenant: Tenant) {
     if (!tenant.isActive) {
@@ -256,30 +419,46 @@ export function TenantManagement() {
     );
   }
 
+  const handleAddNewDomain = useCallback(() => {
+    tryAddDomain(
+      cf.form.domainInput, cf.form.domains,
+      (d) => cf.updateField("domains", d),
+      (v) => cf.updateField("domainInput", v),
+      (e) => cf.updateField("domainError", e),
+    );
+  }, [cf.form.domainInput, cf.form.domains, cf.updateField]);
+
+  const handleAddEditDomain = useCallback(() => {
+    tryAddDomain(
+      ef.form.domainInput, ef.form.domains,
+      (d) => ef.updateField("domains", d),
+      (v) => ef.updateField("domainInput", v),
+      (e) => ef.updateField("domainError", e),
+    );
+  }, [ef.form.domainInput, ef.form.domains, ef.updateField]);
+
   function handleCreateSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!newName.trim() || !newSlug.trim()) return;
+    const { name, slug, domains, ownerEmail } = cf.form;
+    if (!name.trim() || !slug.trim()) return;
     createMutation.mutate({
-      name: newName.trim(),
-      slug: newSlug.trim(),
-      domain: newDomain.trim(),
+      name: name.trim(),
+      slug: slug.trim(),
+      domains,
+      ...(ownerEmail.trim() && { ownerEmail: ownerEmail.trim() }),
     });
   }
 
   function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!editTenant || !editName.trim() || !editSlug.trim()) return;
+    const { name, slug, domains, ownerEmail } = ef.form;
+    if (!editTenant || !name.trim() || !slug.trim()) return;
     updateMutation.mutate({
       id: editTenant.id,
-      name: editName.trim(),
-      slug: editSlug.trim(),
-      domain: editDomain.trim(),
-      currency: editCurrency,
-      timezone: editTimezone,
-      prepTimeMinutes: editPrepTime,
-      phone: editPhone.trim(),
-      email: editEmail.trim(),
-      address: editAddress.trim(),
+      name: name.trim(),
+      slug: slug.trim(),
+      domains,
+      ownerEmail: ownerEmail.trim(),
     });
   }
 
@@ -340,52 +519,85 @@ export function TenantManagement() {
               Create Tenant
             </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Tenant</DialogTitle>
+          <DialogContent className="max-w-lg gap-0 p-0">
+            <DialogHeader className="px-6 pt-6 pb-4">
+              <DialogTitle className="text-lg">Create New Tenant</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Set up a new store with its owner and custom domains.
+              </p>
             </DialogHeader>
-            <form onSubmit={handleCreateSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="create-name">Name</Label>
-                <Input
-                  id="create-name"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="My Restaurant"
-                  required
+            <form onSubmit={handleCreateSubmit}>
+              <div className="max-h-[60vh] overflow-y-auto px-6 space-y-6">
+                {/* Identity */}
+                <div className="space-y-3">
+                  <SectionHeader icon={Store} title="Identity" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="create-name" className="text-xs">Name</Label>
+                      <Input
+                        id="create-name"
+                        value={cf.form.name}
+                        onChange={(e) => cf.updateField("name", e.target.value)}
+                        placeholder="My Restaurant"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="create-slug" className="text-xs">Slug</Label>
+                      <Input
+                        id="create-slug"
+                        value={cf.form.slug}
+                        onChange={(e) => {
+                          cf.updateField("slug", e.target.value);
+                          setSlugTouched(true);
+                        }}
+                        placeholder="my-restaurant"
+                        className="font-mono text-sm"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Owner */}
+                <div className="space-y-3">
+                  <SectionHeader icon={User} title="Store Owner" />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="create-owner" className="text-xs">Email Address</Label>
+                    <Input
+                      id="create-owner"
+                      type="email"
+                      value={cf.form.ownerEmail}
+                      onChange={(e) => cf.updateField("ownerEmail", e.target.value)}
+                      placeholder="owner@example.com"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Must be an existing account. They&apos;ll get the OWNER role.
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Domains */}
+                <DomainField
+                  domains={cf.form.domains}
+                  setDomains={(d) => cf.updateField("domains", d)}
+                  inputValue={cf.form.domainInput}
+                  setInputValue={(v) => cf.updateField("domainInput", v)}
+                  domainError={cf.form.domainError}
+                  setDomainError={(e) => cf.updateField("domainError", e)}
+                  onAdd={handleAddNewDomain}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-slug">Slug</Label>
-                <Input
-                  id="create-slug"
-                  value={newSlug}
-                  onChange={(e) => {
-                    setNewSlug(e.target.value);
-                    setSlugTouched(true);
-                  }}
-                  placeholder="my-restaurant"
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  URL-friendly identifier. Auto-generated from name.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-domain">
-                  Custom Domain (optional)
-                </Label>
-                <Input
-                  id="create-domain"
-                  value={newDomain}
-                  onChange={(e) => setNewDomain(e.target.value)}
-                  placeholder="orders.myrestaurant.com"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
+
+              {/* Footer */}
+              <div className="flex justify-end gap-2 border-t px-6 py-4 mt-6">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => setCreateOpen(false)}
                 >
                   Cancel
@@ -444,12 +656,14 @@ export function TenantManagement() {
                       <span className="font-semibold">{tenant.name}</span>
                       {getStatusBadge(tenant)}
                     </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                       <span className="font-mono">/{tenant.slug}</span>
-                      {tenant.domain && (
+                      {tenant.domains?.length > 0 && (
                         <span className="flex items-center gap-1">
                           <Globe className="h-3 w-3" />
-                          {tenant.domain}
+                          {tenant.domains.length === 1
+                            ? tenant.domains[0].domain
+                            : `${tenant.domains.length} domains`}
                         </span>
                       )}
                       <span className="flex items-center gap-1">
@@ -457,6 +671,12 @@ export function TenantManagement() {
                         {tenant._count.orders} orders
                       </span>
                       <span>{tenant.currency}</span>
+                      {tenant.ownerEmail && (
+                        <span className="flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          {tenant.ownerEmail}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -532,138 +752,107 @@ export function TenantManagement() {
         open={editTenant !== null}
         onOpenChange={(open) => !open && setEditTenant(null)}
       >
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Tenant</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Name</Label>
-                <Input
-                  id="edit-name"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-slug">Slug</Label>
-                <Input
-                  id="edit-slug"
-                  value={editSlug}
-                  onChange={(e) => setEditSlug(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-domain">Custom Domain</Label>
-              <Input
-                id="edit-domain"
-                value={editDomain}
-                onChange={(e) => setEditDomain(e.target.value)}
-                placeholder="orders.example.com"
-              />
-            </div>
-
-            <Separator />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-currency">Currency</Label>
-                <Input
-                  id="edit-currency"
-                  value={editCurrency}
-                  onChange={(e) => setEditCurrency(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-timezone">Timezone</Label>
-                <Input
-                  id="edit-timezone"
-                  value={editTimezone}
-                  onChange={(e) => setEditTimezone(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-prep">Prep Time (minutes)</Label>
-              <Input
-                id="edit-prep"
-                type="number"
-                min={1}
-                value={editPrepTime}
-                onChange={(e) => setEditPrepTime(Number(e.target.value))}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-phone">Phone</Label>
-              <Input
-                id="edit-phone"
-                value={editPhone}
-                onChange={(e) => setEditPhone(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-address">Address</Label>
-              <Input
-                id="edit-address"
-                value={editAddress}
-                onChange={(e) => setEditAddress(e.target.value)}
-              />
-            </div>
-
+        <DialogContent className="max-w-lg gap-0 p-0">
+          <DialogHeader className="px-6 pt-6 pb-4">
+            <DialogTitle className="text-lg">Edit Tenant</DialogTitle>
             {editTenant && (
-              <>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="edit-active">Active</Label>
-                  <Switch
-                    id="edit-active"
-                    checked={editTenant.isActive}
-                    onCheckedChange={(checked) =>
-                      toggleMutation.mutate({
-                        id: editTenant.id,
-                        isActive: checked,
-                      })
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="edit-paused">Paused</Label>
-                  <Switch
-                    id="edit-paused"
-                    checked={editTenant.isPaused}
-                    onCheckedChange={(checked) =>
-                      toggleMutation.mutate({
-                        id: editTenant.id,
-                        isPaused: checked,
-                      })
-                    }
-                  />
-                </div>
-              </>
+              <p className="text-sm text-muted-foreground">
+                Manage settings for <span className="font-medium text-foreground">{editTenant.name}</span>
+              </p>
             )}
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit}>
+            <div className="max-h-[60vh] overflow-y-auto px-6 space-y-6">
+              {/* Identity */}
+              <div className="space-y-3">
+                <SectionHeader icon={Store} title="Identity" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-name" className="text-xs">Name</Label>
+                    <Input
+                      id="edit-name"
+                      value={ef.form.name}
+                      onChange={(e) => ef.updateField("name", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-slug" className="text-xs">Slug</Label>
+                    <Input
+                      id="edit-slug"
+                      value={ef.form.slug}
+                      onChange={(e) => ef.updateField("slug", e.target.value)}
+                      className="font-mono text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+              <Separator />
+
+              {/* Owner */}
+              <div className="space-y-3">
+                <SectionHeader icon={User} title="Store Owner" />
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-owner" className="text-xs">Email Address</Label>
+                  <Input
+                    id="edit-owner"
+                    type="email"
+                    value={ef.form.ownerEmail}
+                    onChange={(e) => ef.updateField("ownerEmail", e.target.value)}
+                    placeholder="owner@example.com"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Must be an existing account. They&apos;ll get the OWNER role.
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Domains */}
+              <DomainField
+                domains={ef.form.domains}
+                setDomains={(d) => ef.updateField("domains", d)}
+                inputValue={ef.form.domainInput}
+                setInputValue={(v) => ef.updateField("domainInput", v)}
+                domainError={ef.form.domainError}
+                setDomainError={(e) => ef.updateField("domainError", e)}
+                onAdd={handleAddEditDomain}
+              />
+
+              {/* Active toggle */}
+              {editTenant && (
+                <>
+                  <Separator />
+                  <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 p-3">
+                    <div>
+                      <p className="text-sm font-medium">Active</p>
+                      <p className="text-xs text-muted-foreground">
+                        Inactive tenants cannot accept orders
+                      </p>
+                    </div>
+                    <Switch
+                      id="edit-active"
+                      checked={editTenant.isActive}
+                      onCheckedChange={(checked) =>
+                        toggleMutation.mutate({
+                          id: editTenant.id,
+                          isActive: checked,
+                        })
+                      }
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-2 border-t px-6 py-4 mt-6">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setEditTenant(null)}
               >
                 Cancel

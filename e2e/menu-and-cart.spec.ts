@@ -75,16 +75,18 @@ test.describe("Cart", () => {
     await page.waitForTimeout(500);
   });
 
-  test("remove item from cart shows empty state", async ({ page }) => {
+  test("remove item from cart auto-closes dialog", async ({ page }) => {
     await addProductToCart(page, "Espresso");
     await page.getByText("View Cart").click();
 
-    // Click trash to remove (quantity is 1)
-    const removeBtn = page.locator("button:has(svg.lucide-trash-2)").first();
-    await removeBtn.click();
+    // Click minus to remove (quantity is 1, so item gets removed)
+    const cartDialog = page.locator("[role=dialog]");
+    await expect(cartDialog).toBeVisible({ timeout: 5000 });
+    const minusBtn = cartDialog.locator("button:has(svg.lucide-minus)").first();
+    await minusBtn.click();
 
-    // Cart should show empty state
-    await expect(page.getByText(/empty/i)).toBeVisible({ timeout: 3000 });
+    // Cart dialog should auto-close when empty
+    await expect(cartDialog).toBeHidden({ timeout: 3000 });
   });
 
   test("cart persists after page reload", async ({ page }) => {

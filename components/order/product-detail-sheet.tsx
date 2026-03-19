@@ -1,20 +1,14 @@
 "use client";
 
-import { Check,Minus, Plus, Store } from "lucide-react";
-import { useCallback,useEffect, useState } from "react";
+import { Minus, Plus, Square, SquareCheck, Store, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
-import { toast } from "sonner";
-
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useFormatPrice } from "@/hooks/use-format-price";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useCartStore } from "@/lib/stores/cart-store";
 
 interface ModifierOption {
@@ -52,36 +46,66 @@ interface Product {
   modifierGroups: ModifierGroup[];
 }
 
+function getOptionalLabel(maxSelect: number) {
+  return maxSelect > 1 ? `Select up to ${maxSelect}` : "Optional";
+}
+
+interface CartItemEdit {
+  cartItemId: string;
+  quantity: number;
+  modifiers: { modifierOptionId: string; name: string; priceAdjustment: number }[];
+}
+
 interface ProductDetailSheetProps {
   product: Product | null;
+  editingCartItem?: CartItemEdit | null;
   onClose: () => void;
 }
 
 export const ProductDetailSheet = ({
   product,
+  editingCartItem,
   onClose,
 }: ProductDetailSheetProps) => {
   const cart = useCartStore();
   const formatPrice = useFormatPrice();
-  const isMobile = useIsMobile();
   const [quantity, setQuantity] = useState(1);
   const [selectedModifiers, setSelectedModifiers] = useState<
     Map<string, Set<string>>
   >(new Map());
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (product) {
-      setQuantity(1);
-      const defaults = new Map<string, Set<string>>();
-      for (const group of product.modifierGroups) {
-        const defaultIds = new Set(
-          group.options.filter((o) => o.isDefault).map((o) => o.id)
-        );
-        defaults.set(group.id, defaultIds);
+      if (editingCartItem) {
+        // Edit mode — pre-fill from existing cart item
+        setIsEditing(true);
+        setQuantity(editingCartItem.quantity);
+        const modMap = new Map<string, Set<string>>();
+        for (const group of product.modifierGroups) {
+          const selectedIds = new Set(
+            editingCartItem.modifiers
+              .filter((m) => group.options.some((o) => o.id === m.modifierOptionId))
+              .map((m) => m.modifierOptionId)
+          );
+          modMap.set(group.id, selectedIds);
+        }
+        setSelectedModifiers(modMap);
+      } else {
+        // Add mode — defaults
+        setIsEditing(false);
+        setQuantity(1);
+        const defaults = new Map<string, Set<string>>();
+        for (const group of product.modifierGroups) {
+          const defaultIds = new Set(
+            group.options.filter((o) => o.isDefault).map((o) => o.id)
+          );
+          defaults.set(group.id, defaultIds);
+        }
+        setSelectedModifiers(defaults);
       }
-      setSelectedModifiers(defaults);
     }
-  }, [product]);
+  }, [product, editingCartItem]);
 
   const toggleModifier = useCallback(
     (groupId: string, optionId: string, maxSelect: number) => {
@@ -119,8 +143,8 @@ export const ProductDetailSheet = ({
 
   const totalPrice = (product.price + modifierTotal) * quantity;
 
-  const handleAddToCart = () => {
-    const modifiers = product.modifierGroups.flatMap((group) => {
+  const buildModifiers = () =>
+    product.modifierGroups.flatMap((group) => {
       const selected = selectedModifiers.get(group.id) || new Set();
       return group.options
         .filter((o) => selected.has(o.id))
@@ -131,106 +155,121 @@ export const ProductDetailSheet = ({
         }));
     });
 
-    cart.addItem({
-      productId: product.id,
-      productName: product.name,
-      productImage: product.image,
-      basePrice: product.price,
-      quantity,
-      modifiers,
-      notes: "",
-    });
+  const handleSubmit = () => {
+    const modifiers = buildModifiers();
 
-    toast.success(`${product.name} added to cart`);
+    if (isEditing && editingCartItem) {
+      cart.updateItem(editingCartItem.cartItemId, { quantity, modifiers });
+    } else {
+      cart.addItem({
+        productId: product.id,
+        productName: product.name,
+        productImage: product.image,
+        basePrice: product.price,
+        quantity,
+        modifiers,
+        notes: "",
+      });
+    }
+
     onClose();
   };
 
-  return (
-    <Sheet open={!!product} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        side={isMobile ? "bottom" : "right"}
-        className={
-          isMobile
-            ? "max-h-[90vh] rounded-t-3xl p-0 gap-0 flex flex-col"
-            : "flex flex-col w-120 p-0 gap-0"
-        }
-      >
-        {isMobile && (
-          <div className="flex justify-center pt-3 pb-2">
-            <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
-          </div>
-        )}
+  const switchToAddNew = () => {
+    setIsEditing(false);
+    setQuantity(1);
+    const defaults = new Map<string, Set<string>>();
+    for (const group of product.modifierGroups) {
+      const defaultIds = new Set(
+        group.options.filter((o) => o.isDefault).map((o) => o.id)
+      );
+      defaults.set(group.id, defaultIds);
+    }
+    setSelectedModifiers(defaults);
+  };
 
-        <div className={`overflow-y-auto ${isMobile ? "max-h-[calc(90vh-140px)]" : "flex-1"}`}>
-          {/* Hero image */}
-          {product.image ? (
-            <div className="relative mx-4 rounded-2xl overflow-hidden aspect-16/10 bg-muted">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="mx-4 rounded-2xl bg-muted flex items-center justify-center h-32">
-              <Store className="size-10 text-muted-foreground/20" />
-            </div>
-          )}
+  return (
+    <Dialog open={!!product} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className="bg-[#1b1b1f] text-white border-0 p-0 sm:max-w-md sm:max-h-[90vh] overflow-hidden"
+        showCloseButton={false}
+      >
+        {/* Hidden accessible title */}
+        <DialogTitle className="sr-only">{product.name}</DialogTitle>
+
+        <div className="overflow-y-auto flex-1">
+          {/* Hero image with close button */}
+          <div className="relative">
+            {product.image ? (
+              <div className="w-full aspect-4/3 bg-muted overflow-hidden">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-full aspect-4/3 bg-white/5 flex items-center justify-center">
+                <Store className="size-16 text-white/10" />
+              </div>
+            )}
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 size-9 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 transition-colors duration-200 cursor-pointer"
+            >
+              <X className="size-5 text-white" />
+            </button>
+          </div>
 
           {/* Product info */}
-          <div className="px-5 pt-4 pb-2">
-            <SheetHeader className="text-left p-0">
-              <SheetTitle className="text-xl font-bold leading-tight">
-                {product.name}
-              </SheetTitle>
-            </SheetHeader>
+          <div className="px-5 pt-5 pb-3">
+            <h2 className="text-2xl font-bold leading-tight text-white">
+              {product.name}
+            </h2>
 
-            <p className="text-lg font-semibold mt-1" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>
-              {formatPrice(product.price)}
-            </p>
+            {/* Price */}
+            <div className="flex items-center gap-2 mt-2">
+              <span
+                className="text-lg font-bold"
+                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+              >
+                {formatPrice(product.price)}
+              </span>
+            </div>
 
+            {/* Description */}
             {product.description && (
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+              <p className="text-sm text-white/60 mt-3 leading-relaxed">
                 {product.description}
               </p>
             )}
 
             {/* Dietary tags */}
-            <div className="flex flex-wrap gap-1.5 mt-3">
-              {product.isVegan && (
-                <span className="bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">
-                  Vegan
-                </span>
-              )}
-              {product.isVegetarian && (
-                <span className="bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">
-                  Vegetarian
-                </span>
-              )}
-              {product.isGlutenFree && (
-                <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium px-2.5 py-1 rounded-full">
-                  Gluten Free
-                </span>
-              )}
-              {product.isDairyFree && (
-                <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-medium px-2.5 py-1 rounded-full">
-                  Dairy Free
-                </span>
-              )}
-              {product.isSpicy && (
-                <span className="bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium px-2.5 py-1 rounded-full">
-                  Spicy 🌶
-                </span>
-              )}
-              {product.containsNuts && (
-                <span className="bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-medium px-2.5 py-1 rounded-full">
-                  Contains Nuts
-                </span>
-              )}
-            </div>
+            {(product.isVegan || product.isVegetarian || product.isGlutenFree || product.isDairyFree || product.isSpicy || product.containsNuts) && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {product.isVegan && (
+                  <span className="bg-green-500/15 text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">Vegan</span>
+                )}
+                {product.isVegetarian && (
+                  <span className="bg-green-500/15 text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">Vegetarian</span>
+                )}
+                {product.isGlutenFree && (
+                  <span className="bg-amber-500/15 text-amber-400 text-xs font-medium px-2.5 py-1 rounded-full">Gluten Free</span>
+                )}
+                {product.isDairyFree && (
+                  <span className="bg-blue-500/15 text-blue-400 text-xs font-medium px-2.5 py-1 rounded-full">Dairy Free</span>
+                )}
+                {product.isSpicy && (
+                  <span className="bg-red-500/15 text-red-400 text-xs font-medium px-2.5 py-1 rounded-full">Spicy</span>
+                )}
+                {product.containsNuts && (
+                  <span className="bg-orange-500/15 text-orange-400 text-xs font-medium px-2.5 py-1 rounded-full">Contains Nuts</span>
+                )}
+              </div>
+            )}
 
             {product.allergens && (
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs text-white/40 mt-2">
                 Allergens: {product.allergens}
               </p>
             )}
@@ -238,60 +277,51 @@ export const ProductDetailSheet = ({
 
           {/* Modifier Groups */}
           {product.modifierGroups.length > 0 && (
-            <div className="px-5 space-y-4 pb-4">
-              <Separator />
+            <div className="px-5 space-y-5 pb-6">
+              <div className="h-px bg-white/10" />
               {product.modifierGroups.map((group) => {
                 const selected = selectedModifiers.get(group.id) || new Set();
                 return (
                   <div key={group.id}>
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <h3 className="text-[15px] font-bold">{group.name}</h3>
-                      {group.required && (
-                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400">
-                          Required
-                        </span>
-                      )}
-                    </div>
-                    {group.maxSelect > 1 && (
-                      <p className="text-xs text-muted-foreground -mt-1 mb-2">
-                        Select {group.minSelect > 0 ? `${group.minSelect}–` : "up to "}
-                        {group.maxSelect}
-                      </p>
-                    )}
-                    <div className="space-y-1.5">
+                    <h3 className="text-base font-bold text-white">
+                      {group.name}
+                    </h3>
+                    <p className="text-sm text-white/50 mt-0.5">
+                      {group.required
+                        ? `Choose at least ${group.minSelect} item${group.minSelect !== 1 ? "s" : ""}`
+                        : getOptionalLabel(group.maxSelect)}
+                    </p>
+
+                    <div className="mt-3 space-y-0">
                       {group.options.map((opt) => {
                         const isSelected = selected.has(opt.id);
                         return (
-                          <Button
+                          <button
                             key={opt.id}
-                            variant="ghost"
-                            className={`w-full flex items-center justify-between rounded-xl p-3.5 h-auto transition-all duration-200 ${
-                              isSelected
-                                ? "bg-(--brand-primary,hsl(var(--primary)))/8 ring-1.5 ring-(--brand-primary,hsl(var(--primary)))"
-                                : "bg-muted/30 hover:bg-muted/50"
-                            }`}
+                            className="w-full flex items-center gap-3 py-3.5 border-b border-white/5 last:border-b-0 cursor-pointer hover:bg-white/5 transition-colors duration-200 text-left"
                             onClick={() =>
                               toggleModifier(group.id, opt.id, group.maxSelect)
                             }
                           >
-                            <span className="text-sm font-medium">{opt.name}</span>
-                            <div className="flex items-center gap-2">
-                              {opt.priceAdjustment > 0 && (
-                                <span className="text-xs text-muted-foreground">
-                                  +{formatPrice(opt.priceAdjustment)}
-                                </span>
-                              )}
-                              <div
-                                className={`size-5 rounded-full flex items-center justify-center transition-all duration-200 ${
-                                  isSelected
-                                    ? "bg-(--brand-primary,hsl(var(--primary))) text-white"
-                                    : "border-2 border-muted-foreground/20"
-                                }`}
-                              >
-                                {isSelected && <Check className="size-3" />}
-                              </div>
-                            </div>
-                          </Button>
+                            {isSelected ? (
+                              <SquareCheck
+                                className="size-5 shrink-0"
+                                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+                              />
+                            ) : (
+                              <Square className="size-5 shrink-0 text-white/30" />
+                            )}
+
+                            <span className={`flex-1 text-sm ${isSelected ? "text-white" : "text-white/70"}`}>
+                              {opt.name}
+                            </span>
+
+                            {opt.priceAdjustment > 0 && (
+                              <span className="text-sm text-white/40">
+                                +{formatPrice(opt.priceAdjustment)}
+                              </span>
+                            )}
+                          </button>
                         );
                       })}
                     </div>
@@ -302,46 +332,57 @@ export const ProductDetailSheet = ({
           )}
         </div>
 
-        {/* ── Bottom bar: quantity + add to cart ── */}
-        <div className="border-t border-border p-4 pb-6 bg-background">
-          <div className="flex items-center gap-4">
+        {/* ── Bottom bar ── */}
+        <div className="border-t border-white/10 bg-[#1b1b1f] shrink-0">
+          {/* Editing banner */}
+          {isEditing && (
+            <div className="px-4 py-3 bg-white/5 border-b border-white/10">
+              <p className="text-sm text-white/70">You&apos;re currently editing your existing selection.</p>
+              <button
+                className="text-sm font-medium mt-0.5 cursor-pointer"
+                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+                onClick={switchToAddNew}
+              >
+                Add another with different options
+              </button>
+            </div>
+          )}
+          <div className="flex items-center gap-3 p-4 pb-6 sm:pb-4">
             {/* Quantity */}
-            <div className="flex items-center gap-2 bg-muted/50 rounded-xl p-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-9 rounded-lg"
+            <div className="flex items-center gap-0 bg-white/10 rounded-xl overflow-hidden">
+              <button
+                className="size-11 flex items-center justify-center hover:bg-white/10 transition-colors duration-200 cursor-pointer"
+                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
               >
-                <Minus className="size-4" />
-              </Button>
-              <span className="text-base font-bold w-6 text-center tabular-nums">
+                <Minus className="size-5" />
+              </button>
+              <span className="text-base font-bold w-8 text-center tabular-nums text-white">
                 {quantity}
               </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-9 rounded-lg"
+              <button
+                className="size-11 flex items-center justify-center hover:bg-white/10 transition-colors duration-200 cursor-pointer"
+                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
                 onClick={() => setQuantity(quantity + 1)}
               >
-                <Plus className="size-4" />
-              </Button>
+                <Plus className="size-5" />
+              </button>
             </div>
 
-            {/* Add to cart button */}
-            <Button
-              className="flex-1 h-12 rounded-xl font-semibold text-[15px] active:scale-[0.98]"
+            {/* Submit button */}
+            <button
+              className="flex-1 h-11 rounded-xl font-semibold text-[15px] flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-[0.98]"
               style={{
                 background: "var(--brand-primary, hsl(var(--primary)))",
                 color: "white",
               }}
-              onClick={handleAddToCart}
+              onClick={handleSubmit}
             >
-              Add to cart — {formatPrice(totalPrice)}
-            </Button>
+              {isEditing ? "Update order" : "Add to order"}&nbsp;&nbsp;{formatPrice(totalPrice)}
+            </button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 };

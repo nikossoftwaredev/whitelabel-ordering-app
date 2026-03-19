@@ -2,7 +2,6 @@ import { setRequestLocale } from "next-intl/server";
 
 import { ActiveOrderBanner } from "@/components/order/active-order-banner";
 import { CustomerHeader } from "@/components/order/customer-header";
-import { StoreClosedBanner } from "@/components/order/store-closed-banner";
 import { StoreSelector } from "@/components/order/store-selector";
 import { getRequestTenant } from "@/lib/tenant/resolve";
 import { BaseLayoutProps } from "@/types/page-props";
@@ -23,7 +22,6 @@ export default async function OrderLayout({
   return (
     <>
       <CustomerHeader />
-      <StoreClosedBanner />
       {children}
       <ActiveOrderBanner />
     </>

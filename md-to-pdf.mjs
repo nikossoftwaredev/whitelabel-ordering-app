@@ -14,7 +14,8 @@ function imageToDataUri(relativePath) {
   const absPath = resolve(__dirname, relativePath);
   if (!existsSync(absPath)) return null;
   const ext = relativePath.split('.').pop().toLowerCase();
-  const mime = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
+  let mime = 'image/png';
+  if (ext === 'jpg' || ext === 'jpeg') mime = 'image/jpeg';
   const data = readFileSync(absPath).toString('base64');
   return `data:${mime};base64,${data}`;
 }

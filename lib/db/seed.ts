@@ -55,6 +55,7 @@ async function main() {
           primaryColor: "#6b8f71",
           secondaryColor: "#f5f0e8",
           accentColor: "#c4a35a",
+          logo: "https://www.figata.gr/_next/image?url=%2Fassets%2Fimgs%2Ficon.ico&w=48&q=75",
           description: "Specialty coffee & pastries in the heart of Athens",
           coverImage: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&h=400&fit=crop&q=80",
           pwaName: "Figata Cafe",

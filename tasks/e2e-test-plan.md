@@ -40,8 +40,7 @@ Comprehensive end-to-end test plan for the whitelabel ordering app.
 - [ ] Cart icon shows item count badge
 - [ ] Opening cart sheet shows all items with quantities and prices
 - [ ] Increase quantity updates price
-- [ ] Decrease quantity to 0 removes item
-- [ ] Trash icon removes item
+- [ ] Decrease quantity to 0 removes item (via minus button on image overlay)
 - [ ] Cart subtotal is correct
 - [ ] Cart persists across page refreshes (localStorage)
 - [ ] Switching tenant slug clears cart automatically
@@ -101,7 +100,7 @@ Comprehensive end-to-end test plan for the whitelabel ordering app.
 - [ ] API returns 503 when creating order while paused
 - [ ] Overnight hours work correctly (e.g., 18:00–02:00)
 - [ ] Timezone is respected (tenant timezone, not browser timezone)
-- [ ] `StoreClosedBanner` appears on menu page when closed
+- [ ] Cart checkout button shows "Store is closed" (disabled) when store is closed
 
 ---
 
@@ -341,6 +340,75 @@ Comprehensive end-to-end test plan for the whitelabel ordering app.
 - [ ] Price mismatch between client and server is caught by `validateCart`
 - [ ] Expired session during checkout redirects to sign-in
 - [ ] Admin updating order that was already updated shows conflict
+
+---
+
+## 26. Address Management Dialog Flow
+
+- [ ] Address list dialog opens from header address picker
+- [ ] Address list dialog opens from cart dialog address row
+- [ ] "Add new address" button opens separate add-address dialog
+- [ ] Add-address dialog has back arrow that returns to list dialog
+- [ ] Search input in add-address dialog accepts text (Google Places)
+- [ ] "Detect location" button triggers browser geolocation prompt
+- [ ] After selecting address from search, form step shows with street/city prefilled
+- [ ] Saving address closes add dialog and shows it in list
+- [ ] Clicking an address in list selects it and closes dialog
+- [ ] Selected address shows brand-colored pin icon
+- [ ] Selected address persists after page reload (Zustand/localStorage)
+
+---
+
+## 27. Responsive Layout
+
+- [ ] Mobile: header shows only address picker + icons (no store name, no search bar)
+- [ ] Mobile: hero image is full-width, store name + logo appear below image
+- [ ] Mobile: info pills (delivery/pickup) are horizontally scrollable
+- [ ] Mobile: product detail dialog is full-screen
+- [ ] Mobile: cart dialog is full-screen
+- [ ] Mobile: address dialog is full-screen
+- [ ] Desktop: header shows store name, search bar, address picker
+- [ ] Desktop: hero has overlaid store name/logo on cover image
+- [ ] Desktop: dialogs are centered rounded cards (not full-screen)
+- [ ] Desktop: info bar shows delivery, pickup, restaurant details
+
+---
+
+## 28. Cart ↔ Empty State Auto-Close
+
+- [ ] When last item is removed via minus button, cart dialog auto-closes
+- [ ] Cart dialog shows address picker row at top
+- [ ] Cart dialog address picker opens address list dialog
+
+---
+
+## 29. Product Quick-Add vs Detail
+
+- [ ] Clicking + on a product WITHOUT required modifiers adds it directly to cart
+- [ ] Clicking + on a product WITH required modifiers opens product detail dialog
+- [ ] Product detail dialog shows modifier groups with checkbox selection
+- [ ] Quantity can be adjusted in product detail before adding
+- [ ] No toast notification appears when adding/removing items
+
+---
+
+## 30. Search & Filters
+
+- [ ] Search input filters products across all categories in real-time
+- [ ] Search with no results shows "No products found" empty state
+- [ ] Dietary filter pills toggle on/off (Vegan, Vegetarian, Gluten Free)
+- [ ] Multiple filters can be active simultaneously (AND logic)
+- [ ] Clearing search restores full menu
+- [ ] Category tabs update active state on scroll (intersection observer)
+- [ ] Clicking category tab scrolls to that section
+
+---
+
+## 31. Concurrent Sessions & Race Conditions
+
+- [ ] Two browser tabs with same cart don't lose items on refresh
+- [ ] Adding item while cart dialog is open reflects immediately
+- [ ] Rapidly clicking + multiple times doesn't skip quantity increments
 
 ---
 

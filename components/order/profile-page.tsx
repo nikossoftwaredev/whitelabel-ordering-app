@@ -55,7 +55,9 @@ export function ProfilePage() {
     }
   };
 
-  const saveLabel = saving ? t("saving") : saved ? t("saved") : t("saveChanges");
+  let saveLabel = t("saveChanges");
+  if (saving) saveLabel = t("saving");
+  else if (saved) saveLabel = t("saved");
 
   return (
     <div className="min-h-screen bg-background">

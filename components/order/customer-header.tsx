@@ -1,7 +1,12 @@
 "use client";
 
-import { ChevronDown, MapPin, ShoppingBag } from "lucide-react";
-import { useSession } from "next-auth/react";
+import {
+  ChevronDown,
+  Home,
+  Search,
+  ShoppingCart,
+} from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
@@ -16,7 +21,6 @@ import { CartSheet } from "./cart-sheet";
 import { ProfilePromptSheet } from "./profile-prompt-sheet";
 
 export const CustomerHeader = () => {
-  const { data: session } = useSession();
   const tenant = useTenant();
   const cart = useCartStore();
   const selectedAddress = useAddressStore((s) => s.selectedAddress);
@@ -25,66 +29,123 @@ export const CustomerHeader = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
-
-  const user = session?.user;
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+
+    const onScroll = () => {
+      setScrolled(window.scrollY > 60);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const addressLabel = selectedAddress
-    ? selectedAddress.street.length > 28
-      ? selectedAddress.street.slice(0, 28) + "..."
-      : selectedAddress.street
+    ? selectedAddress.label || "Home"
     : "Add address";
+
+  let addressStreet: string | null = null;
+  if (selectedAddress) {
+    addressStreet = selectedAddress.street.length > 22
+      ? selectedAddress.street.slice(0, 22) + "..."
+      : selectedAddress.street;
+  }
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-md border-b border-border/50">
-        <div className="max-w-5xl mx-auto flex items-center h-14 px-4 gap-2">
-          {/* Address Selector */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 text-white transition-all duration-300 ${
+          scrolled
+            ? "bg-[#1b1b1f]/95 backdrop-blur-md shadow-lg"
+            : "bg-transparent"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto flex items-center h-14 px-3 sm:px-4 gap-1.5 sm:gap-3">
+          {/* Store Logo / Name — hidden on mobile (shown in hero) */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            {tenant.logo ? (
+              <Image
+                src={tenant.logo}
+                alt={tenant.name}
+                width={80}
+                height={32}
+                className="h-7 w-auto object-contain"
+              />
+            ) : (
+              <span className="text-lg font-bold italic tracking-tight drop-shadow-md">
+                {tenant.name}
+              </span>
+            )}
+          </div>
+
+          {/* Address Picker */}
           <button
             onClick={() => setAddressOpen(true)}
-            className="flex items-center gap-1.5 min-w-0 shrink py-1.5 px-2 rounded-full hover:bg-muted/50 transition-colors duration-200 cursor-pointer"
+            className="flex items-center gap-1.5 py-1.5 px-2 sm:px-3 rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer shrink min-w-0"
           >
-            <MapPin className="size-4 shrink-0" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} />
-            <span className="text-sm font-medium truncate max-w-45 sm:max-w-70">
+            <Home className="size-4 shrink-0 text-white/80" />
+            <span className="text-sm font-semibold truncate drop-shadow-sm max-w-24 sm:max-w-none">
               {addressLabel}
             </span>
-            <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+            {addressStreet && (
+              <span className="text-sm text-white/60 truncate hidden sm:inline">
+                ({addressStreet})
+              </span>
+            )}
+            <ChevronDown className="size-3.5 shrink-0 text-white/50" />
           </button>
 
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Cart Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative size-10 rounded-full hover:bg-muted/50"
-            onClick={() => setCartOpen(true)}
-          >
-            <ShoppingBag className="size-5" />
-            {mounted && cart.itemCount() > 0 && (
-              <span
-                className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-5 h-5 rounded-full text-[11px] font-bold text-white px-1 tabular-nums"
-                style={{
-                  backgroundColor:
-                    "var(--brand-primary, hsl(var(--primary)))",
-                }}
-              >
-                {cart.itemCount()}
-              </span>
-            )}
-          </Button>
+          {/* Search Bar — desktop only */}
+          <div className="flex-1 max-w-md hidden sm:block">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/40" />
+              <input
+                type="text"
+                placeholder={`Search in ${tenant.name}...`}
+                className="w-full h-9 pl-9 pr-4 rounded-lg bg-white/15 backdrop-blur-sm text-sm text-white placeholder:text-white/40 border border-white/10 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all duration-200"
+              />
+            </div>
+          </div>
 
-          {/* User Profile — right of cart */}
-          <UserAvatarMenu
-            showCustomerLinks
-            onSignInClick={() => setAuthOpen(true)}
-          />
+          {/* Right side actions */}
+          <div className="flex items-center gap-1">
+            {/* User Avatar */}
+            <UserAvatarMenu
+              showCustomerLinks
+              onSignInClick={() => setAuthOpen(true)}
+            />
+
+            {/* Cart Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative size-9 rounded-lg hover:bg-white/10 text-white"
+              onClick={() => setCartOpen(true)}
+            >
+              <ShoppingCart className="size-5" />
+              {mounted && cart.itemCount() > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 flex items-center justify-center min-w-4.5 h-4.5 rounded-full text-[10px] font-bold text-white px-1 tabular-nums"
+                  style={{
+                    backgroundColor:
+                      "var(--brand-primary, hsl(var(--primary)))",
+                  }}
+                >
+                  {cart.itemCount()}
+                </span>
+              )}
+            </Button>
+
+          </div>
         </div>
       </header>
+
+      {/* Spacer so content doesn't hide behind fixed header */}
+      {/* Not needed — hero image starts at top, header floats over it */}
 
       <CartSheet
         open={cartOpen}

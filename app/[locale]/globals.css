@@ -169,3 +169,8 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Google Places autocomplete dropdown — must sit above Radix dialogs */
+.pac-container {
+  z-index: 10000 !important;
+}
