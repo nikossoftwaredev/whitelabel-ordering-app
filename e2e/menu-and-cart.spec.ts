@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { addProductToCart, clearCart, dismissLocationPrompt } from "./helpers";
+import { addProductToCart, clearCart, dismissLocationPrompt, suppressPwaPrompt } from "./helpers";
 
 test.describe("Menu Browsing", () => {
   test.beforeEach(async ({ page }) => {
@@ -10,7 +10,7 @@ test.describe("Menu Browsing", () => {
 
   test("menu loads with categories and products", async ({ page }) => {
     // Store name should be visible
-    await expect(page.getByText("Figata Cafe")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Figata Cafe").first()).toBeVisible({ timeout: 10000 });
     // Wait for products to load — price indicator
     await expect(page.locator("text=/€/").first()).toBeVisible({ timeout: 10000 });
   });
@@ -44,6 +44,7 @@ test.describe("Menu Browsing", () => {
 test.describe("Cart", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/en/order");
+    await suppressPwaPrompt(page);
     await clearCart(page);
     await page.reload();
     await dismissLocationPrompt(page);

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { dismissLocationPrompt } from "./helpers";
+import { dismissLocationPrompt, suppressPwaPrompt } from "./helpers";
 
 test.describe("Order Page", () => {
   test.beforeEach(async ({ page }) => {
@@ -10,13 +10,13 @@ test.describe("Order Page", () => {
 
   test("should load the menu page", async ({ page }) => {
     // Store name visible
-    await expect(page.getByText("Figata Cafe")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Figata Cafe").first()).toBeVisible({ timeout: 10000 });
     // Products load with prices
     await expect(page.locator("text=/€/").first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should display store cover image", async ({ page }) => {
-    await expect(page.getByText("Figata Cafe")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Figata Cafe").first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should search for products", async ({ page }) => {
@@ -28,11 +28,13 @@ test.describe("Order Page", () => {
   test("should open product detail sheet when clicking a product", async ({
     page,
   }) => {
+    await page.locator("text=/€/").first().waitFor({ state: "visible", timeout: 10000 });
     await page.getByText("Espresso").first().click();
     await expect(page.getByText("Add to cart")).toBeVisible({ timeout: 5000 });
   });
 
   test("should add item to cart and show cart bar", async ({ page }) => {
+    await page.locator("text=/€/").first().waitFor({ state: "visible", timeout: 10000 });
     await page.getByText("Espresso").first().click();
     await page.getByText("Add to cart").click();
     await expect(page.getByText("View Cart")).toBeVisible({ timeout: 5000 });
@@ -50,7 +52,10 @@ test.describe("Order Page", () => {
 test.describe("Location Prompt", () => {
   test("should show location prompt for new users", async ({ page }) => {
     await page.goto("/en/order");
-    await page.evaluate(() => localStorage.clear());
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.setItem("pwa-prompt-dismissed", "1");
+    });
     await page.reload();
 
     // Location prompt may or may not appear depending on state

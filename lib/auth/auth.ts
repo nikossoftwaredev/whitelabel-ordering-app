@@ -28,7 +28,7 @@ export const authOptions: NextAuthOptions = {
           return;
         }
 
-        await resend.emails.send({
+        const { error } = await resend.emails.send({
           from: process.env.EMAIL_FROM || "noreply@example.com",
           to: email,
           subject: "Sign in link",
@@ -45,6 +45,11 @@ export const authOptions: NextAuthOptions = {
             </div>
           `,
         });
+
+        if (error) {
+          console.error("[Resend] Failed to send magic link:", error);
+          throw new Error(`Failed to send verification email: ${error.message}`);
+        }
       },
     }),
   ],
