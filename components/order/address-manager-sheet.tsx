@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
@@ -217,7 +218,10 @@ function AddAddressDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error("Failed to create address");
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error || "Failed to save address");
+      }
       const data = await res.json();
       return (data.address ?? data) as Address;
     },
@@ -227,6 +231,9 @@ function AddAddressDialog({
       });
       onCreated(created);
       onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
     },
   });
 
@@ -483,9 +490,17 @@ export function AddressManagerSheet({
           className="bg-background text-foreground border-0 p-0 sm:max-w-md sm:max-h-[85vh] overflow-hidden shadow-2xl"
           showCloseButton={false}
         >
-          {/* Header */}
-          <div className="px-6 pt-6 pb-2 shrink-0">
-            <DialogTitle className="text-2xl font-bold italic text-foreground">
+          {/* Header with back button */}
+          <div className="px-5 pt-5 shrink-0">
+            <button
+              onClick={() => onOpenChange(false)}
+              className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
+            >
+              <ArrowLeft className="size-5 text-foreground" />
+            </button>
+          </div>
+          <div className="px-6 pb-2 shrink-0">
+            <DialogTitle className="text-2xl font-bold text-foreground">
               Choose address
             </DialogTitle>
           </div>

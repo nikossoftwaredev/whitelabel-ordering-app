@@ -8,11 +8,11 @@ import { prisma } from "@/lib/db";
 const createAddressSchema = z.object({
   label: z.string().min(1, "Label is required"),
   street: z.string().min(1, "Street is required"),
-  city: z.string().optional(),
-  postalCode: z.string().optional(),
-  country: z.string().optional(),
-  lat: z.number().optional(),
-  lng: z.number().optional(),
+  city: z.string().nullish(),
+  postalCode: z.string().nullish(),
+  country: z.string().nullish(),
+  lat: z.number().nullish(),
+  lng: z.number().nullish(),
   isDefault: z.boolean().optional(),
 });
 
