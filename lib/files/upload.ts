@@ -16,7 +16,7 @@ const s3Client = new S3Client({
   forcePathStyle: true,
 });
 
-export const IMAGES_BUCKET = "images";
+export const IMAGES_BUCKET = process.env.SUPABASE_S3_BUCKET || "uploads";
 
 const MAX_DIMENSION = 1200;
 const WEBP_QUALITY = 85;

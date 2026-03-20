@@ -1,11 +1,10 @@
-const CACHE_NAME = "ordering-v2";
-const STATIC_ASSETS = ["/order", "/menu"];
+const CACHE_NAME = "ordering-v3";
 
 // ─── Install ────────────────────────────────────────────────
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
+// Don't pre-cache navigation routes — they redirect through i18n middleware
+// and cache.addAll() failures would block SW installation entirely.
+// Instead, let the fetch handler cache pages on first visit.
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 

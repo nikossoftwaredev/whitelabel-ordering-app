@@ -39,20 +39,14 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const config = tenant.config;
   const baseUrl = getBaseUrl(host);
 
-  // Build icons — use tenant logo if available, else static fallbacks.
-  // Separate "any" and "maskable" purpose per Chrome best practices.
-  const logo = config?.logo;
-  const icons: MetadataRoute.Manifest["icons"] = logo
-    ? [
-        { src: logo, sizes: "192x192", type: "image/png", purpose: "any" },
-        { src: logo, sizes: "512x512", type: "image/png", purpose: "any" },
-        { src: logo, sizes: "512x512", type: "image/png", purpose: "maskable" },
-      ]
-    : [
-        { src: "/images/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-        { src: "/images/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-        { src: "/images/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
-      ];
+  // PWA icons must be exact declared sizes — Chrome validates strictly.
+  // Use properly-sized static fallbacks. Tenant branding (name, colors) is already
+  // per-tenant; custom per-tenant PWA icons require uploading exact 192/512px PNGs.
+  const icons: MetadataRoute.Manifest["icons"] = [
+    { src: "/images/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: "/images/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+    { src: "/images/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+  ];
 
   return {
     id: `${baseUrl}/order`,
