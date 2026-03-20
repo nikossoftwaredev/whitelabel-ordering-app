@@ -1,53 +1,18 @@
-const CACHE_NAME = "ordering-v3";
-
 // ─── Install ────────────────────────────────────────────────
-// Don't pre-cache navigation routes — they redirect through i18n middleware
-// and cache.addAll() failures would block SW installation entirely.
-// Instead, let the fetch handler cache pages on first visit.
+// No custom caching — rely on the browser's normal HTTP cache.
+// The SW exists only for PWA installability and push notifications.
 self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
-// ─── Activate — clean up old caches ─────────────────────────
+// ─── Activate — clean up any old caches from previous SW versions ─
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
+      Promise.all(keys.map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
-});
-
-// ─── Fetch — only handle same-origin requests ──────────────
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-
-  // Skip non-GET requests
-  if (request.method !== "GET") return;
-
-  // Only handle same-origin requests — let cross-origin (images, CDN) go to network directly
-  const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
-
-  // Skip API calls — let them always go to network
-  if (url.pathname.startsWith("/api/")) return;
-
-  // Network-first for same-origin navigation and assets
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(request))
-  );
 });
 
 // ─── Push notifications ─────────────────────────────────────
