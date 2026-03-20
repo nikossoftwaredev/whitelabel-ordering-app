@@ -35,7 +35,13 @@ export const generateViewport = async (): Promise<Viewport> => {
   const themeColor =
     tenant?.config?.pwaThemeColor || tenant?.config?.primaryColor || "#0a0a0a";
 
-  return { themeColor };
+  return {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    themeColor,
+  };
 };
 
 export const generateMetadata = async ({
