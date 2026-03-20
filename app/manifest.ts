@@ -44,6 +44,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
   // per-tenant; custom per-tenant PWA icons require uploading exact 192/512px PNGs.
   const icons: MetadataRoute.Manifest["icons"] = [
     { src: "/images/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: "/images/icon-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
     { src: "/images/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
     { src: "/images/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
   ];

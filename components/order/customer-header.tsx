@@ -2,11 +2,12 @@
 
 import {
   ChevronDown,
-  Home,
+  MapPin,
   Search,
   ShoppingCart,
 } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
@@ -21,6 +22,7 @@ import { CartSheet } from "./cart-sheet";
 import { ProfilePromptSheet } from "./profile-prompt-sheet";
 
 export const CustomerHeader = () => {
+  const t = useTranslations("Address");
   const tenant = useTenant();
   const cart = useCartStore();
   const selectedAddress = useAddressStore((s) => s.selectedAddress);
@@ -41,16 +43,11 @@ export const CustomerHeader = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const addressLabel = selectedAddress
-    ? selectedAddress.label || "Home"
-    : "Add address";
-
-  let addressStreet: string | null = null;
-  if (selectedAddress) {
-    addressStreet = selectedAddress.street.length > 22
+  const addressDisplay = selectedAddress
+    ? selectedAddress.street.length > 22
       ? selectedAddress.street.slice(0, 22) + "..."
-      : selectedAddress.street;
-  }
+      : selectedAddress.street
+    : t("addAddress");
 
   // When over hero (not scrolled): white text on transparent bg
   // When scrolled: theme-aware bg + text
@@ -90,15 +87,10 @@ export const CustomerHeader = () => {
             onClick={() => setAddressOpen(true)}
             className={`flex items-center gap-1.5 py-1.5 px-2 sm:px-3 rounded-lg ${hoverBgClass} transition-colors duration-200 cursor-pointer shrink min-w-0`}
           >
-            <Home className={`size-4 shrink-0 ${subtleTextClass}`} />
-            <span className="text-sm font-semibold truncate drop-shadow-sm max-w-24 sm:max-w-none">
-              {addressLabel}
+            <MapPin className={`size-4 shrink-0 ${subtleTextClass}`} />
+            <span className="text-sm font-semibold truncate drop-shadow-sm max-w-32 sm:max-w-none">
+              {addressDisplay}
             </span>
-            {addressStreet && (
-              <span className={`text-sm ${subtleTextClass} truncate hidden sm:inline`}>
-                ({addressStreet})
-              </span>
-            )}
             <ChevronDown className={`size-3.5 shrink-0 ${iconDimClass}`} />
           </button>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { Minus, Plus, Square, SquareCheck, Store, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -46,8 +47,8 @@ interface Product {
   modifierGroups: ModifierGroup[];
 }
 
-function getOptionalLabel(maxSelect: number) {
-  return maxSelect > 1 ? `Select up to ${maxSelect}` : "Optional";
+function getOptionalLabel(maxSelect: number, t: (key: string, values?: Record<string, unknown>) => string) {
+  return maxSelect > 1 ? t("selectUpTo", { max: maxSelect }) : t("optional");
 }
 
 interface CartItemEdit {
@@ -67,6 +68,7 @@ export const ProductDetailSheet = ({
   editingCartItem,
   onClose,
 }: ProductDetailSheetProps) => {
+  const t = useTranslations("Product");
   const cart = useCartStore();
   const formatPrice = useFormatPrice();
   const [quantity, setQuantity] = useState(1);
@@ -246,29 +248,29 @@ export const ProductDetailSheet = ({
             {(product.isVegan || product.isVegetarian || product.isGlutenFree || product.isDairyFree || product.isSpicy || product.containsNuts) && (
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {product.isVegan && (
-                  <span className="bg-green-500/15 text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">Vegan</span>
+                  <span className="bg-green-500/15 text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("vegan")}</span>
                 )}
                 {product.isVegetarian && (
-                  <span className="bg-green-500/15 text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">Vegetarian</span>
+                  <span className="bg-green-500/15 text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("vegetarian")}</span>
                 )}
                 {product.isGlutenFree && (
-                  <span className="bg-amber-500/15 text-amber-400 text-xs font-medium px-2.5 py-1 rounded-full">Gluten Free</span>
+                  <span className="bg-amber-500/15 text-amber-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("glutenFree")}</span>
                 )}
                 {product.isDairyFree && (
-                  <span className="bg-blue-500/15 text-blue-400 text-xs font-medium px-2.5 py-1 rounded-full">Dairy Free</span>
+                  <span className="bg-blue-500/15 text-blue-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("dairyFree")}</span>
                 )}
                 {product.isSpicy && (
-                  <span className="bg-red-500/15 text-red-400 text-xs font-medium px-2.5 py-1 rounded-full">Spicy</span>
+                  <span className="bg-red-500/15 text-red-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("spicy")}</span>
                 )}
                 {product.containsNuts && (
-                  <span className="bg-orange-500/15 text-orange-400 text-xs font-medium px-2.5 py-1 rounded-full">Contains Nuts</span>
+                  <span className="bg-orange-500/15 text-orange-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("containsNuts")}</span>
                 )}
               </div>
             )}
 
             {product.allergens && (
               <p className="text-xs text-muted-foreground mt-2">
-                Allergens: {product.allergens}
+                {t("allergens", { list: product.allergens })}
               </p>
             )}
           </div>
@@ -286,8 +288,8 @@ export const ProductDetailSheet = ({
                     </h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {group.required
-                        ? `Choose at least ${group.minSelect} item${group.minSelect !== 1 ? "s" : ""}`
-                        : getOptionalLabel(group.maxSelect)}
+                        ? (group.minSelect !== 1 ? t("chooseAtLeastPlural", { min: group.minSelect }) : t("chooseAtLeast", { min: group.minSelect }))
+                        : getOptionalLabel(group.maxSelect, t)}
                     </p>
 
                     <div className="mt-3 space-y-0">
@@ -335,13 +337,13 @@ export const ProductDetailSheet = ({
           {/* Editing banner */}
           {isEditing && (
             <div className="px-4 py-3 bg-muted border-b border-border">
-              <p className="text-sm text-muted-foreground">You&apos;re currently editing your existing selection.</p>
+              <p className="text-sm text-muted-foreground">{t("editingNote")}</p>
               <button
                 className="text-sm font-medium mt-0.5 cursor-pointer"
                 style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
                 onClick={switchToAddNew}
               >
-                Add another with different options
+                {t("addAnother")}
               </button>
             </div>
           )}

@@ -22,7 +22,6 @@ interface TenantMeta {
   icons?: { src: string }[];
 }
 
-const DISMISSED_KEY = "pwa-prompt-dismissed";
 
 export function PwaInstallPrompt() {
   const t = useTranslations("Pwa");
@@ -55,10 +54,8 @@ export function PwaInstallPrompt() {
         .catch(() => {});
     }
 
-    // Show on first load if not dismissed
-    if (!sessionStorage.getItem(DISMISSED_KEY)) {
-      setVisible(true);
-    }
+    // Always show the install prompt on page load
+    setVisible(true);
 
     // Fetch branding from Next.js manifest convention (non-blocking)
     fetch("/manifest.webmanifest")
@@ -80,7 +77,6 @@ export function PwaInstallPrompt() {
 
     // Allow re-showing from other components (e.g. dropdown menu "Download App")
     const showHandler = () => {
-      sessionStorage.removeItem(DISMISSED_KEY);
       setVisible(true);
     };
     window.addEventListener("show-pwa-prompt", showHandler);
@@ -113,7 +109,6 @@ export function PwaInstallPrompt() {
   };
 
   const dismiss = () => {
-    sessionStorage.setItem(DISMISSED_KEY, "1");
     setVisible(false);
   };
 

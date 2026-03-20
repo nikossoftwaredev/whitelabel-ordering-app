@@ -1,12 +1,5 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -16,15 +9,15 @@ import {
   Home,
   Loader2,
   MapPin,
+  MapPinOff,
   Plus,
   Search,
 } from "lucide-react";
-import Script from "next/script";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useTenant } from "@/components/tenant-provider";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +25,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useAddressStore } from "@/lib/stores/address-store";
+import {
+  searchPlaces,
+  getPlaceDetails,
+  type PlacePrediction,
+} from "@/server_actions/googleSearchActions";
 
 interface Address {
   id: string;
@@ -63,6 +61,12 @@ function getLabelIcon(label: string) {
   return labelIcons[label] ?? <MapPin className="size-5" />;
 }
 
+const LABEL_TRANSLATION_KEYS: Record<string, string> = {
+  Home: "home",
+  Work: "work",
+  Other: "other",
+};
+
 /* ─────────────── Add Address Dialog ─────────────── */
 function AddAddressDialog({
   open,
@@ -75,6 +79,7 @@ function AddAddressDialog({
   tenantSlug: string;
   onCreated: (addr: Address) => void;
 }) {
+  const t = useTranslations("Address");
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState<"search" | "form">("search");
@@ -86,11 +91,12 @@ function AddAddressDialog({
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<any>(null);
-  const [googleLoaded, setGoogleLoaded] = useState(
-    typeof window !== "undefined" && !!window.google?.maps?.places
-  );
+  // Server-side Google Places autocomplete
+  const [query, setQuery] = useState("");
+  const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectingPlace, setSelectingPlace] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -101,53 +107,59 @@ function AddAddressDialog({
       setNewLat(null);
       setNewLng(null);
       setLocationError(null);
+      setQuery("");
+      setPredictions([]);
     }
   }, [open]);
 
-  // Google Places
+  // Debounced search via server action
   useEffect(() => {
-    if (!googleLoaded || !searchInputRef.current || autocompleteRef.current)
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (query.length < 3) {
+      setPredictions([]);
+      setSearching(false);
       return;
+    }
 
-    const autocomplete = new window.google.maps.places.Autocomplete(
-      searchInputRef.current,
-      {
-        types: ["address"],
-        fields: ["formatted_address", "geometry", "address_components"],
-      }
-    );
+    setSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      const results = await searchPlaces(query, "address");
+      setPredictions(results);
+      setSearching(false);
+    }, 350);
 
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      if (!place.formatted_address) return;
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
 
-      const street = place.formatted_address
+  const handleSelectPrediction = async (prediction: PlacePrediction) => {
+    setSelectingPlace(true);
+    const details = await getPlaceDetails(prediction.place_id);
+    setSelectingPlace(false);
+
+    if (details) {
+      const street = details.formatted_address
         .split(",")
         .slice(0, 2)
         .join(",")
         .trim();
-      const cityComponent = place.address_components?.find((c: any) =>
-        c.types.includes("locality")
-      );
-
       setNewStreet(street);
-      setNewCity(cityComponent?.long_name || "");
-      setNewLat(place.geometry?.location?.lat() ?? null);
-      setNewLng(place.geometry?.location?.lng() ?? null);
-      setStep("form");
-    });
+      setNewLat(details.coordinates.lat);
+      setNewLng(details.coordinates.lng);
 
-    autocompleteRef.current = autocomplete;
-
-    return () => {
-      window.google.maps.event.clearInstanceListeners(autocomplete);
-      autocompleteRef.current = null;
-    };
-  }, [googleLoaded, open, step]);
+      const parts = details.formatted_address.split(",").map((s) => s.trim());
+      setNewCity(parts[2] || parts[1] || "");
+    } else {
+      setNewStreet(prediction.description);
+    }
+    setStep("form");
+  };
 
   const handleUseCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser.");
+      setLocationError(t("geolocationNotSupported"));
       return;
     }
 
@@ -192,18 +204,18 @@ function AddAddressDialog({
         setLocating(false);
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setLocationError("Location access was denied. Check your browser settings or allow location for this site.");
+            setLocationError(t("locationDenied"));
             break;
           case error.POSITION_UNAVAILABLE:
-            setLocationError("Location information is unavailable.");
+            setLocationError(t("locationUnavailable"));
             break;
           default:
-            setLocationError("Could not determine your location.");
+            setLocationError(t("locationError"));
         }
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, []);
+  }, [t]);
 
   const createMutation = useMutation({
     mutationFn: async (body: {
@@ -220,7 +232,7 @@ function AddAddressDialog({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
-        throw new Error(err?.error || "Failed to save address");
+        throw new Error(err?.error || t("saveFailed"));
       }
       const data = await res.json();
       return (data.address ?? data) as Address;
@@ -249,97 +261,113 @@ function AddAddressDialog({
   };
 
   return (
-    <>
-      {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
-        <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-          strategy="lazyOnload"
-          onReady={() => setGoogleLoaded(true)}
-        />
-      )}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="bg-background text-foreground border-0 p-0 sm:max-w-md sm:max-h-[85vh] overflow-hidden shadow-2xl"
+        showCloseButton={false}
+      >
+        {step === "search" ? (
+          <>
+            {/* Back button */}
+            <div className="px-5 pt-5 shrink-0">
+              <button
+                onClick={() => onOpenChange(false)}
+                className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
+              >
+                <ArrowLeft className="size-5 text-foreground" />
+              </button>
+            </div>
 
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
-          className="bg-background text-foreground border-0 p-0 sm:max-w-md sm:max-h-[85vh] overflow-hidden shadow-2xl"
-          showCloseButton={false}
-          onInteractOutside={(e) => {
-            // Prevent closing when clicking Google Places autocomplete dropdown
-            const target = e.target as HTMLElement;
-            if (target.closest?.(".pac-container")) {
-              e.preventDefault();
-            }
-          }}
-        >
-          {step === "search" ? (
-            <>
-              {/* Back button */}
-              <div className="px-5 pt-5 shrink-0">
-                <button
-                  onClick={() => onOpenChange(false)}
-                  className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
-                >
-                  <ArrowLeft className="size-5 text-foreground" />
-                </button>
-              </div>
+            {/* Title + description */}
+            <div className="px-6 pt-4 pb-2">
+              <DialogTitle className="text-2xl font-bold text-foreground">
+                {t("addNewAddressTitle")}
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                {t("addNewAddressDesc")}
+              </p>
+            </div>
 
-              {/* Title + description */}
-              <div className="px-6 pt-4 pb-2">
-                <DialogTitle className="text-2xl font-bold text-foreground">
-                  Add new address
-                </DialogTitle>
-                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                  We need your address to find stores that deliver to you.
-                  Use location detection for faster and accurate entry.
-                </p>
-              </div>
-
-              {/* Search input */}
-              <div className="px-6 pt-4 pb-3">
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Street, number, area"
-                    className="w-full h-12 pl-10 pr-4 rounded-xl bg-muted/50 border border-border text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-(--brand-primary,hsl(var(--ring))) transition-all duration-200"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && searchInputRef.current?.value.trim()) {
-                        e.preventDefault();
-                        setNewStreet(searchInputRef.current.value.trim());
-                        setStep("form");
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Location error */}
-              {locationError && (
-                <p className="text-xs text-destructive text-center px-6">
-                  {locationError}
-                </p>
-              )}
-
-              {/* Use current location */}
-              <div className="px-6 pb-6 pt-1">
-                <button
-                  onClick={handleUseCurrentLocation}
-                  disabled={locating}
-                  className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2.5 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
-                  style={{
-                    background:
-                      "var(--brand-primary, hsl(var(--primary)))",
-                    color: "white",
+            {/* Search input */}
+            <div className="px-6 pt-4 pb-1">
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t("searchPlaceholder")}
+                  className="w-full h-12 pl-10 pr-4 rounded-xl bg-muted/50 border border-border text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-(--brand-primary,hsl(var(--ring))) transition-all duration-200"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && query.trim()) {
+                      e.preventDefault();
+                      setNewStreet(query.trim());
+                      setStep("form");
+                    }
                   }}
-                >
-                  <Crosshair
-                    className={`size-5 ${locating ? "animate-pulse" : ""}`}
-                  />
-                  {locating ? "Locating..." : "Detect location"}
-                </button>
+                />
+                {searching && (
+                  <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground animate-spin" />
+                )}
               </div>
-            </>
-          ) : (
+            </div>
+
+            {/* Autocomplete predictions */}
+            {predictions.length > 0 && (
+              <div className="px-6 pb-2 max-h-48 overflow-y-auto">
+                {selectingPlace && (
+                  <div className="flex items-center justify-center py-3">
+                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+                {!selectingPlace &&
+                  predictions.map((p) => (
+                    <button
+                      key={p.place_id}
+                      onClick={() => handleSelectPrediction(p)}
+                      className="w-full flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/50 transition-colors duration-200 cursor-pointer text-left"
+                    >
+                      <MapPin className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {p.structured_formatting.main_text}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {p.structured_formatting.secondary_text}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+              </div>
+            )}
+
+            {/* Location error */}
+            {locationError && (
+              <p className="text-xs text-destructive text-center px-6">
+                {locationError}
+              </p>
+            )}
+
+            {/* Use current location */}
+            <div className="px-6 pb-6 pt-3">
+              <button
+                onClick={handleUseCurrentLocation}
+                disabled={locating}
+                className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2.5 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
+                style={{
+                  background:
+                    "var(--brand-primary, hsl(var(--primary)))",
+                  color: "white",
+                }}
+              >
+                <Crosshair
+                  className={`size-5 ${locating ? "animate-pulse" : ""}`}
+                />
+                {locating ? t("locating") : t("detectLocation")}
+              </button>
+            </div>
+          </>
+        ) : (
             <>
               {/* Back to search */}
               <div className="px-5 pt-5 shrink-0">
@@ -353,7 +381,7 @@ function AddAddressDialog({
 
               <div className="px-6 pt-2 pb-6">
                 <DialogTitle className="text-2xl font-bold text-foreground mb-4">
-                  Confirm address
+                  {t("confirmAddress")}
                 </DialogTitle>
 
                 <div className="space-y-3">
@@ -380,7 +408,7 @@ function AddAddressDialog({
                           }
                         >
                           {getLabelIcon(label)}
-                          {label}
+                          {t(LABEL_TRANSLATION_KEYS[label])}
                         </button>
                       );
                     })}
@@ -389,12 +417,12 @@ function AddAddressDialog({
                   {/* Street */}
                   <div>
                     <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
-                      Street Address
+                      {t("streetAddress")}
                     </label>
                     <Input
                       value={newStreet}
                       onChange={(e) => setNewStreet(e.target.value)}
-                      placeholder="e.g. Ermou 10, Athens"
+                      placeholder={t("streetPlaceholder")}
                       className="h-12 rounded-xl text-[15px]"
                     />
                   </div>
@@ -402,12 +430,12 @@ function AddAddressDialog({
                   {/* City */}
                   <div>
                     <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
-                      City
+                      {t("city")}
                     </label>
                     <Input
                       value={newCity}
                       onChange={(e) => setNewCity(e.target.value)}
-                      placeholder="e.g. Athens"
+                      placeholder={t("cityPlaceholder")}
                       className="h-12 rounded-xl text-[15px]"
                     />
                   </div>
@@ -431,8 +459,8 @@ function AddAddressDialog({
                       <Check className="size-4.5" />
                     )}
                     {createMutation.isPending
-                      ? "Saving..."
-                      : "Save Address"}
+                      ? t("saving")
+                      : t("saveAddress")}
                   </button>
                 </div>
               </div>
@@ -440,7 +468,6 @@ function AddAddressDialog({
           )}
         </DialogContent>
       </Dialog>
-    </>
   );
 }
 
@@ -449,6 +476,7 @@ export function AddressManagerSheet({
   open,
   onOpenChange,
 }: AddressManagerSheetProps) {
+  const t = useTranslations("Address");
   const tenant = useTenant();
   const { selectedAddress, setSelectedAddress } = useAddressStore();
   const [addOpen, setAddOpen] = useState(false);
@@ -460,7 +488,7 @@ export function AddressManagerSheet({
     queryKey: ["addresses", tenant.slug],
     queryFn: async () => {
       const res = await fetch(`/api/tenants/${tenant.slug}/addresses`);
-      if (!res.ok) throw new Error("Failed to fetch addresses");
+      if (!res.ok) throw new Error(t("fetchFailed"));
       const data = await res.json();
       return data.addresses ?? data;
     },
@@ -478,7 +506,6 @@ export function AddressManagerSheet({
   const handleAddressCreated = useCallback(
     (addr: Address) => {
       setSelectedAddress(addr);
-      // Don't close the list dialog — user sees the new address selected
     },
     [setSelectedAddress]
   );
@@ -501,19 +528,8 @@ export function AddressManagerSheet({
           </div>
           <div className="px-6 pb-2 shrink-0">
             <DialogTitle className="text-2xl font-bold text-foreground">
-              Choose address
+              {t("chooseAddress")}
             </DialogTitle>
-          </div>
-
-          {/* Search — opens the add dialog for Google Places */}
-          <div className="px-6 pb-3">
-            <button
-              onClick={() => setAddOpen(true)}
-              className="w-full h-11 pl-10 pr-4 rounded-xl bg-muted/50 border border-border text-sm text-muted-foreground text-left relative cursor-pointer hover:bg-muted transition-colors duration-200"
-            >
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              Search address...
-            </button>
           </div>
 
           {/* Address list */}
@@ -563,9 +579,17 @@ export function AddressManagerSheet({
               </div>
             )}
             {!isLoading && addresses.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-8">
-                No saved addresses yet.
-              </p>
+              <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                <div className="size-16 rounded-full bg-muted/60 flex items-center justify-center mb-4">
+                  <MapPinOff className="size-7 text-muted-foreground" />
+                </div>
+                <p className="text-base font-semibold text-foreground mb-1">
+                  {t("noAddresses")}
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {t("noAddressesDesc")}
+                </p>
+              </div>
             )}
           </div>
 
@@ -581,7 +605,7 @@ export function AddressManagerSheet({
               }}
             >
               <Plus className="size-4.5" />
-              Add new address
+              {t("addNewAddress")}
             </button>
           </div>
         </DialogContent>

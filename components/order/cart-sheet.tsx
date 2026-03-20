@@ -65,7 +65,7 @@ const CartContents = ({
                   {/* Modifier summary */}
                   {item.modifiers.length > 0 && (
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      Add ingredients: {item.modifiers.map((m) => m.name).join(", ")}
+                      {t("addIngredients", { items: item.modifiers.map((m) => m.name).join(", ") })}
                     </p>
                   )}
 
@@ -136,7 +136,7 @@ const CartContents = ({
                 className="w-full h-12 rounded-xl text-[15px] font-semibold"
                 disabled
               >
-                Store is closed
+                {t("storeClosed")}
               </Button>
             )}
             {!storeClosed && session && (
