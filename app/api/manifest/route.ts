@@ -1,24 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { prisma } from "@/lib/db";
+import { getTenantByDomain } from "@/lib/tenant/resolve";
 
 export async function GET(request: NextRequest) {
-  // Get tenant from host header (same resolution as layout)
   const host =
     request.headers.get("x-tenant-host") ||
     request.headers.get("host") ||
     "";
 
-  const domain = host.split(":")[0];
-
-  // Try to find tenant by domain or slug prefix
-  let tenant = await prisma.tenant.findFirst({
-    where: {
-      OR: [{ domain }, { slug: domain.split(".")[0] }],
-      isActive: true,
-    },
-    include: { config: true },
-  });
+  const tenant = await getTenantByDomain(host);
 
   if (!tenant) {
     return NextResponse.json(
@@ -30,8 +20,8 @@ export async function GET(request: NextRequest) {
   const config = tenant.config;
 
   const manifest = {
-    name: config?.pwaName || tenant?.name || "Order App",
-    short_name: config?.pwaShortName || tenant?.name?.slice(0, 12) || "Order",
+    name: config?.pwaName || tenant.name || "Order App",
+    short_name: config?.pwaShortName || tenant.name?.slice(0, 12) || "Order",
     description: config?.description || "Online ordering platform",
     start_url: "/order",
     display: "standalone" as const,

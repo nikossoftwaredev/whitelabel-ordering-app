@@ -1,6 +1,7 @@
 import "./globals.css";
 
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Roboto } from "next/font/google";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
@@ -16,6 +17,7 @@ import { routing } from "@/lib/i18n/routing";
 import { generateBrandStyles } from "@/lib/tenant/brand-styles";
 import { setCurrentTenant } from "@/lib/tenant/context";
 import { getRequestTenant } from "@/lib/tenant/resolve";
+import { getBaseUrl } from "@/lib/tenant/url";
 import { BaseLayoutProps } from "@/types/page-props";
 
 const roboto = Roboto({
@@ -36,22 +38,38 @@ export const generateViewport = async (): Promise<Viewport> => {
   return { themeColor };
 };
 
-export const generateMetadata = async (): Promise<Metadata> => {
+export const generateMetadata = async ({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> => {
+  const { locale } = await params;
   const tenant = await getRequestTenant();
+
+  const headerList = await headers();
+  const host = headerList.get("x-tenant-host") || "localhost:3000";
+  const baseUrl = getBaseUrl(host);
 
   if (!tenant) {
     return { title: "Store Not Found", description: "" };
   }
 
   const config = tenant.config;
+  const description = config?.description || `Order online from ${tenant.name}`;
+
+  // Build hreflang alternates for all locales
+  const languages: Record<string, string> = {};
+  for (const loc of routing.locales) {
+    languages[loc] = `${baseUrl}/${loc}`;
+  }
 
   return {
+    metadataBase: new URL(baseUrl),
     title: {
       default: tenant.name,
       template: `%s | ${tenant.name}`,
     },
-    description:
-      config?.description || `Order online from ${tenant.name}`,
+    description,
     icons: {
       icon: config?.logoSmall || config?.logo || "/favicon.ico",
       apple: config?.logoSmall || config?.logo || "/favicon.ico",
@@ -61,10 +79,14 @@ export const generateMetadata = async (): Promise<Metadata> => {
       statusBarStyle: "black-translucent",
       title: tenant.name,
     },
+    alternates: {
+      canonical: `${baseUrl}/${locale}`,
+      languages,
+    },
     openGraph: {
       title: tenant.name,
-      description:
-        config?.description || `Order online from ${tenant.name}`,
+      description,
+      url: `${baseUrl}/${locale}`,
       images: config?.coverImage || config?.logo
         ? [{ url: config?.coverImage || config?.logo || "" }]
         : undefined,
