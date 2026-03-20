@@ -39,14 +39,15 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const config = tenant.config;
   const baseUrl = getBaseUrl(host);
 
-  // Use the tenant's uploaded logo for PWA icons when available.
-  // Browsers will resize as needed. Fall back to generic static icons.
-  const tenantLogo = config?.logo || config?.logoSmall;
+  // When the tenant has a logo, serve it through /api/pwa-icon which
+  // dynamically resizes it to exact PWA dimensions via sharp.
+  // Chrome validates icon sizes strictly — mismatched sizes downgrade to shortcut.
+  const hasLogo = !!(config?.logo || config?.logoSmall);
 
-  const icons: MetadataRoute.Manifest["icons"] = tenantLogo
+  const icons: MetadataRoute.Manifest["icons"] = hasLogo
     ? [
-        { src: tenantLogo, sizes: "192x192", type: "image/png", purpose: "any" },
-        { src: tenantLogo, sizes: "512x512", type: "image/png", purpose: "any" },
+        { src: "/api/pwa-icon?size=192", sizes: "192x192", type: "image/png", purpose: "any" },
+        { src: "/api/pwa-icon?size=512", sizes: "512x512", type: "image/png", purpose: "any" },
       ]
     : [
         { src: "/images/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
