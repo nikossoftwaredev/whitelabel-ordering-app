@@ -13,6 +13,7 @@ import {
   Store,
   WheatOff,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback,useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";

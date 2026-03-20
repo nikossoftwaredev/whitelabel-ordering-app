@@ -47,7 +47,11 @@ interface Product {
   modifierGroups: ModifierGroup[];
 }
 
-function getOptionalLabel(maxSelect: number, t: (key: string, values?: Record<string, unknown>) => string) {
+function getRequiredLabel(minSelect: number, t: (key: string, values?: Record<string, string | number | Date>) => string) {
+  return minSelect !== 1 ? t("chooseAtLeastPlural", { min: minSelect }) : t("chooseAtLeast", { min: minSelect });
+}
+
+function getOptionalLabel(maxSelect: number, t: (key: string, values?: Record<string, string | number | Date>) => string) {
   return maxSelect > 1 ? t("selectUpTo", { max: maxSelect }) : t("optional");
 }
 
@@ -288,7 +292,7 @@ export const ProductDetailSheet = ({
                     </h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {group.required
-                        ? (group.minSelect !== 1 ? t("chooseAtLeastPlural", { min: group.minSelect }) : t("chooseAtLeast", { min: group.minSelect }))
+                        ? getRequiredLabel(group.minSelect, t)
                         : getOptionalLabel(group.maxSelect, t)}
                     </p>
 
@@ -378,7 +382,7 @@ export const ProductDetailSheet = ({
               }}
               onClick={handleSubmit}
             >
-              {isEditing ? "Update order" : "Add to order"}&nbsp;&nbsp;{formatPrice(totalPrice)}
+              {isEditing ? t("updateOrder") : t("addToOrder")}&nbsp;&nbsp;{formatPrice(totalPrice)}
             </button>
           </div>
         </div>
