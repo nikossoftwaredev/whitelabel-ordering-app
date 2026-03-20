@@ -13,6 +13,7 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -25,6 +26,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useAddressStore } from "@/lib/stores/address-store";
+
+import { AuthDialog } from "./auth-dialog";
 import {
   searchPlaces,
   getPlaceDetails,
@@ -478,8 +481,10 @@ export function AddressManagerSheet({
 }: AddressManagerSheetProps) {
   const t = useTranslations("Address");
   const tenant = useTenant();
+  const { data: session } = useSession();
   const { selectedAddress, setSelectedAddress } = useAddressStore();
   const [addOpen, setAddOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
 
   const {
     data: addresses = [],
@@ -509,6 +514,14 @@ export function AddressManagerSheet({
     },
     [setSelectedAddress]
   );
+
+  const handleAddAddress = useCallback(() => {
+    if (!session) {
+      setAuthOpen(true);
+    } else {
+      setAddOpen(true);
+    }
+  }, [session]);
 
   return (
     <>
@@ -596,7 +609,7 @@ export function AddressManagerSheet({
           {/* Add new address button */}
           <div className="px-6 py-5 shrink-0">
             <button
-              onClick={() => setAddOpen(true)}
+              onClick={handleAddAddress}
               className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98]"
               style={{
                 background:
@@ -617,6 +630,8 @@ export function AddressManagerSheet({
         tenantSlug={tenant.slug}
         onCreated={handleAddressCreated}
       />
+
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
     </>
   );
 }

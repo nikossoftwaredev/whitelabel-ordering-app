@@ -43,11 +43,12 @@ export const CustomerHeader = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const addressDisplay = selectedAddress
-    ? selectedAddress.street.length > 22
+  let addressDisplay = t("addAddress");
+  if (selectedAddress) {
+    addressDisplay = selectedAddress.street.length > 22
       ? selectedAddress.street.slice(0, 22) + "..."
-      : selectedAddress.street
-    : t("addAddress");
+      : selectedAddress.street;
+  }
 
   // When over hero (not scrolled): white text on transparent bg
   // When scrolled: theme-aware bg + text

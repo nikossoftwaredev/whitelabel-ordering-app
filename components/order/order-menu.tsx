@@ -97,9 +97,9 @@ interface OrderMenuProps {
 }
 
 const dietaryFilters = [
-  { key: "isVegan", label: "Vegan", icon: Leaf },
-  { key: "isVegetarian", label: "Vegetarian", icon: Leaf },
-  { key: "isGlutenFree", label: "Gluten Free", icon: WheatOff },
+  { key: "isVegan", labelKey: "vegan", icon: Leaf },
+  { key: "isVegetarian", labelKey: "vegetarian", icon: Leaf },
+  { key: "isGlutenFree", labelKey: "glutenFree", icon: WheatOff },
 ] as const;
 
 
@@ -185,6 +185,7 @@ function ProductCard({
   quantity: number;
   modifierSummary?: string;
 }) {
+  const t = useTranslations("Menu");
   const hasRequiredModifiers = product.modifierGroups.some((g) => g.required);
   return (
     <div
@@ -200,9 +201,9 @@ function ProductCard({
           <p className="text-[12px] mt-0.5 line-clamp-1 leading-snug" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{modifierSummary}</p>
         )}
         <div className="flex items-center gap-1.5 mt-1.5">
-          {product.isVegan && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">Vegan</span>}
-          {product.isVegetarian && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">Vegetarian</span>}
-          {product.isGlutenFree && <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">GF</span>}
+          {product.isVegan && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">{t("vegan")}</span>}
+          {product.isVegetarian && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">{t("vegetarian")}</span>}
+          {product.isGlutenFree && <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">{t("glutenFree")}</span>}
         </div>
         <p className="text-[14px] font-semibold mt-1.5" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.price)}</p>
       </div>
@@ -343,6 +344,7 @@ function MenuSkeleton() {
 
 /* ═══════════════════ MAIN COMPONENT ═══════════════════ */
 export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
+  const t = useTranslations("Menu");
   const formatPrice = useFormatPrice();
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
@@ -529,8 +531,8 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
         <Store className="size-16 text-muted-foreground/30" />
-        <h1 className="text-2xl font-bold">Temporarily Closed</h1>
-        <p className="text-muted-foreground">We&apos;re not accepting orders right now. Please check back later.</p>
+        <h1 className="text-2xl font-bold">{t("temporarilyClosed")}</h1>
+        <p className="text-muted-foreground">{t("temporarilyClosedDesc")}</p>
       </div>
     );
   }
@@ -618,13 +620,13 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         {prepTime && (
           <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1 shrink-0">
             <Bike className="size-3.5 text-muted-foreground" />
-            <span className="font-medium">Delivery {prepTime}-{prepTime + 10} min</span>
+            <span className="font-medium">{t("delivery", { min: prepTime, max: prepTime + 10 })}</span>
           </div>
         )}
         {prepTime && (
           <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1 shrink-0">
             <Package className="size-3.5 text-muted-foreground" />
-            <span className="font-medium">Pickup {Math.max(5, prepTime - 10)}-{prepTime} min</span>
+            <span className="font-medium">{t("pickup", { min: Math.max(5, prepTime - 10), max: prepTime })}</span>
           </div>
         )}
       </div>
@@ -635,18 +637,18 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           {prepTime && (
             <div className="flex items-center gap-1.5 bg-background rounded-full px-3 py-1.5 shrink-0 border border-border">
               <Bike className="size-3.5 text-muted-foreground" />
-              <span className="font-medium">Delivery {prepTime}-{prepTime + 10} min</span>
+              <span className="font-medium">{t("delivery", { min: prepTime, max: prepTime + 10 })}</span>
             </div>
           )}
           {prepTime && (
             <div className="flex items-center gap-1.5 bg-background rounded-full px-3 py-1.5 shrink-0 border border-border">
               <Package className="size-3.5 text-muted-foreground" />
-              <span className="font-medium">Pickup {Math.max(5, prepTime - 10)}-{prepTime} min</span>
+              <span className="font-medium">{t("pickup", { min: Math.max(5, prepTime - 10), max: prepTime })}</span>
             </div>
           )}
           <button className="flex items-center gap-1.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer">
             <Info className="size-3.5" />
-            <span>Restaurant details</span>
+            <span>{t("restaurantDetails")}</span>
           </button>
         </div>
       </div>
@@ -656,7 +658,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder={`Search in ${storeName}...`}
+            placeholder={t("searchIn", { storeName })}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 h-10 sm:h-12 rounded-xl bg-muted/50 border border-border/50 text-sm sm:text-[15px] focus-visible:ring-1 focus-visible:ring-(--brand-primary,hsl(var(--ring)))"
@@ -711,7 +713,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                       onClick={() => toggleFilter(f.key)}
                     >
                       <f.icon className="size-4" />
-                      {f.label}
+                      {t(f.labelKey)}
                     </button>
                   ))}
                 </PopoverContent>
@@ -726,14 +728,14 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         {filteredCategories.length === 0 && !isLoading ? (
           <div className="flex flex-col items-center gap-2 py-16 text-center px-4">
             <Search className="size-10 text-muted-foreground/30" />
-            <p className="text-muted-foreground">No products found</p>
+            <p className="text-muted-foreground">{t("noProducts")}</p>
           </div>
         ) : (
           <>
             {/* Popular carousel */}
             {!search && activeFilters.size === 0 && popularProducts.length > 0 && (
               <section className="pt-6 pb-1 px-4">
-                <h2 className="text-xl font-bold tracking-tight mb-3">Popular</h2>
+                <h2 className="text-xl font-bold tracking-tight mb-3">{t("popular")}</h2>
                 <Carousel opts={{ align: "start", dragFree: true, watchDrag: true }} className="-mx-1.5">
                   <CarouselContent className="-ml-3">
                     {popularProducts.map((product) => (
@@ -797,7 +799,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
             onClick={() => setCartOpen(true)}
           >
             <span className="flex items-center justify-center size-7 rounded-lg bg-white/20 text-sm font-bold tabular-nums">{itemCount}</span>
-            <span className="flex-1 text-left font-semibold text-[15px]">View Cart</span>
+            <span className="flex-1 text-left font-semibold text-[15px]">{t("viewCart")}</span>
             <span className="font-bold text-[15px] tabular-nums">{formatPrice(subtotal)}</span>
           </Button>
         </div>
