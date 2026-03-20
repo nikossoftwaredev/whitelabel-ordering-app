@@ -138,7 +138,6 @@ const LocaleLayout = async ({ children, params }: BaseLayoutProps) => {
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        <link rel="manifest" href="/api/manifest" />
         {brandStyles && <style>{brandStyles}</style>}
         {/* Capture beforeinstallprompt before React hydrates so it's never missed */}
         <script

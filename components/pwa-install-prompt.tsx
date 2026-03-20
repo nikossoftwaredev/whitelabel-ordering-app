@@ -47,8 +47,8 @@ export function PwaInstallPrompt() {
       setVisible(true);
     }
 
-    // Fetch branding (non-blocking — fallback used if this fails)
-    fetch("/api/manifest")
+    // Fetch branding from Next.js manifest convention (non-blocking)
+    fetch("/manifest.webmanifest")
       .then((r) => r.json())
       .then((data: TenantMeta) => setTenantMeta(data))
       .catch(() => {});
