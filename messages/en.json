@@ -39,7 +39,8 @@
     "or": "or",
     "email": "Email",
     "emailPlaceholder": "you@example.com",
-    "sendMagicLink": "Send magic link"
+    "sendMagicLink": "Send magic link",
+    "googlePwaNote": "Google sign-in may open in your browser"
   },
   "AuthDialog": {
     "title": "Create an account or log in",
@@ -196,7 +197,9 @@
   },
   "Pwa": {
     "getFullExperience": "Get the full experience — install the app",
+    "appInstalled": "You already have the app installed",
     "addToHomeScreen": "Add to Home Screen",
+    "openInApp": "Open in App",
     "iosTip": "Tap the Share button in Safari, then tap Add to Home Screen.",
     "androidTip": "Open this page in Chrome or Safari on your phone and tap Add to Home Screen.",
     "keepUsingWeb": "Keep using web"

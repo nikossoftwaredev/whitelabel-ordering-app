@@ -78,7 +78,6 @@ export const ProductDetailSheet = ({
   useEffect(() => {
     if (product) {
       if (editingCartItem) {
-        // Edit mode — pre-fill from existing cart item
         setIsEditing(true);
         setQuantity(editingCartItem.quantity);
         const modMap = new Map<string, Set<string>>();
@@ -92,7 +91,6 @@ export const ProductDetailSheet = ({
         }
         setSelectedModifiers(modMap);
       } else {
-        // Add mode — defaults
         setIsEditing(false);
         setQuantity(1);
         const defaults = new Map<string, Set<string>>();
@@ -191,7 +189,7 @@ export const ProductDetailSheet = ({
   return (
     <Dialog open={!!product} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="bg-[#1b1b1f] text-white border-0 p-0 sm:max-w-md sm:max-h-[90vh] overflow-hidden"
+        className="bg-background text-foreground border-border p-0 sm:max-w-md sm:max-h-[90vh] overflow-hidden"
         showCloseButton={false}
       >
         {/* Hidden accessible title */}
@@ -209,8 +207,8 @@ export const ProductDetailSheet = ({
                 />
               </div>
             ) : (
-              <div className="w-full aspect-4/3 bg-white/5 flex items-center justify-center">
-                <Store className="size-16 text-white/10" />
+              <div className="w-full aspect-4/3 bg-muted flex items-center justify-center">
+                <Store className="size-16 text-muted-foreground/30" />
               </div>
             )}
             <button
@@ -223,7 +221,7 @@ export const ProductDetailSheet = ({
 
           {/* Product info */}
           <div className="px-5 pt-5 pb-3">
-            <h2 className="text-2xl font-bold leading-tight text-white">
+            <h2 className="text-2xl font-bold leading-tight text-foreground">
               {product.name}
             </h2>
 
@@ -239,7 +237,7 @@ export const ProductDetailSheet = ({
 
             {/* Description */}
             {product.description && (
-              <p className="text-sm text-white/60 mt-3 leading-relaxed">
+              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
                 {product.description}
               </p>
             )}
@@ -269,7 +267,7 @@ export const ProductDetailSheet = ({
             )}
 
             {product.allergens && (
-              <p className="text-xs text-white/40 mt-2">
+              <p className="text-xs text-muted-foreground mt-2">
                 Allergens: {product.allergens}
               </p>
             )}
@@ -278,15 +276,15 @@ export const ProductDetailSheet = ({
           {/* Modifier Groups */}
           {product.modifierGroups.length > 0 && (
             <div className="px-5 space-y-5 pb-6">
-              <div className="h-px bg-white/10" />
+              <div className="h-px bg-border" />
               {product.modifierGroups.map((group) => {
                 const selected = selectedModifiers.get(group.id) || new Set();
                 return (
                   <div key={group.id}>
-                    <h3 className="text-base font-bold text-white">
+                    <h3 className="text-base font-bold text-foreground">
                       {group.name}
                     </h3>
-                    <p className="text-sm text-white/50 mt-0.5">
+                    <p className="text-sm text-muted-foreground mt-0.5">
                       {group.required
                         ? `Choose at least ${group.minSelect} item${group.minSelect !== 1 ? "s" : ""}`
                         : getOptionalLabel(group.maxSelect)}
@@ -298,7 +296,7 @@ export const ProductDetailSheet = ({
                         return (
                           <button
                             key={opt.id}
-                            className="w-full flex items-center gap-3 py-3.5 border-b border-white/5 last:border-b-0 cursor-pointer hover:bg-white/5 transition-colors duration-200 text-left"
+                            className="w-full flex items-center gap-3 py-3.5 border-b border-border last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-200 text-left"
                             onClick={() =>
                               toggleModifier(group.id, opt.id, group.maxSelect)
                             }
@@ -309,15 +307,15 @@ export const ProductDetailSheet = ({
                                 style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
                               />
                             ) : (
-                              <Square className="size-5 shrink-0 text-white/30" />
+                              <Square className="size-5 shrink-0 text-muted-foreground/50" />
                             )}
 
-                            <span className={`flex-1 text-sm ${isSelected ? "text-white" : "text-white/70"}`}>
+                            <span className={`flex-1 text-sm ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
                               {opt.name}
                             </span>
 
                             {opt.priceAdjustment > 0 && (
-                              <span className="text-sm text-white/40">
+                              <span className="text-sm text-muted-foreground">
                                 +{formatPrice(opt.priceAdjustment)}
                               </span>
                             )}
@@ -333,11 +331,11 @@ export const ProductDetailSheet = ({
         </div>
 
         {/* ── Bottom bar ── */}
-        <div className="border-t border-white/10 bg-[#1b1b1f] shrink-0">
+        <div className="border-t border-border bg-background shrink-0">
           {/* Editing banner */}
           {isEditing && (
-            <div className="px-4 py-3 bg-white/5 border-b border-white/10">
-              <p className="text-sm text-white/70">You&apos;re currently editing your existing selection.</p>
+            <div className="px-4 py-3 bg-muted border-b border-border">
+              <p className="text-sm text-muted-foreground">You&apos;re currently editing your existing selection.</p>
               <button
                 className="text-sm font-medium mt-0.5 cursor-pointer"
                 style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
@@ -349,19 +347,19 @@ export const ProductDetailSheet = ({
           )}
           <div className="flex items-center gap-3 p-4 pb-6 sm:pb-4">
             {/* Quantity */}
-            <div className="flex items-center gap-0 bg-white/10 rounded-xl overflow-hidden">
+            <div className="flex items-center gap-0 bg-muted rounded-xl overflow-hidden">
               <button
-                className="size-11 flex items-center justify-center hover:bg-white/10 transition-colors duration-200 cursor-pointer"
+                className="size-11 flex items-center justify-center hover:bg-muted/80 transition-colors duration-200 cursor-pointer"
                 style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
               >
                 <Minus className="size-5" />
               </button>
-              <span className="text-base font-bold w-8 text-center tabular-nums text-white">
+              <span className="text-base font-bold w-8 text-center tabular-nums text-foreground">
                 {quantity}
               </span>
               <button
-                className="size-11 flex items-center justify-center hover:bg-white/10 transition-colors duration-200 cursor-pointer"
+                className="size-11 flex items-center justify-center hover:bg-muted/80 transition-colors duration-200 cursor-pointer"
                 style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
                 onClick={() => setQuantity(quantity + 1)}
               >

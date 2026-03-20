@@ -43,10 +43,10 @@ const CartContents = ({
     <>
       {cart.items.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-16 px-4 text-center flex-1">
-          <div className="size-16 rounded-full bg-white/5 flex items-center justify-center">
-            <ShoppingCart className="size-7 text-white/20" />
+          <div className="size-16 rounded-full bg-muted flex items-center justify-center">
+            <ShoppingCart className="size-7 text-muted-foreground/40" />
           </div>
-          <p className="text-white/50 text-sm">{t("empty")}</p>
+          <p className="text-muted-foreground text-sm">{t("empty")}</p>
         </div>
       ) : (
         <>
@@ -54,17 +54,17 @@ const CartContents = ({
             {cart.items.map((item) => (
               <div
                 key={item.cartItemId}
-                className="flex gap-3 py-3 border-b border-white/5 last:border-b-0"
+                className="flex gap-3 py-3 border-b border-border last:border-b-0"
               >
                 {/* Left: text info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-sm text-white leading-tight truncate">
+                  <h4 className="font-semibold text-sm text-foreground leading-tight truncate">
                     {item.productName}
                   </h4>
 
                   {/* Modifier summary */}
                   {item.modifiers.length > 0 && (
-                    <p className="text-xs text-white/40 mt-0.5 truncate">
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
                       Add ingredients: {item.modifiers.map((m) => m.name).join(", ")}
                     </p>
                   )}
@@ -79,7 +79,7 @@ const CartContents = ({
                 </div>
 
                 {/* Right: image with quantity overlay */}
-                <div className="relative shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-white/5">
+                <div className="relative shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-muted">
                   {item.productImage ? (
                     <img
                       src={item.productImage}
@@ -88,14 +88,14 @@ const CartContents = ({
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <ShoppingCart className="size-5 text-white/10" />
+                      <ShoppingCart className="size-5 text-muted-foreground/30" />
                     </div>
                   )}
 
                   {/* Quantity controls overlaid at bottom */}
-                  <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between bg-black/70 backdrop-blur-sm rounded-lg overflow-hidden">
+                  <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between bg-background/80 backdrop-blur-sm rounded-lg overflow-hidden border border-border">
                     <button
-                      className="size-8 flex items-center justify-center hover:bg-white/10 transition-colors duration-200 cursor-pointer"
+                      className="size-8 flex items-center justify-center hover:bg-muted transition-colors duration-200 cursor-pointer"
                       style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
                       onClick={() =>
                         cart.updateQuantity(item.cartItemId, item.quantity - 1)
@@ -103,11 +103,11 @@ const CartContents = ({
                     >
                       <Minus className="size-3.5" />
                     </button>
-                    <span className="text-sm font-bold text-white tabular-nums">
+                    <span className="text-sm font-bold text-foreground tabular-nums">
                       {item.quantity}
                     </span>
                     <button
-                      className="size-8 flex items-center justify-center hover:bg-white/10 transition-colors duration-200 cursor-pointer"
+                      className="size-8 flex items-center justify-center hover:bg-muted transition-colors duration-200 cursor-pointer"
                       style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
                       onClick={() =>
                         cart.updateQuantity(item.cartItemId, item.quantity + 1)
@@ -122,12 +122,12 @@ const CartContents = ({
           </div>
 
           {/* Bottom section */}
-          <div className="border-t border-white/10 p-4 pb-6 sm:pb-4 space-y-4 shrink-0">
+          <div className="border-t border-border p-4 pb-6 sm:pb-4 space-y-4 shrink-0">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-white/50">
+              <span className="text-sm text-muted-foreground">
                 {t("subtotal")}
               </span>
-              <span className="text-lg font-bold text-white tabular-nums">
+              <span className="text-lg font-bold text-foreground tabular-nums">
                 {formatPrice(cart.subtotal())}
               </span>
             </div>
@@ -203,35 +203,35 @@ export const CartSheet = ({ open, onOpenChange }: CartSheetProps) => {
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="bg-[#1b1b1f] text-white border-0 p-0 sm:max-w-md sm:max-h-[85vh] overflow-hidden"
+          className="bg-background text-foreground border-border p-0 sm:max-w-md sm:max-h-[85vh] overflow-hidden"
           showCloseButton={false}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-            <DialogTitle className="text-lg font-bold text-white">
+            <DialogTitle className="text-lg font-bold text-foreground">
               {t("title")}
             </DialogTitle>
             <button
               onClick={() => onOpenChange(false)}
-              className="size-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors duration-200 cursor-pointer"
+              className="size-8 flex items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition-colors duration-200 cursor-pointer"
             >
-              <X className="size-4 text-white" />
+              <X className="size-4 text-foreground" />
             </button>
           </div>
 
           {/* Address picker */}
           <button
             onClick={() => setAddressOpen(true)}
-            className="mx-4 mb-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors duration-200 cursor-pointer"
+            className="mx-4 mb-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors duration-200 cursor-pointer"
           >
-            <Home className="size-4 shrink-0 text-white/60" />
+            <Home className="size-4 shrink-0 text-muted-foreground" />
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-semibold text-white truncate">{addressLabel}</p>
+              <p className="text-sm font-semibold text-foreground truncate">{addressLabel}</p>
               {addressStreet && (
-                <p className="text-xs text-white/50 truncate">{addressStreet}</p>
+                <p className="text-xs text-muted-foreground truncate">{addressStreet}</p>
               )}
             </div>
-            <ChevronDown className="size-3.5 shrink-0 text-white/40" />
+            <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
           </button>
 
           <CartContents

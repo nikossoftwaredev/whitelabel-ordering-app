@@ -29,18 +29,31 @@ export function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [tenantMeta, setTenantMeta] = useState<TenantMeta | null>(null);
   const [visible, setVisible] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    const isInstalled =
+    const installed =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true;
 
-    if (isInstalled) return;
+    // If running inside the PWA, never show the prompt
+    if (installed) return;
 
     // Only show on mobile/tablet — not desktop
     const isMobileOrTablet = /android|iphone|ipad|ipod|mobile|tablet/i.test(navigator.userAgent) ||
       (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
     if (!isMobileOrTablet) return;
+
+    // Check if the PWA is installed (via getInstalledRelatedApps or display-mode media query listener)
+    // On Android Chrome, navigator.getInstalledRelatedApps() can detect installed PWAs
+    if ("getInstalledRelatedApps" in navigator) {
+      (navigator as unknown as { getInstalledRelatedApps(): Promise<unknown[]> })
+        .getInstalledRelatedApps()
+        .then((apps) => {
+          if (apps.length > 0) setIsInstalled(true);
+        })
+        .catch(() => {});
+    }
 
     // Show on first load if not dismissed
     if (!sessionStorage.getItem(DISMISSED_KEY)) {
@@ -93,6 +106,12 @@ export function PwaInstallPrompt() {
     }
   };
 
+  const handleOpenInApp = () => {
+    // Reload the current page — the OS will open the installed PWA if it matches the scope
+    window.location.reload();
+    dismiss();
+  };
+
   const dismiss = () => {
     sessionStorage.setItem(DISMISSED_KEY, "1");
     setVisible(false);
@@ -105,7 +124,7 @@ export function PwaInstallPrompt() {
   const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
+    <div className="fixed inset-0 z-60 flex items-end justify-center pointer-events-none">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto"
@@ -136,16 +155,23 @@ export function PwaInstallPrompt() {
 
           <div className="space-y-1">
             <h2 className="text-xl font-bold">{appName}</h2>
-            <p className="text-sm text-muted-foreground">{t("getFullExperience")}</p>
+            <p className="text-sm text-muted-foreground">
+              {isInstalled ? t("appInstalled") : t("getFullExperience")}
+            </p>
           </div>
 
-          {/* Action area — adapts per platform */}
-          {deferredPrompt && (
+          {/* Action area — adapts per state */}
+          {isInstalled && (
+            <Button className="w-full rounded-xl h-12 text-base font-semibold" onClick={handleOpenInApp}>
+              {t("openInApp")}
+            </Button>
+          )}
+          {!isInstalled && deferredPrompt && (
             <Button className="w-full rounded-xl h-12 text-base font-semibold" onClick={handleInstall}>
               {t("addToHomeScreen")}
             </Button>
           )}
-          {!deferredPrompt && (
+          {!isInstalled && !deferredPrompt && (
             <div className="w-full rounded-xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground text-left">
               {isIos ? t("iosTip") : t("androidTip")}
             </div>

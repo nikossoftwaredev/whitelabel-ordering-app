@@ -628,22 +628,22 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         )}
       </div>
 
-      {/* Desktop: dark bar */}
-      <div className="hidden sm:block bg-[#1b1b1f] text-white">
+      {/* Desktop: info bar */}
+      <div className="hidden sm:block bg-muted/50 border-b border-border">
         <div className="max-w-2xl mx-auto flex items-center gap-3 px-4 py-2.5 overflow-x-auto scrollbar-hide text-[13px]">
           {prepTime && (
-            <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1.5 shrink-0">
-              <Bike className="size-3.5" />
+            <div className="flex items-center gap-1.5 bg-background rounded-full px-3 py-1.5 shrink-0 border border-border">
+              <Bike className="size-3.5 text-muted-foreground" />
               <span className="font-medium">Delivery {prepTime}-{prepTime + 10} min</span>
             </div>
           )}
           {prepTime && (
-            <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1.5 shrink-0">
-              <Package className="size-3.5" />
+            <div className="flex items-center gap-1.5 bg-background rounded-full px-3 py-1.5 shrink-0 border border-border">
+              <Package className="size-3.5 text-muted-foreground" />
               <span className="font-medium">Pickup {Math.max(5, prepTime - 10)}-{prepTime} min</span>
             </div>
           )}
-          <button className="flex items-center gap-1.5 shrink-0 text-white/60 hover:text-white/80 transition-colors duration-200 cursor-pointer">
+          <button className="flex items-center gap-1.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer">
             <Info className="size-3.5" />
             <span>Restaurant details</span>
           </button>

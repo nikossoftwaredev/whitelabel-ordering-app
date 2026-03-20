@@ -39,7 +39,8 @@
     "or": "ή",
     "email": "Email",
     "emailPlaceholder": "you@example.com",
-    "sendMagicLink": "Αποστολή magic link"
+    "sendMagicLink": "Αποστολή magic link",
+    "googlePwaNote": "Η σύνδεση Google μπορεί να ανοίξει στον browser"
   },
   "AuthDialog": {
     "title": "Δημιουργία λογαριασμού ή σύνδεση",
@@ -196,7 +197,9 @@
   },
   "Pwa": {
     "getFullExperience": "Αποκτήστε την πλήρη εμπειρία — εγκαταστήστε την εφαρμογή",
+    "appInstalled": "Έχετε ήδη εγκαταστήσει την εφαρμογή",
     "addToHomeScreen": "Προσθήκη στην αρχική οθόνη",
+    "openInApp": "Άνοιγμα στην εφαρμογή",
     "iosTip": "Πατήστε το κουμπί Κοινοποίηση στο Safari, μετά πατήστε Προσθήκη στην αρχική οθόνη.",
     "androidTip": "Ανοίξτε αυτή τη σελίδα στο Chrome ή Safari στο τηλέφωνό σας και πατήστε Προσθήκη στην αρχική οθόνη.",
     "keepUsingWeb": "Συνέχεια μέσω web"

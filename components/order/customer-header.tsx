@@ -52,14 +52,20 @@ export const CustomerHeader = () => {
       : selectedAddress.street;
   }
 
+  // When over hero (not scrolled): white text on transparent bg
+  // When scrolled: theme-aware bg + text
+  const headerClasses = scrolled
+    ? "bg-background/95 backdrop-blur-md shadow-lg text-foreground"
+    : "bg-transparent text-white";
+
+  const subtleTextClass = scrolled ? "text-muted-foreground" : "text-white/60";
+  const hoverBgClass = scrolled ? "hover:bg-muted" : "hover:bg-white/10";
+  const iconDimClass = scrolled ? "text-muted-foreground" : "text-white/50";
+
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 text-white transition-all duration-300 ${
-          scrolled
-            ? "bg-[#1b1b1f]/95 backdrop-blur-md shadow-lg"
-            : "bg-transparent"
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${headerClasses}`}
       >
         <div className="max-w-7xl mx-auto flex items-center h-14 px-3 sm:px-4 gap-1.5 sm:gap-3">
           {/* Store Logo / Name — hidden on mobile (shown in hero) */}
@@ -82,18 +88,18 @@ export const CustomerHeader = () => {
           {/* Address Picker */}
           <button
             onClick={() => setAddressOpen(true)}
-            className="flex items-center gap-1.5 py-1.5 px-2 sm:px-3 rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer shrink min-w-0"
+            className={`flex items-center gap-1.5 py-1.5 px-2 sm:px-3 rounded-lg ${hoverBgClass} transition-colors duration-200 cursor-pointer shrink min-w-0`}
           >
-            <Home className="size-4 shrink-0 text-white/80" />
+            <Home className={`size-4 shrink-0 ${subtleTextClass}`} />
             <span className="text-sm font-semibold truncate drop-shadow-sm max-w-24 sm:max-w-none">
               {addressLabel}
             </span>
             {addressStreet && (
-              <span className="text-sm text-white/60 truncate hidden sm:inline">
+              <span className={`text-sm ${subtleTextClass} truncate hidden sm:inline`}>
                 ({addressStreet})
               </span>
             )}
-            <ChevronDown className="size-3.5 shrink-0 text-white/50" />
+            <ChevronDown className={`size-3.5 shrink-0 ${iconDimClass}`} />
           </button>
 
           {/* Spacer */}
@@ -102,11 +108,15 @@ export const CustomerHeader = () => {
           {/* Search Bar — desktop only */}
           <div className="flex-1 max-w-md hidden sm:block">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/40" />
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 size-4 ${iconDimClass}`} />
               <input
                 type="text"
                 placeholder={`Search in ${tenant.name}...`}
-                className="w-full h-9 pl-9 pr-4 rounded-lg bg-white/15 backdrop-blur-sm text-sm text-white placeholder:text-white/40 border border-white/10 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all duration-200"
+                className={`w-full h-9 pl-9 pr-4 rounded-lg text-sm transition-all duration-200 focus:outline-none focus:ring-1 ${
+                  scrolled
+                    ? "bg-muted placeholder:text-muted-foreground border border-border focus:ring-ring"
+                    : "bg-white/15 backdrop-blur-sm placeholder:text-white/40 border border-white/10 focus:ring-white/30"
+                }`}
               />
             </div>
           </div>
@@ -123,7 +133,7 @@ export const CustomerHeader = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="relative size-9 rounded-lg hover:bg-white/10 text-white"
+              className={`relative size-9 rounded-lg ${hoverBgClass}`}
               onClick={() => setCartOpen(true)}
             >
               <ShoppingCart className="size-5" />
@@ -143,9 +153,6 @@ export const CustomerHeader = () => {
           </div>
         </div>
       </header>
-
-      {/* Spacer so content doesn't hide behind fixed header */}
-      {/* Not needed — hero image starts at top, header floats over it */}
 
       <CartSheet
         open={cartOpen}
