@@ -3,10 +3,14 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   Bike,
+  Clock,
   Info,
   Leaf,
+  Mail,
+  MapPin,
   Minus,
   Package,
+  Phone,
   Plus,
   Search,
   SlidersHorizontal,
@@ -26,6 +30,12 @@ import {
 } from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { queryKeys } from "@/lib/query/keys";
@@ -77,6 +87,13 @@ interface Category {
   products: Product[];
 }
 
+interface OperatingHour {
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
+}
+
 interface MenuData {
   tenant: {
     name: string;
@@ -86,6 +103,10 @@ interface MenuData {
     coverImage: string | null;
     description: string | null;
     prepTimeMinutes: number;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+    operatingHours: OperatingHour[];
   };
   categories: Category[];
 }
@@ -350,8 +371,9 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [editingCartItem, setEditingCartItem] = useState<{ cartItemId: string; quantity: number; modifiers: { modifierOptionId: string; name: string; priceAdjustment: number }[] } | null>(null);
+  const [editingCartItem, setEditingCartItem] = useState<{ cartItemId: string; quantity: number; modifiers: { modifierOptionId: string; name: string; priceAdjustment: number }[]; notes?: string } | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
+  const [storeInfoOpen, setStoreInfoOpen] = useState(false);
 
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -395,7 +417,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
     const cartItems = cart.items.filter((i) => i.productId === product.id);
     if (cartItems.length > 0) {
       const last = cartItems[cartItems.length - 1];
-      setEditingCartItem({ cartItemId: last.cartItemId, quantity: last.quantity, modifiers: last.modifiers });
+      setEditingCartItem({ cartItemId: last.cartItemId, quantity: last.quantity, modifiers: last.modifiers, notes: last.notes });
     } else {
       setEditingCartItem(null);
     }
@@ -405,7 +427,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const openCartItemEdit = useCallback((product: Product, cartItemId: string) => {
     const item = cart.items.find((i) => i.cartItemId === cartItemId);
     if (!item) return;
-    setEditingCartItem({ cartItemId: item.cartItemId, quantity: item.quantity, modifiers: item.modifiers });
+    setEditingCartItem({ cartItemId: item.cartItemId, quantity: item.quantity, modifiers: item.modifiers, notes: item.notes });
     setSelectedProduct(product);
   }, [cart.items]);
 
@@ -646,7 +668,10 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
               <span className="font-medium">{t("pickup", { min: Math.max(5, prepTime - 10), max: prepTime })}</span>
             </div>
           )}
-          <button className="flex items-center gap-1.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer">
+          <button
+            onClick={() => setStoreInfoOpen(true)}
+            className="flex items-center gap-1.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
+          >
             <Info className="size-3.5" />
             <span>{t("restaurantDetails")}</span>
           </button>
@@ -807,6 +832,79 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
 
       <ProductDetailSheet product={selectedProduct} editingCartItem={editingCartItem} onClose={() => { setSelectedProduct(null); setEditingCartItem(null); }} />
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} tenantSlug={tenantSlug} />
+
+      {/* ═══ STORE INFO SHEET ═══ */}
+      <Sheet open={storeInfoOpen} onOpenChange={setStoreInfoOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
+          <SheetHeader className="text-left">
+            <SheetTitle className="text-lg">{storeName}</SheetTitle>
+            {data?.tenant.description && (
+              <p className="text-sm text-muted-foreground">{data.tenant.description}</p>
+            )}
+          </SheetHeader>
+
+          <div className="flex flex-col gap-5 mt-5 pb-4">
+            {/* Operating Hours */}
+            {data?.tenant.operatingHours && data.tenant.operatingHours.length > 0 && (
+              <div className="rounded-xl border bg-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="size-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{t("hours")}</span>
+                </div>
+                <div className="space-y-1.5">
+                  {data.tenant.operatingHours.map((h) => {
+                    const today = new Date().getDay();
+                    const isToday = h.dayOfWeek === today;
+                    return (
+                      <div
+                        key={h.dayOfWeek}
+                        className={`flex items-center justify-between text-sm px-2 py-1 rounded-md ${
+                          isToday ? "bg-primary/5 font-medium" : ""
+                        }`}
+                      >
+                        <span>{t(`day${h.dayOfWeek}`)}</span>
+                        <span className={h.isClosed ? "text-destructive" : "text-muted-foreground"}>
+                          {h.isClosed ? t("closed") : `${h.openTime} – ${h.closeTime}`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Contact & Location */}
+            {(data?.tenant.phone || data?.tenant.email || data?.tenant.address) && (
+              <div className="rounded-xl border bg-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Store className="size-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{t("contactInfo")}</span>
+                </div>
+                <div className="space-y-3">
+                  {data?.tenant.phone && (
+                    <a href={`tel:${data.tenant.phone}`} className="flex items-center gap-3 text-sm hover:text-primary transition-colors">
+                      <Phone className="size-4 text-muted-foreground shrink-0" />
+                      <span>{data.tenant.phone}</span>
+                    </a>
+                  )}
+                  {data?.tenant.email && (
+                    <a href={`mailto:${data.tenant.email}`} className="flex items-center gap-3 text-sm hover:text-primary transition-colors">
+                      <Mail className="size-4 text-muted-foreground shrink-0" />
+                      <span>{data.tenant.email}</span>
+                    </a>
+                  )}
+                  {data?.tenant.address && (
+                    <div className="flex items-start gap-3 text-sm">
+                      <MapPin className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <span>{data.tenant.address}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

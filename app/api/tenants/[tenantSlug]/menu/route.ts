@@ -17,8 +17,15 @@ export async function GET(
       isPaused: true,
       prepTimeMinutes: true,
       currency: true,
+      phone: true,
+      email: true,
+      address: true,
       config: {
         select: { logo: true, coverImage: true, description: true },
+      },
+      operatingHours: {
+        orderBy: { dayOfWeek: "asc" },
+        select: { dayOfWeek: true, openTime: true, closeTime: true, isClosed: true },
       },
     },
   });
@@ -104,6 +111,10 @@ export async function GET(
       logo: tenant.config?.logo,
       coverImage: tenant.config?.coverImage,
       description: tenant.config?.description,
+      phone: tenant.phone,
+      email: tenant.email,
+      address: tenant.address,
+      operatingHours: tenant.operatingHours,
     },
     categories: formattedCategories,
   });

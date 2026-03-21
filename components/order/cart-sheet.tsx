@@ -5,7 +5,17 @@ import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +48,7 @@ const CartContents = ({
   const { data: session } = useSession();
   const formatPrice = useFormatPrice();
   const { isClosed: storeClosed } = useStoreStatus();
+  const [removeConfirm, setRemoveConfirm] = useState<{ cartItemId: string; name: string } | null>(null);
 
   return (
     <>
@@ -97,9 +108,13 @@ const CartContents = ({
                     <button
                       className="size-8 flex items-center justify-center hover:bg-muted transition-colors duration-200 cursor-pointer"
                       style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                      onClick={() =>
-                        cart.updateQuantity(item.cartItemId, item.quantity - 1)
-                      }
+                      onClick={() => {
+                        if (item.quantity <= 1) {
+                          setRemoveConfirm({ cartItemId: item.cartItemId, name: item.productName });
+                        } else {
+                          cart.updateQuantity(item.cartItemId, item.quantity - 1);
+                        }
+                      }}
                     >
                       <Minus className="size-3.5" />
                     </button>
@@ -174,6 +189,30 @@ const CartContents = ({
           </div>
         </>
       )}
+
+      {/* Remove item confirmation */}
+      <AlertDialog open={!!removeConfirm} onOpenChange={(o) => { if (!o) setRemoveConfirm(null); }}>
+        <AlertDialogContent className="max-w-xs">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("removeTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("removeDescription", { item: removeConfirm?.name ?? "" })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row justify-center gap-2 sm:justify-center">
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => {
+                if (removeConfirm) cart.removeItem(removeConfirm.cartItemId);
+                setRemoveConfirm(null);
+              }}
+            >
+              {t("remove")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

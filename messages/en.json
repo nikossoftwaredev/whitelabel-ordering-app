@@ -52,7 +52,11 @@
     "subtotal": "Subtotal",
     "proceedToCheckout": "Proceed to checkout",
     "addIngredients": "Add ingredients: {items}",
-    "storeClosed": "Store is closed"
+    "storeClosed": "Store is closed",
+    "removeTitle": "Remove item?",
+    "removeDescription": "Remove {item} from your cart?",
+    "remove": "Remove",
+    "cancel": "Cancel"
   },
   "Checkout": {
     "title": "Checkout",
@@ -289,7 +293,17 @@
     "vegan": "Vegan",
     "vegetarian": "Vegetarian",
     "glutenFree": "Gluten Free",
-    "filters": "Filters"
+    "filters": "Filters",
+    "hours": "Opening Hours",
+    "contactInfo": "Contact & Location",
+    "closed": "Closed",
+    "day0": "Sunday",
+    "day1": "Monday",
+    "day2": "Tuesday",
+    "day3": "Wednesday",
+    "day4": "Thursday",
+    "day5": "Friday",
+    "day6": "Saturday"
   },
   "Product": {
     "vegan": "Vegan",
@@ -306,7 +320,10 @@
     "editingNote": "You're currently editing your existing selection.",
     "addAnother": "Add another with different options",
     "updateOrder": "Update order",
-    "addToOrder": "Add to order"
+    "addToOrder": "Add to order",
+    "addNote": "Add a note",
+    "orderNote": "Order note",
+    "notePlaceholder": "e.g. No onions, extra sauce..."
   },
   "Pwa": {
     "getFullExperience": "Get the full experience — install the app",

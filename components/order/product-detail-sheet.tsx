@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, Square, SquareCheck, Store, X } from "lucide-react";
+import { MessageSquare, Minus, Plus, Square, SquareCheck, Store, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
@@ -59,6 +59,7 @@ interface CartItemEdit {
   cartItemId: string;
   quantity: number;
   modifiers: { modifierOptionId: string; name: string; priceAdjustment: number }[];
+  notes?: string;
 }
 
 interface ProductDetailSheetProps {
@@ -80,12 +81,16 @@ export const ProductDetailSheet = ({
     Map<string, Set<string>>
   >(new Map());
   const [isEditing, setIsEditing] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [showNotes, setShowNotes] = useState(false);
 
   useEffect(() => {
     if (product) {
       if (editingCartItem) {
         setIsEditing(true);
         setQuantity(editingCartItem.quantity);
+        setNotes(editingCartItem.notes || "");
+        setShowNotes(!!editingCartItem.notes);
         const modMap = new Map<string, Set<string>>();
         for (const group of product.modifierGroups) {
           const selectedIds = new Set(
@@ -99,6 +104,8 @@ export const ProductDetailSheet = ({
       } else {
         setIsEditing(false);
         setQuantity(1);
+        setNotes("");
+        setShowNotes(false);
         const defaults = new Map<string, Set<string>>();
         for (const group of product.modifierGroups) {
           const defaultIds = new Set(
@@ -163,7 +170,7 @@ export const ProductDetailSheet = ({
     const modifiers = buildModifiers();
 
     if (isEditing && editingCartItem) {
-      cart.updateItem(editingCartItem.cartItemId, { quantity, modifiers });
+      cart.updateItem(editingCartItem.cartItemId, { quantity, modifiers, notes: notes.trim() });
     } else {
       cart.addItem({
         productId: product.id,
@@ -172,7 +179,7 @@ export const ProductDetailSheet = ({
         basePrice: product.price,
         quantity,
         modifiers,
-        notes: "",
+        notes: notes.trim(),
       });
     }
 
@@ -182,6 +189,8 @@ export const ProductDetailSheet = ({
   const switchToAddNew = () => {
     setIsEditing(false);
     setQuantity(1);
+    setNotes("");
+    setShowNotes(false);
     const defaults = new Map<string, Set<string>>();
     for (const group of product.modifierGroups) {
       const defaultIds = new Set(
@@ -201,8 +210,16 @@ export const ProductDetailSheet = ({
         {/* Hidden accessible title */}
         <DialogTitle className="sr-only">{product.name}</DialogTitle>
 
-        <div className="overflow-y-auto flex-1">
-          {/* Hero image with close button */}
+        {/* Close button — always visible, above scroll */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 size-9 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 transition-colors duration-200 cursor-pointer"
+        >
+          <X className="size-5 text-white" />
+        </button>
+
+        <div className="overflow-y-auto flex-1 scrollbar-hide">
+          {/* Hero image */}
           <div className="relative">
             {product.image ? (
               <div className="w-full aspect-4/3 bg-muted overflow-hidden">
@@ -217,12 +234,6 @@ export const ProductDetailSheet = ({
                 <Store className="size-16 text-muted-foreground/30" />
               </div>
             )}
-            <button
-              onClick={onClose}
-              className="absolute top-3 right-3 size-9 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 transition-colors duration-200 cursor-pointer"
-            >
-              <X className="size-5 text-white" />
-            </button>
           </div>
 
           {/* Product info */}
@@ -334,6 +345,33 @@ export const ProductDetailSheet = ({
               })}
             </div>
           )}
+
+          {/* Order notes */}
+          <div className="px-5 pb-5">
+            {!showNotes ? (
+              <button
+                onClick={() => setShowNotes(true)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
+              >
+                <MessageSquare className="size-4" />
+                <span>{t("addNote")}</span>
+              </button>
+            ) : (
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">
+                  {t("orderNote")}
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={t("notePlaceholder")}
+                  maxLength={200}
+                  rows={2}
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Bottom bar ── */}
