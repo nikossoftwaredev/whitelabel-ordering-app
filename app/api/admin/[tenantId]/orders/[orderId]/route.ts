@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { isAuthResult,requireRole } from "@/lib/auth/require-role";
 import { prisma } from "@/lib/db";
+import { sendOrderStatusUpdate } from "@/lib/email/send";
 import { orderEvents } from "@/lib/events/order-events";
 import type { OrderStatus } from "@/lib/general/status-config";
 
@@ -129,6 +130,15 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     total: updated.total,
     customerName: updated.customerName,
   });
+
+  // Send status email (fire-and-forget)
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    include: { config: { select: { primaryColor: true } } },
+  });
+  if (tenant) {
+    sendOrderStatusUpdate(updated, status, tenant).catch(() => {});
+  }
 
   return NextResponse.json(updated);
 }

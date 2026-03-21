@@ -44,7 +44,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     };
   }
 
-  const [customers, total] = await Promise.all([
+  const [customers, total, tenantConfig] = await Promise.all([
     prisma.customer.findMany({
       where,
       include: {
@@ -68,34 +68,53 @@ export async function GET(request: NextRequest, { params }: Params) {
           orderBy: { createdAt: "desc" },
           take: 5,
         },
+        _count: {
+          select: { loyaltyRedemptions: true },
+        },
       },
       orderBy,
       skip: offset,
       take: limit,
     }),
     prisma.customer.count({ where }),
+    prisma.tenantConfig.findUnique({
+      where: { tenantId },
+      select: { loyaltyEnabled: true, loyaltyRequiredOrders: true, loyaltyRewardAmount: true },
+    }),
   ]);
 
   // Transform to a flat response
-  const data = customers.map((c) => ({
-    id: c.id,
-    name: c.user.name,
-    email: c.user.email,
-    phone: c.user.phone,
-    image: c.user.image,
-    totalSpent: c.totalSpent,
-    orderCount: c.orderCount,
-    createdAt: c.createdAt.toISOString(),
-    updatedAt: c.updatedAt.toISOString(),
-    lastOrderDate: c.orders[0]?.createdAt.toISOString() || null,
-    recentOrders: c.orders.map((o) => ({
-      id: o.id,
-      orderNumber: o.orderNumber,
-      total: o.total,
-      status: o.status,
-      createdAt: o.createdAt.toISOString(),
-    })),
-  }));
+  const loyaltyEnabled = tenantConfig?.loyaltyEnabled ?? false;
+  const loyaltyRequired = tenantConfig?.loyaltyRequiredOrders ?? 10;
+
+  const data = customers.map((c) => {
+    const redemptions = c._count.loyaltyRedemptions;
+    const loyaltyProgress = loyaltyEnabled
+      ? Math.max(0, c.orderCount - redemptions * loyaltyRequired)
+      : undefined;
+
+    return {
+      id: c.id,
+      name: c.user.name,
+      email: c.user.email,
+      phone: c.user.phone,
+      image: c.user.image,
+      totalSpent: c.totalSpent,
+      orderCount: c.orderCount,
+      createdAt: c.createdAt.toISOString(),
+      updatedAt: c.updatedAt.toISOString(),
+      lastOrderDate: c.orders[0]?.createdAt.toISOString() || null,
+      loyaltyProgress,
+      loyaltyRedemptions: redemptions,
+      recentOrders: c.orders.map((o) => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        total: o.total,
+        status: o.status,
+        createdAt: o.createdAt.toISOString(),
+      })),
+    };
+  });
 
   return NextResponse.json({
     customers: data,
@@ -103,5 +122,6 @@ export async function GET(request: NextRequest, { params }: Params) {
     page,
     limit,
     totalPages: Math.ceil(total / limit),
+    loyalty: loyaltyEnabled ? { required: loyaltyRequired, rewardAmount: tenantConfig!.loyaltyRewardAmount } : null,
   });
 }

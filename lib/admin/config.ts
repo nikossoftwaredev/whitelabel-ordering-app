@@ -1,4 +1,5 @@
 import {
+  ChefHat,
   FileText,
   LayoutDashboard,
   LucideIcon,
@@ -6,6 +7,7 @@ import {
   Settings,
   Shield,
   ShoppingBag,
+  Tag,
   Truck,
   Users,
   UserSearch,
@@ -25,12 +27,16 @@ export const adminNavItems: Record<string, AdminNavItem[]> = {
   ],
   Operations: [
     { label: "Orders", href: "orders", icon: ShoppingBag },
+    { label: "Kitchen", href: "kitchen", icon: ChefHat },
     { label: "Menu", href: "menu", icon: UtensilsCrossed },
     { label: "Delivery", href: "delivery", icon: Truck },
   ],
   People: [
     { label: "Customers", href: "customers", icon: UserSearch },
     { label: "Staff", href: "staff", icon: Users },
+  ],
+  Marketing: [
+    { label: "Promo Codes", href: "promo-codes", icon: Tag },
   ],
   Finance: [
     { label: "Invoices", href: "invoices", icon: FileText },

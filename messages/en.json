@@ -62,6 +62,12 @@
     "readyIn": "Ready in ~{minutes} min",
     "when": "When?",
     "standard": "Standard",
+    "scheduleForLater": "Schedule for later",
+    "scheduledFor": "Scheduled for",
+    "selectTime": "Select time",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "scheduleTooSoon": "Please select a time at least 30 minutes from now",
     "orderItems": "Order items",
     "addMore": "+ Add more",
     "yourDetails": "Your details",
@@ -79,8 +85,14 @@
     "payAtPickup": "Pay at pickup",
     "card": "Card",
     "cardBrands": "Visa, Mastercard, etc.",
+    "tip": "Tip",
+    "tipDescription": "Show your appreciation to the team",
+    "noTip": "No tip",
+    "customTip": "Custom",
+    "tipCustomPlaceholder": "Enter amount",
     "summary": "Summary",
     "itemSubtotal": "Item subtotal",
+    "tipAmount": "Tip",
     "deliveryFee": "Delivery fee",
     "tbd": "TBD",
     "placingOrder": "Placing order...",
@@ -91,6 +103,11 @@
     "backToMenu": "Back to Menu",
     "signInToContinue": "Sign in to continue",
     "signInDesc": "Sign in to place your order. Your cart will be saved.",
+    "completeProfile": "Almost there!",
+    "completeProfileDesc": "We need your name and phone number to process your order.",
+    "fullNameLabel": "Full name",
+    "phoneLabel": "Phone number",
+    "continueToCheckout": "Continue to checkout",
     "orderPlacedSuccess": "Order placed successfully!",
     "enterName": "Please enter your name",
     "enterPhone": "Please enter your phone number",
@@ -103,7 +120,18 @@
     "tapToSelectAddress": "Tap to select a delivery address",
     "deliveryAddress": "Delivery address",
     "change": "Change",
-    "select": "Select"
+    "select": "Select",
+    "promoCode": "Promo code",
+    "promoCodePlaceholder": "Enter promo code",
+    "promoApply": "Apply",
+    "discount": "Discount",
+    "loyaltyReward": "Loyalty Reward",
+    "loyaltyUseReward": "Use your reward",
+    "loyaltyApplied": "Reward applied!",
+    "loyaltyRewardValue": "Get {amount} off your order",
+    "loyaltyProgress": "Your progress",
+    "loyaltyOrdersLeft": "{count} more orders to earn {amount} off",
+    "loyaltyExclusive": "Cannot combine with promo code"
   },
   "OrderConfirmation": {
     "orderDeclined": "Order {number} Declined",
@@ -130,7 +158,8 @@
     "cancelSuccess": "Order cancelled successfully.",
     "cancelError": "Failed to cancel order. Please try again.",
     "orderCancelled": "Order {number} Cancelled",
-    "cancelledDesc": "Your order has been cancelled."
+    "cancelledDesc": "Your order has been cancelled.",
+    "scheduledForTime": "Scheduled for {time}"
   },
   "ActiveOrderBanner": {
     "statusPlaced": "Placed",
@@ -185,6 +214,26 @@
     "save": "Save",
     "saving": "Saving..."
   },
+  "Analytics": {
+    "title": "Analytics",
+    "revenue7Days": "Revenue (Last 7 Days)",
+    "orders7Days": "Orders (Last 7 Days)",
+    "popularProducts": "Top Products",
+    "orderTypeBreakdown": "Order Types",
+    "peakHours": "Peak Hours (Today)",
+    "noData": "No data available"
+  },
+  "Kitchen": {
+    "title": "Kitchen Display",
+    "newOrders": "New Orders",
+    "preparing": "Preparing",
+    "readyForPickup": "Ready",
+    "noOrders": "No orders",
+    "tapToAccept": "Accept Order",
+    "tapToPrepare": "Start Preparing",
+    "tapToReady": "Mark Ready",
+    "tapToComplete": "Complete"
+  },
   "LocationPrompt": {
     "title": "Tell us where you are",
     "description": "Help us confirm availability and delivery fees.",
@@ -224,6 +273,7 @@
     "locationUnavailable": "Location information is unavailable.",
     "locationError": "Could not determine your location.",
     "saveFailed": "Failed to save address",
+    "deleteFailed": "Failed to delete address",
     "fetchFailed": "Failed to fetch addresses"
   },
   "Menu": {

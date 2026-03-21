@@ -62,6 +62,12 @@
     "readyIn": "Έτοιμο σε ~{minutes} λεπτά",
     "when": "Πότε;",
     "standard": "Κανονικά",
+    "scheduleForLater": "Προγραμματισμός",
+    "scheduledFor": "Προγραμματισμένο για",
+    "selectTime": "Επιλέξτε ώρα",
+    "today": "Σήμερα",
+    "tomorrow": "Αύριο",
+    "scheduleTooSoon": "Επιλέξτε ώρα τουλάχιστον 30 λεπτά από τώρα",
     "orderItems": "Προϊόντα παραγγελίας",
     "addMore": "+ Προσθήκη",
     "yourDetails": "Στοιχεία σας",
@@ -79,8 +85,14 @@
     "payAtPickup": "Πληρωμή κατά την παραλαβή",
     "card": "Κάρτα",
     "cardBrands": "Visa, Mastercard, κ.λπ.",
+    "tip": "Φιλοδώρημα",
+    "tipDescription": "Δείξτε την εκτίμησή σας στην ομάδα",
+    "noTip": "Χωρίς",
+    "customTip": "Άλλο",
+    "tipCustomPlaceholder": "Εισάγετε ποσό",
     "summary": "Σύνοψη",
     "itemSubtotal": "Υποσύνολο προϊόντων",
+    "tipAmount": "Φιλοδώρημα",
     "deliveryFee": "Κόστος διανομής",
     "tbd": "ΥΠ",
     "placingOrder": "Υποβολή παραγγελίας...",
@@ -91,6 +103,11 @@
     "backToMenu": "Πίσω στο μενού",
     "signInToContinue": "Συνδεθείτε για να συνεχίσετε",
     "signInDesc": "Συνδεθείτε για να υποβάλετε παραγγελία. Το καλάθι σας θα αποθηκευτεί.",
+    "completeProfile": "Σχεδόν έτοιμο!",
+    "completeProfileDesc": "Χρειαζόμαστε το όνομα και το τηλέφωνό σας για να επεξεργαστούμε την παραγγελία σας.",
+    "fullNameLabel": "Ονοματεπώνυμο",
+    "phoneLabel": "Τηλέφωνο",
+    "continueToCheckout": "Συνέχεια στην παραγγελία",
     "orderPlacedSuccess": "Η παραγγελία υποβλήθηκε επιτυχώς!",
     "enterName": "Παρακαλώ εισάγετε το όνομά σας",
     "enterPhone": "Παρακαλώ εισάγετε τον αριθμό τηλεφώνου σας",
@@ -103,7 +120,18 @@
     "tapToSelectAddress": "Πατήστε για επιλογή διεύθυνσης παράδοσης",
     "deliveryAddress": "Διεύθυνση παράδοσης",
     "change": "Αλλαγή",
-    "select": "Επιλογή"
+    "select": "Επιλογή",
+    "promoCode": "Κωδικός προσφοράς",
+    "promoCodePlaceholder": "Εισαγωγή κωδικού",
+    "promoApply": "Εφαρμογή",
+    "discount": "Έκπτωση",
+    "loyaltyReward": "Επιβράβευση Πιστότητας",
+    "loyaltyUseReward": "Χρήση επιβράβευσης",
+    "loyaltyApplied": "Επιβράβευση εφαρμόστηκε!",
+    "loyaltyRewardValue": "Κερδίστε {amount} έκπτωση",
+    "loyaltyProgress": "Η πρόοδός σας",
+    "loyaltyOrdersLeft": "Ακόμα {count} παραγγελίες για {amount} έκπτωση",
+    "loyaltyExclusive": "Δεν συνδυάζεται με κωδικό προσφοράς"
   },
   "OrderConfirmation": {
     "orderDeclined": "Παραγγελία {number} Απορρίφθηκε",
@@ -130,7 +158,8 @@
     "cancelSuccess": "Η παραγγελία ακυρώθηκε επιτυχώς.",
     "cancelError": "Αποτυχία ακύρωσης παραγγελίας. Παρακαλώ δοκιμάστε ξανά.",
     "orderCancelled": "Παραγγελία {number} Ακυρώθηκε",
-    "cancelledDesc": "Η παραγγελία σας έχει ακυρωθεί."
+    "cancelledDesc": "Η παραγγελία σας έχει ακυρωθεί.",
+    "scheduledForTime": "Προγραμματισμένη για {time}"
   },
   "ActiveOrderBanner": {
     "statusPlaced": "Υποβλήθηκε",
@@ -185,6 +214,26 @@
     "save": "Αποθήκευση",
     "saving": "Αποθήκευση..."
   },
+  "Analytics": {
+    "title": "Αναλυτικά",
+    "revenue7Days": "Έσοδα (Τελευταίες 7 Ημέρες)",
+    "orders7Days": "Παραγγελίες (Τελευταίες 7 Ημέρες)",
+    "popularProducts": "Δημοφιλή Προϊόντα",
+    "orderTypeBreakdown": "Τύποι Παραγγελιών",
+    "peakHours": "Ώρες Αιχμής (Σήμερα)",
+    "noData": "Δεν υπάρχουν δεδομένα"
+  },
+  "Kitchen": {
+    "title": "Οθόνη Κουζίνας",
+    "newOrders": "Νέες Παραγγελίες",
+    "preparing": "Σε Προετοιμασία",
+    "readyForPickup": "Έτοιμες",
+    "noOrders": "Δεν υπάρχουν παραγγελίες",
+    "tapToAccept": "Αποδοχή",
+    "tapToPrepare": "Έναρξη Προετοιμασίας",
+    "tapToReady": "Έτοιμη",
+    "tapToComplete": "Ολοκλήρωση"
+  },
   "LocationPrompt": {
     "title": "Πείτε μας πού βρίσκεστε",
     "description": "Βοηθήστε μας να επιβεβαιώσουμε τη διαθεσιμότητα και τα έξοδα διανομής.",
@@ -224,6 +273,7 @@
     "locationUnavailable": "Οι πληροφορίες τοποθεσίας δεν είναι διαθέσιμες.",
     "locationError": "Δεν ήταν δυνατός ο εντοπισμός της τοποθεσίας σας.",
     "saveFailed": "Αποτυχία αποθήκευσης διεύθυνσης",
+    "deleteFailed": "Αποτυχία διαγραφής διεύθυνσης",
     "fetchFailed": "Αποτυχία φόρτωσης διευθύνσεων"
   },
   "Menu": {

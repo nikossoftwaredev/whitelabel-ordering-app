@@ -21,6 +21,10 @@ export const createOrderSchema = z.object({
   notes: z.string().max(1000).optional().default(""),
   paymentMethod: z.enum(["STRIPE", "CASH"]),
   deliveryAddress: z.string().max(500).optional(),
+  tipAmount: z.number().int().min(0).max(100_00).optional().default(0),
+  scheduledFor: z.string().datetime().optional(),
+  promoCode: z.string().max(50).optional(),
+  loyaltyRedeem: z.boolean().optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

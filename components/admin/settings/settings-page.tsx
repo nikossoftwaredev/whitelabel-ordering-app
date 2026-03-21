@@ -28,6 +28,9 @@ interface ConfigData {
   secondaryColor: string;
   accentColor: string;
   currency: string;
+  loyaltyEnabled: boolean;
+  loyaltyRequiredOrders: number;
+  loyaltyRewardAmount: number;
 }
 
 interface TenantSettings {
@@ -110,6 +113,9 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
   const [secondaryColor, setSecondaryColor] = useState("#000000");
   const [accentColor, setAccentColor] = useState("#000000");
   const [currency, setCurrency] = useState("EUR");
+  const [loyaltyEnabled, setLoyaltyEnabled] = useState(false);
+  const [loyaltyRequiredOrders, setLoyaltyRequiredOrders] = useState(10);
+  const [loyaltyRewardAmount, setLoyaltyRewardAmount] = useState("5.00");
 
   const { data: settings, isLoading } = useQuery<TenantSettings>({
     queryKey: queryKeys.settings.all(resolvedTenantId),
@@ -139,6 +145,11 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
       setSecondaryColor(settings.config.secondaryColor || "#000000");
       setAccentColor(settings.config.accentColor || "#000000");
       setCurrency(settings.config.currency || "EUR");
+      setLoyaltyEnabled(settings.config.loyaltyEnabled || false);
+      setLoyaltyRequiredOrders(settings.config.loyaltyRequiredOrders || 10);
+      setLoyaltyRewardAmount(
+        centsToEuros(settings.config.loyaltyRewardAmount || 500)
+      );
     }
 
     if (settings.operatingHours && settings.operatingHours.length > 0) {
@@ -184,6 +195,9 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
             secondaryColor,
             accentColor,
             currency,
+            loyaltyEnabled,
+            loyaltyRequiredOrders,
+            loyaltyRewardAmount: eurosToCents(loyaltyRewardAmount),
           },
           operatingHours,
         }),
@@ -448,6 +462,60 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Loyalty Program */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Loyalty Program</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Enable loyalty program</Label>
+              <p className="text-sm text-muted-foreground">
+                Reward customers after a number of orders
+              </p>
+            </div>
+            <Switch
+              checked={loyaltyEnabled}
+              onCheckedChange={setLoyaltyEnabled}
+            />
+          </div>
+          {loyaltyEnabled && (
+            <>
+              <Separator />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Orders required for reward</Label>
+                  <Input
+                    type="number"
+                    min={2}
+                    max={50}
+                    value={loyaltyRequiredOrders}
+                    onChange={(e) =>
+                      setLoyaltyRequiredOrders(parseInt(e.target.value) || 10)
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Reward amount (EUR)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.50"
+                    value={loyaltyRewardAmount}
+                    onChange={(e) => setLoyaltyRewardAmount(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Customers earn &euro;{loyaltyRewardAmount} off after every{" "}
+                {loyaltyRequiredOrders} completed orders.
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Save Button */}
       <div className="flex justify-end">

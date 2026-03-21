@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   Store,
   Trash2,
+  Type,
   User,
   X,
 } from "lucide-react";
@@ -30,6 +31,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -42,6 +50,7 @@ interface TenantConfig {
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
+  fontFamily: string | null;
   logo: string | null;
 }
 
@@ -73,6 +82,29 @@ interface Tenant {
     orders: number;
   };
 }
+
+const GOOGLE_FONTS = [
+  "Inter",
+  "Open Sans",
+  "Lato",
+  "Montserrat",
+  "Poppins",
+  "Nunito",
+  "Raleway",
+  "Playfair Display",
+  "Merriweather",
+  "Source Sans 3",
+  "DM Sans",
+  "Outfit",
+  "Manrope",
+  "Space Grotesk",
+  "Sora",
+  "Plus Jakarta Sans",
+  "Cabin",
+  "Quicksand",
+  "Mulish",
+  "Rubik",
+];
 
 // ─── API helpers ────────────────────────────────────────────
 
@@ -270,6 +302,7 @@ interface TenantFormState {
   name: string;
   slug: string;
   ownerEmail: string;
+  fontFamily: string;
   domains: string[];
   domainInput: string;
   domainError: string;
@@ -279,6 +312,7 @@ const EMPTY_FORM: TenantFormState = {
   name: "",
   slug: "",
   ownerEmail: "",
+  fontFamily: "",
   domains: [],
   domainInput: "",
   domainError: "",
@@ -325,6 +359,7 @@ export function TenantManagement() {
       name: tenant.name,
       slug: tenant.slug,
       ownerEmail: tenant.ownerEmail || "",
+      fontFamily: tenant.config?.fontFamily || "",
       domains: tenant.domains?.map((d) => d.domain) || [],
       domainInput: "",
       domainError: "",
@@ -451,7 +486,7 @@ export function TenantManagement() {
 
   function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const { name, slug, domains, ownerEmail } = ef.form;
+    const { name, slug, domains, ownerEmail, fontFamily } = ef.form;
     if (!editTenant || !name.trim() || !slug.trim()) return;
     updateMutation.mutate({
       id: editTenant.id,
@@ -459,6 +494,7 @@ export function TenantManagement() {
       slug: slug.trim(),
       domains,
       ownerEmail: ownerEmail.trim(),
+      fontFamily: fontFamily.trim() || null,
     });
   }
 
@@ -821,6 +857,34 @@ export function TenantManagement() {
                 setDomainError={(e) => ef.updateField("domainError", e)}
                 onAdd={handleAddEditDomain}
               />
+
+              {/* Font */}
+              <Separator />
+              <div className="space-y-3">
+                <SectionHeader icon={Type} title="Custom Font" />
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-font" className="text-xs">Google Font Family</Label>
+                  <Select
+                    value={ef.form.fontFamily || "__default__"}
+                    onValueChange={(v) => ef.updateField("fontFamily", v === "__default__" ? "" : v)}
+                  >
+                    <SelectTrigger id="edit-font">
+                      <SelectValue placeholder="Default (Roboto)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__default__">Default (Roboto)</SelectItem>
+                      {GOOGLE_FONTS.map((font) => (
+                        <SelectItem key={font} value={font}>
+                          {font}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Choose a Google Font for the store&apos;s customer-facing pages.
+                  </p>
+                </div>
+              </div>
 
               {/* Active toggle */}
               {editTenant && (

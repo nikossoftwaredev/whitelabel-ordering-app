@@ -3,10 +3,12 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
+import { sendOrderConfirmation } from "@/lib/email/send";
 import { orderEvents } from "@/lib/events/order-events";
 import { generateOrderNumber } from "@/lib/orders/order-number";
 import { isStoreOpen } from "@/lib/orders/store-hours";
 import { validateCart } from "@/lib/orders/validate-cart";
+import { validatePromoCode } from "@/lib/promo/validate";
 import { createOrderSchema } from "@/lib/validations/order";
 
 export async function POST(
@@ -22,7 +24,17 @@ export async function POST(
 
   const tenant = await prisma.tenant.findUnique({
     where: { slug: tenantSlug, isActive: true },
-    include: { operatingHours: true },
+    include: {
+      operatingHours: true,
+      config: {
+        select: {
+          primaryColor: true,
+          loyaltyEnabled: true,
+          loyaltyRequiredOrders: true,
+          loyaltyRewardAmount: true,
+        },
+      },
+    },
   });
 
   if (!tenant) {
@@ -65,7 +77,23 @@ export async function POST(
     customerEmail,
     orderType,
     deliveryAddress,
+    tipAmount,
+    scheduledFor: scheduledForStr,
+    promoCode: promoCodeStr,
+    loyaltyRedeem,
   } = parsed.data;
+
+  // Parse and validate scheduled time
+  const scheduledFor = scheduledForStr ? new Date(scheduledForStr) : null;
+  if (scheduledFor) {
+    const minScheduleTime = new Date(Date.now() + 30 * 60 * 1000); // at least 30 min ahead
+    if (scheduledFor < minScheduleTime) {
+      return NextResponse.json(
+        { error: "Scheduled time must be at least 30 minutes from now" },
+        { status: 400 }
+      );
+    }
+  }
 
   // Validate cart
   const validation = await validateCart(tenant.id, items);
@@ -74,6 +102,29 @@ export async function POST(
       { error: "Invalid cart", details: validation.errors },
       { status: 400 }
     );
+  }
+
+  // Mutual exclusivity: promo code and loyalty reward
+  if (promoCodeStr && loyaltyRedeem) {
+    return NextResponse.json(
+      { error: "Cannot use both promo code and loyalty reward" },
+      { status: 400 }
+    );
+  }
+
+  // Validate promo code if provided
+  let discount = 0;
+  let promoCodeId: string | null = null;
+  let maxUsesPerUser = 1;
+  let isLoyaltyDiscount = false;
+  if (promoCodeStr) {
+    const result = await validatePromoCode(tenant.id, promoCodeStr, validation.subtotal);
+    if (!result.valid) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+    discount = result.discount;
+    promoCodeId = result.promo.id;
+    maxUsesPerUser = result.promo.maxUsesPerUser;
   }
 
   // Upsert customer record
@@ -91,8 +142,39 @@ export async function POST(
     },
   });
 
+  // Validate loyalty redemption if requested
+  if (loyaltyRedeem && tenant.config?.loyaltyEnabled) {
+    const { loyaltyRequiredOrders, loyaltyRewardAmount } = tenant.config;
+    const redemptionCount = await prisma.loyaltyRedemption.count({
+      where: { customerId: customer.id, tenantId: tenant.id },
+    });
+    const effectiveOrders =
+      customer.orderCount - redemptionCount * loyaltyRequiredOrders;
+    if (effectiveOrders >= loyaltyRequiredOrders) {
+      discount = Math.min(loyaltyRewardAmount, validation.subtotal);
+      isLoyaltyDiscount = true;
+    } else {
+      return NextResponse.json(
+        { error: "Not enough orders for loyalty reward" },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Check per-user promo usage
+  if (promoCodeId) {
+    const userUsages = await prisma.promoCodeUsage.count({
+      where: { promoCodeId, customerId: customer.id },
+    });
+    if (userUsages >= maxUsesPerUser) {
+      return NextResponse.json({ error: "You have already used this promo code" }, { status: 400 });
+    }
+  }
+
   // Generate order number
   const orderNumber = await generateOrderNumber(tenant.id);
+
+  const total = validation.subtotal - discount + tipAmount;
 
   // Create order in transaction
   const order = await prisma.order.create({
@@ -102,9 +184,15 @@ export async function POST(
       orderNumber,
       orderType,
       paymentMethod,
+      scheduledFor,
       deliveryAddress: deliveryAddress || null,
       subtotal: validation.subtotal,
-      total: validation.subtotal, // no discount for now
+      discount,
+      promoCode: isLoyaltyDiscount
+        ? "LOYALTY"
+        : (promoCodeStr?.toUpperCase() ?? null),
+      tipAmount,
+      total,
       customerNote,
       customerName: customerName || session.user.name,
       customerPhone: customerPhone || null,
@@ -131,6 +219,37 @@ export async function POST(
     },
   });
 
+  // Track promo code usage
+  if (promoCodeId && discount > 0) {
+    await prisma.$transaction([
+      prisma.promoCodeUsage.create({
+        data: {
+          promoCodeId,
+          customerId: customer.id,
+          orderId: order.id,
+          discount,
+        },
+      }),
+      prisma.promoCode.update({
+        where: { id: promoCodeId },
+        data: { usesCount: { increment: 1 } },
+      }),
+    ]);
+  }
+
+  // Track loyalty redemption
+  if (isLoyaltyDiscount && discount > 0) {
+    await prisma.loyaltyRedemption.create({
+      data: {
+        tenantId: tenant.id,
+        customerId: customer.id,
+        orderId: order.id,
+        discount,
+        orderCountAtRedemption: customer.orderCount,
+      },
+    });
+  }
+
   // Notify admins via SSE
   orderEvents.emitNewOrder({
     tenantId: tenant.id,
@@ -140,6 +259,9 @@ export async function POST(
     total: order.total,
     customerName: order.customerName,
   });
+
+  // Send confirmation email (fire-and-forget)
+  sendOrderConfirmation(order, tenant).catch(() => {});
 
   // Update customer stats
   await prisma.customer.update({

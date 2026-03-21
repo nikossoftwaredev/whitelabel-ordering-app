@@ -11,6 +11,7 @@ import { getMessages,setRequestLocale } from "next-intl/server";
 import { Providers } from "@/components/providers";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { SwRegister } from "@/components/sw-register";
+import { AddressPreloader } from "@/components/address-preloader";
 import { TenantProvider } from "@/components/tenant-provider";
 import { authOptions } from "@/lib/auth/auth";
 import { routing } from "@/lib/i18n/routing";
@@ -119,6 +120,10 @@ const LocaleLayout = async ({ children, params }: BaseLayoutProps) => {
 
   const session = await getServerSession(authOptions);
   const brandStyles = tenant ? generateBrandStyles(tenant.config) : "";
+  const customFont = tenant?.config?.fontFamily || null;
+  const googleFontUrl = customFont
+    ? `https://fonts.googleapis.com/css2?family=${encodeURIComponent(customFont)}:wght@400;500;600;700&display=swap`
+    : null;
 
   const tenantContextValue = tenant
     ? {
@@ -144,6 +149,13 @@ const LocaleLayout = async ({ children, params }: BaseLayoutProps) => {
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
+        {googleFontUrl && (
+          <>
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            <link rel="stylesheet" href={googleFontUrl} />
+          </>
+        )}
         {brandStyles && <style>{brandStyles}</style>}
         {/* Capture beforeinstallprompt before React hydrates so it's never missed */}
         <script
@@ -158,6 +170,7 @@ const LocaleLayout = async ({ children, params }: BaseLayoutProps) => {
           <PwaInstallPrompt />
           {tenantContextValue ? (
             <TenantProvider value={tenantContextValue}>
+              <AddressPreloader />
               {children}
             </TenantProvider>
           ) : (

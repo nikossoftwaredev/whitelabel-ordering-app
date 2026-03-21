@@ -78,7 +78,8 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     email,
     address,
     ownerEmail,
-  } = body as Record<string, unknown> & { domains?: string[]; ownerEmail?: string };
+    fontFamily,
+  } = body as Record<string, unknown> & { domains?: string[]; ownerEmail?: string; fontFamily?: string | null };
 
   // If slug is changing, check uniqueness
   if (slug) {
@@ -121,6 +122,15 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     } else {
       await clearOwnerRole(tenantId);
     }
+  }
+
+  // Update config fields if provided
+  if (fontFamily !== undefined) {
+    await prisma.tenantConfig.upsert({
+      where: { tenantId },
+      update: { fontFamily: fontFamily || null },
+      create: { tenantId, fontFamily: fontFamily || null },
+    });
   }
 
   const tenant = await prisma.tenant.update({

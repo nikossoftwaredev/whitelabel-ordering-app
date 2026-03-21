@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  CalendarClock,
   Check,
   ChefHat,
   ClipboardList,
@@ -55,6 +56,7 @@ export const OrderConfirmation = () => {
   const tenant = useTenant();
   const [status, setStatus] = useState<OrderStatus>("NEW");
   const [orderType, setOrderType] = useState<"PICKUP" | "DELIVERY" | "DINE_IN">("PICKUP");
+  const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -119,6 +121,7 @@ export const OrderConfirmation = () => {
         const data = JSON.parse(e.data);
         setStatus(data.status);
         if (data.orderType) setOrderType(data.orderType);
+        if (data.scheduledFor) setScheduledFor(data.scheduledFor);
         setConnected(true);
       });
 
@@ -202,9 +205,25 @@ export const OrderConfirmation = () => {
     <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
       {/* Header */}
       <h1 className="text-2xl font-bold mb-1">{t("orderTitle", { number: displayNumber })}</h1>
-      <p className="text-muted-foreground mb-8">
+      <p className="text-muted-foreground mb-4">
         {isCompleted ? t("orderComplete") : t("trackingLive")}
       </p>
+
+      {/* Scheduled badge */}
+      {scheduledFor && (
+        <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-2 mb-6 text-sm font-medium">
+          <CalendarClock className="size-4 shrink-0" />
+          <span>
+            {t("scheduledForTime", {
+              time: new Date(scheduledFor).toLocaleString(undefined, {
+                weekday: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            })}
+          </span>
+        </div>
+      )}
 
       {/* Status stepper */}
       <div className="w-full max-w-md mb-10">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Briefcase,
@@ -12,6 +12,8 @@ import {
   MapPinOff,
   Plus,
   Search,
+  Trash2,
+  X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
@@ -25,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useAddressStore } from "@/lib/stores/address-store";
+import { type Address, useAddressStore } from "@/lib/stores/address-store";
 
 import { AuthDialog } from "./auth-dialog";
 import {
@@ -33,18 +35,6 @@ import {
   getPlaceDetails,
   type PlacePrediction,
 } from "@/server_actions/googleSearchActions";
-
-interface Address {
-  id: string;
-  label: string;
-  street: string;
-  city: string | null;
-  postalCode: string | null;
-  country: string | null;
-  lat: number | null;
-  lng: number | null;
-  isDefault: boolean;
-}
 
 interface AddressManagerSheetProps {
   open: boolean;
@@ -70,22 +60,27 @@ const LABEL_TRANSLATION_KEYS: Record<string, string> = {
   Other: "other",
 };
 
-/* ─────────────── Add Address Dialog ─────────────── */
-function AddAddressDialog({
+type ViewState = "list" | "search" | "form";
+
+export function AddressManagerSheet({
   open,
   onOpenChange,
-  tenantSlug,
-  onCreated,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  tenantSlug: string;
-  onCreated: (addr: Address) => void;
-}) {
+}: AddressManagerSheetProps) {
   const t = useTranslations("Address");
-  const queryClient = useQueryClient();
+  const tenant = useTenant();
+  const { data: session } = useSession();
+  const {
+    addresses,
+    selectedAddress,
+    setSelectedAddress,
+    addAddress,
+    removeAddress,
+  } = useAddressStore();
 
-  const [step, setStep] = useState<"search" | "form">("search");
+  const [view, setView] = useState<ViewState>("list");
+  const [authOpen, setAuthOpen] = useState(false);
+
+  // Add-address form state
   const [newLabel, setNewLabel] = useState<LabelOption>("Home");
   const [newStreet, setNewStreet] = useState("");
   const [newCity, setNewCity] = useState("");
@@ -94,26 +89,31 @@ function AddAddressDialog({
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  // Server-side Google Places autocomplete
+  // Google Places search
   const [query, setQuery] = useState("");
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectingPlace, setSelectingPlace] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Reset to list view when opening
   useEffect(() => {
     if (open) {
-      setStep("search");
-      setNewLabel("Home");
-      setNewStreet("");
-      setNewCity("");
-      setNewLat(null);
-      setNewLng(null);
-      setLocationError(null);
-      setQuery("");
-      setPredictions([]);
+      setView("list");
+      resetForm();
     }
   }, [open]);
+
+  function resetForm() {
+    setNewLabel("Home");
+    setNewStreet("");
+    setNewCity("");
+    setNewLat(null);
+    setNewLng(null);
+    setLocationError(null);
+    setQuery("");
+    setPredictions([]);
+  }
 
   // Debounced search via server action
   useEffect(() => {
@@ -157,7 +157,7 @@ function AddAddressDialog({
     } else {
       setNewStreet(prediction.description);
     }
-    setStep("form");
+    setView("form");
   };
 
   const handleUseCurrentLocation = useCallback(() => {
@@ -193,12 +193,12 @@ function AddAddressDialog({
           );
           setNewLat(latitude);
           setNewLng(longitude);
-          setStep("form");
+          setView("form");
         } catch {
           setNewStreet(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
           setNewLat(latitude);
           setNewLng(longitude);
-          setStep("form");
+          setView("form");
         } finally {
           setLocating(false);
         }
@@ -228,7 +228,7 @@ function AddAddressDialog({
       lat: number | null;
       lng: number | null;
     }) => {
-      const res = await fetch(`/api/tenants/${tenantSlug}/addresses`, {
+      const res = await fetch(`/api/tenants/${tenant.slug}/addresses`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -241,14 +241,30 @@ function AddAddressDialog({
       return (data.address ?? data) as Address;
     },
     onSuccess: (created) => {
-      queryClient.invalidateQueries({
-        queryKey: ["addresses", tenantSlug],
-      });
-      onCreated(created);
-      onOpenChange(false);
+      addAddress(created);
+      setSelectedAddress(created);
+      setView("list");
+      resetForm();
     },
     onError: (error: Error) => {
       toast.error(error.message);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(
+        `/api/tenants/${tenant.slug}/addresses/${id}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error("Failed to delete");
+      return id;
+    },
+    onSuccess: (id) => {
+      removeAddress(id);
+    },
+    onError: () => {
+      toast.error(t("deleteFailed"));
     },
   });
 
@@ -263,119 +279,244 @@ function AddAddressDialog({
     });
   };
 
+  const handleSelectAddress = useCallback(
+    (addr: Address) => {
+      setSelectedAddress(addr);
+      onOpenChange(false);
+    },
+    [setSelectedAddress, onOpenChange]
+  );
+
+  const handleAddAddress = useCallback(() => {
+    if (!session) {
+      setAuthOpen(true);
+    } else {
+      setView("search");
+    }
+  }, [session]);
+
+  const handleBack = () => {
+    if (view === "form") setView("search");
+    else if (view === "search") setView("list");
+    else onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="bg-background text-foreground border-0 p-0 sm:max-w-md sm:max-h-[85vh] overflow-hidden shadow-2xl"
-        showCloseButton={false}
-      >
-        {step === "search" ? (
-          <>
-            {/* Back button */}
-            <div className="px-5 pt-5 shrink-0">
-              <button
-                onClick={() => onOpenChange(false)}
-                className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
-              >
-                <ArrowLeft className="size-5 text-foreground" />
-              </button>
-            </div>
-
-            {/* Title + description */}
-            <div className="px-6 pt-4 pb-2">
-              <DialogTitle className="text-2xl font-bold text-foreground">
-                {t("addNewAddressTitle")}
-              </DialogTitle>
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                {t("addNewAddressDesc")}
-              </p>
-            </div>
-
-            {/* Search input */}
-            <div className="px-6 pt-4 pb-1">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t("searchPlaceholder")}
-                  className="w-full h-12 pl-10 pr-4 rounded-xl bg-muted/50 border border-border text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-(--brand-primary,hsl(var(--ring))) transition-all duration-200"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && query.trim()) {
-                      e.preventDefault();
-                      setNewStreet(query.trim());
-                      setStep("form");
-                    }
-                  }}
-                />
-                {searching && (
-                  <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground animate-spin" />
-                )}
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent
+          className="bg-background text-foreground border-0 p-0 sm:max-w-md sm:max-h-[85vh] overflow-hidden shadow-2xl"
+          showCloseButton={false}
+        >
+          {/* ═══ LIST VIEW ═══ */}
+          {view === "list" && (
+            <>
+              <div className="px-5 pt-5 shrink-0 flex items-center justify-between">
+                <button
+                  onClick={() => onOpenChange(false)}
+                  className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
+                >
+                  <ArrowLeft className="size-5 text-foreground" />
+                </button>
+                <button
+                  onClick={() => onOpenChange(false)}
+                  className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
+                >
+                  <X className="size-5 text-foreground" />
+                </button>
               </div>
-            </div>
+              <div className="px-6 pb-2 shrink-0">
+                <DialogTitle className="text-2xl font-bold text-foreground">
+                  {t("chooseAddress")}
+                </DialogTitle>
+              </div>
 
-            {/* Autocomplete predictions */}
-            {predictions.length > 0 && (
-              <div className="px-6 pb-2 max-h-48 overflow-y-auto">
-                {selectingPlace && (
-                  <div className="flex items-center justify-center py-3">
-                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              <div className="overflow-y-auto flex-1 px-3">
+                {addresses.length > 0 ? (
+                  <div>
+                    {addresses.map((addr) => {
+                      const isSelected = selectedAddress?.id === addr.id;
+                      return (
+                        <div
+                          key={addr.id}
+                          className="flex items-center gap-1 border-b border-border/30 last:border-b-0"
+                        >
+                          <button
+                            onClick={() => handleSelectAddress(addr)}
+                            className="flex-1 flex items-start gap-3 px-3 py-3.5 rounded-xl hover:bg-muted/50 transition-colors duration-200 cursor-pointer text-left"
+                          >
+                            <MapPin
+                              className="size-5 shrink-0 mt-0.5"
+                              style={{
+                                color: isSelected
+                                  ? "var(--brand-primary, hsl(var(--primary)))"
+                                  : "var(--muted-foreground)",
+                              }}
+                              fill={isSelected ? "currentColor" : "none"}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-[15px] text-foreground leading-tight">
+                                {addr.street}
+                              </p>
+                              <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
+                                {[addr.city, addr.postalCode]
+                                  .filter(Boolean)
+                                  .join(", ")}
+                              </p>
+                              {addr.label && (
+                                <p className="text-[12px] text-muted-foreground/70 mt-0.5 truncate">
+                                  {addr.label}
+                                </p>
+                              )}
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => deleteMutation.mutate(addr.id)}
+                            disabled={deleteMutation.isPending}
+                            className="size-9 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors duration-200 cursor-pointer shrink-0 mr-2"
+                          >
+                            <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                    <div className="size-16 rounded-full bg-muted/60 flex items-center justify-center mb-4">
+                      <MapPinOff className="size-7 text-muted-foreground" />
+                    </div>
+                    <p className="text-base font-semibold text-foreground mb-1">
+                      {t("noAddresses")}
+                    </p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {t("noAddressesDesc")}
+                    </p>
                   </div>
                 )}
-                {!selectingPlace &&
-                  predictions.map((p) => (
-                    <button
-                      key={p.place_id}
-                      onClick={() => handleSelectPrediction(p)}
-                      className="w-full flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/50 transition-colors duration-200 cursor-pointer text-left"
-                    >
-                      <MapPin className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {p.structured_formatting.main_text}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {p.structured_formatting.secondary_text}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
               </div>
-            )}
 
-            {/* Location error */}
-            {locationError && (
-              <p className="text-xs text-destructive text-center px-6">
-                {locationError}
-              </p>
-            )}
+              <div className="px-6 py-5 shrink-0">
+                <button
+                  onClick={handleAddAddress}
+                  className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98]"
+                  style={{
+                    background:
+                      "var(--brand-primary, hsl(var(--primary)))",
+                    color: "white",
+                  }}
+                >
+                  <Plus className="size-4.5" />
+                  {t("addNewAddress")}
+                </button>
+              </div>
+            </>
+          )}
 
-            {/* Use current location */}
-            <div className="px-6 pb-6 pt-3">
-              <button
-                onClick={handleUseCurrentLocation}
-                disabled={locating}
-                className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2.5 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
-                style={{
-                  background:
-                    "var(--brand-primary, hsl(var(--primary)))",
-                  color: "white",
-                }}
-              >
-                <Crosshair
-                  className={`size-5 ${locating ? "animate-pulse" : ""}`}
-                />
-                {locating ? t("locating") : t("detectLocation")}
-              </button>
-            </div>
-          </>
-        ) : (
+          {/* ═══ SEARCH VIEW ═══ */}
+          {view === "search" && (
             <>
-              {/* Back to search */}
               <div className="px-5 pt-5 shrink-0">
                 <button
-                  onClick={() => setStep("search")}
+                  onClick={handleBack}
+                  className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
+                >
+                  <ArrowLeft className="size-5 text-foreground" />
+                </button>
+              </div>
+
+              <div className="px-6 pt-4 pb-2">
+                <DialogTitle className="text-2xl font-bold text-foreground">
+                  {t("addNewAddressTitle")}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                  {t("addNewAddressDesc")}
+                </p>
+              </div>
+
+              <div className="px-6 pt-4 pb-1">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={t("searchPlaceholder")}
+                    className="w-full h-12 pl-10 pr-4 rounded-xl bg-muted/50 border border-border text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-(--brand-primary,hsl(var(--ring))) transition-all duration-200"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && query.trim()) {
+                        e.preventDefault();
+                        setNewStreet(query.trim());
+                        setView("form");
+                      }
+                    }}
+                  />
+                  {searching && (
+                    <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground animate-spin" />
+                  )}
+                </div>
+              </div>
+
+              {predictions.length > 0 && (
+                <div className="px-6 pb-2 max-h-48 overflow-y-auto">
+                  {selectingPlace && (
+                    <div className="flex items-center justify-center py-3">
+                      <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                  {!selectingPlace &&
+                    predictions.map((p) => (
+                      <button
+                        key={p.place_id}
+                        onClick={() => handleSelectPrediction(p)}
+                        className="w-full flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/50 transition-colors duration-200 cursor-pointer text-left"
+                      >
+                        <MapPin className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {p.structured_formatting.main_text}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {p.structured_formatting.secondary_text}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              )}
+
+              {locationError && (
+                <p className="text-xs text-destructive text-center px-6">
+                  {locationError}
+                </p>
+              )}
+
+              <div className="px-6 pb-6 pt-3">
+                <button
+                  onClick={handleUseCurrentLocation}
+                  disabled={locating}
+                  className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2.5 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
+                  style={{
+                    background:
+                      "var(--brand-primary, hsl(var(--primary)))",
+                    color: "white",
+                  }}
+                >
+                  <Crosshair
+                    className={`size-5 ${locating ? "animate-pulse" : ""}`}
+                  />
+                  {locating ? t("locating") : t("detectLocation")}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ═══ FORM VIEW ═══ */}
+          {view === "form" && (
+            <>
+              <div className="px-5 pt-5 shrink-0">
+                <button
+                  onClick={handleBack}
                   className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
                 >
                   <ArrowLeft className="size-5 text-foreground" />
@@ -388,7 +529,6 @@ function AddAddressDialog({
                 </DialogTitle>
 
                 <div className="space-y-3">
-                  {/* Label selector */}
                   <div className="flex gap-2">
                     {LABEL_OPTIONS.map((label) => {
                       const isActive = newLabel === label;
@@ -417,7 +557,6 @@ function AddAddressDialog({
                     })}
                   </div>
 
-                  {/* Street */}
                   <div>
                     <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
                       {t("streetAddress")}
@@ -430,7 +569,6 @@ function AddAddressDialog({
                     />
                   </div>
 
-                  {/* City */}
                   <div>
                     <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
                       {t("city")}
@@ -443,7 +581,6 @@ function AddAddressDialog({
                     />
                   </div>
 
-                  {/* Save */}
                   <button
                     onClick={handleSave}
                     disabled={
@@ -471,165 +608,6 @@ function AddAddressDialog({
           )}
         </DialogContent>
       </Dialog>
-  );
-}
-
-/* ═══════════════════ MAIN: Address List Dialog ═══════════════════ */
-export function AddressManagerSheet({
-  open,
-  onOpenChange,
-}: AddressManagerSheetProps) {
-  const t = useTranslations("Address");
-  const tenant = useTenant();
-  const { data: session } = useSession();
-  const { selectedAddress, setSelectedAddress } = useAddressStore();
-  const [addOpen, setAddOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
-
-  const {
-    data: addresses = [],
-    isLoading,
-  } = useQuery<Address[]>({
-    queryKey: ["addresses", tenant.slug],
-    queryFn: async () => {
-      const res = await fetch(`/api/tenants/${tenant.slug}/addresses`);
-      if (!res.ok) throw new Error(t("fetchFailed"));
-      const data = await res.json();
-      return data.addresses ?? data;
-    },
-    enabled: open,
-  });
-
-  const handleSelectAddress = useCallback(
-    (addr: Address) => {
-      setSelectedAddress(addr);
-      onOpenChange(false);
-    },
-    [setSelectedAddress, onOpenChange]
-  );
-
-  const handleAddressCreated = useCallback(
-    (addr: Address) => {
-      setSelectedAddress(addr);
-    },
-    [setSelectedAddress]
-  );
-
-  const handleAddAddress = useCallback(() => {
-    if (!session) {
-      setAuthOpen(true);
-    } else {
-      setAddOpen(true);
-    }
-  }, [session]);
-
-  return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
-          className="bg-background text-foreground border-0 p-0 sm:max-w-md sm:max-h-[85vh] overflow-hidden shadow-2xl"
-          showCloseButton={false}
-        >
-          {/* Header with back button */}
-          <div className="px-5 pt-5 shrink-0">
-            <button
-              onClick={() => onOpenChange(false)}
-              className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
-            >
-              <ArrowLeft className="size-5 text-foreground" />
-            </button>
-          </div>
-          <div className="px-6 pb-2 shrink-0">
-            <DialogTitle className="text-2xl font-bold text-foreground">
-              {t("chooseAddress")}
-            </DialogTitle>
-          </div>
-
-          {/* Address list */}
-          <div className="overflow-y-auto flex-1 px-3">
-            {isLoading && (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="size-6 animate-spin text-muted-foreground" />
-              </div>
-            )}
-            {!isLoading && addresses.length > 0 && (
-              <div>
-                {addresses.map((addr) => {
-                  const isSelected = selectedAddress?.id === addr.id;
-                  return (
-                    <button
-                      key={addr.id}
-                      onClick={() => handleSelectAddress(addr)}
-                      className="w-full flex items-start gap-3 px-3 py-3.5 rounded-xl hover:bg-muted/50 transition-colors duration-200 cursor-pointer text-left border-b border-border/30 last:border-b-0"
-                    >
-                      <MapPin
-                        className="size-5 shrink-0 mt-0.5"
-                        style={{
-                          color: isSelected
-                            ? "var(--brand-primary, hsl(var(--primary)))"
-                            : "var(--muted-foreground)",
-                        }}
-                        fill={isSelected ? "currentColor" : "none"}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-[15px] text-foreground leading-tight">
-                          {addr.street}
-                        </p>
-                        <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
-                          {[addr.city, addr.postalCode]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                        {addr.label && (
-                          <p className="text-[12px] text-muted-foreground/70 mt-0.5 truncate">
-                            {addr.label}
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {!isLoading && addresses.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                <div className="size-16 rounded-full bg-muted/60 flex items-center justify-center mb-4">
-                  <MapPinOff className="size-7 text-muted-foreground" />
-                </div>
-                <p className="text-base font-semibold text-foreground mb-1">
-                  {t("noAddresses")}
-                </p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {t("noAddressesDesc")}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Add new address button */}
-          <div className="px-6 py-5 shrink-0">
-            <button
-              onClick={handleAddAddress}
-              className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98]"
-              style={{
-                background:
-                  "var(--brand-primary, hsl(var(--primary)))",
-                color: "white",
-              }}
-            >
-              <Plus className="size-4.5" />
-              {t("addNewAddress")}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <AddAddressDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        tenantSlug={tenant.slug}
-        onCreated={handleAddressCreated}
-      />
 
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
     </>

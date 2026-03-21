@@ -19,8 +19,14 @@ export const queryKeys = {
   stats: {
     dashboard: (tenantId: string) => ["stats", tenantId] as const,
   },
+  analytics: {
+    dashboard: (tenantId: string) => ["analytics", tenantId] as const,
+  },
   invoices: {
     all: (tenantId: string) => ["invoices", tenantId] as const,
+  },
+  promoCodes: {
+    all: (tenantId: string) => ["promo-codes", tenantId] as const,
   },
   staff: {
     all: (tenantId: string) => ["staff", tenantId] as const,

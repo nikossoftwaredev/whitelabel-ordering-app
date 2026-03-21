@@ -26,7 +26,7 @@ export async function GET(
       tenant: { slug: tenantSlug },
       customer: { userId: session.user.id },
     },
-    select: { id: true, tenantId: true, status: true, orderType: true },
+    select: { id: true, tenantId: true, status: true, orderType: true, scheduledFor: true },
   });
 
   if (!order) {
@@ -46,7 +46,7 @@ export async function GET(
 
     orderEvents.on("order:status", onStatusChange);
 
-    send("connected", { orderId, status: order.status, orderType: order.orderType });
+    send("connected", { orderId, status: order.status, orderType: order.orderType, scheduledFor: order.scheduledFor?.toISOString() ?? null });
 
     onAbort(() => {
       orderEvents.off("order:status", onStatusChange);

@@ -56,7 +56,11 @@ interface Order {
   orderNumber: string;
   status: OrderStatus;
   orderType: "PICKUP" | "DELIVERY" | "DINE_IN";
+  tipAmount: number;
+  discount: number;
+  promoCode: string | null;
   total: number;
+  scheduledFor: string | null;
   createdAt: string;
   estimatedReadyAt: string | null;
   rejectionReason: string | null;
@@ -243,6 +247,14 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
             </Badge>
           </div>
 
+          {/* Scheduled badge */}
+          {order.scheduledFor && (
+            <div className="flex items-center gap-1.5 mt-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-lg px-2.5 py-1 w-fit">
+              <Clock className="size-3" />
+              Scheduled: {new Date(order.scheduledFor).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+            </div>
+          )}
+
           {/* Customer info */}
           {order.customer && (
             <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
@@ -309,6 +321,18 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
             <span className="font-semibold text-base">
               {formatPrice(order.total)}
             </span>
+            <div className="flex items-center gap-2">
+              {order.discount > 0 && (
+                <span className="text-xs text-green-600">
+                  -{formatPrice(order.discount)} {order.promoCode && `(${order.promoCode})`}
+                </span>
+              )}
+              {order.tipAmount > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  incl. {formatPrice(order.tipAmount)} tip
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Rejection reason display */}
