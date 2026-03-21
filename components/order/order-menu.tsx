@@ -190,7 +190,7 @@ function ProductCard({
   return (
     <div
       className="flex gap-3 py-3 cursor-pointer group active:scale-[0.99] transition-transform duration-150"
-      onClick={quantity > 0 || hasRequiredModifiers ? onDetail : (e) => onQuickAdd(e)}
+      onClick={onDetail}
     >
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <h3 className="font-semibold text-[15px] leading-tight line-clamp-2">{product.name}</h3>
