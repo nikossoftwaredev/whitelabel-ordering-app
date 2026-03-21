@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { calcBogoTotal, hasActiveOffer } from "@/lib/orders/offers";
 
 interface CartItemModifier {
   modifierOptionId: string;
@@ -103,13 +104,24 @@ export async function validateCart(
       }
     }
 
-    const totalPrice = (product.price + modifierTotal) * item.quantity;
+    const isBogoActive = hasActiveOffer(product);
+
+    let totalPrice: number;
+    let unitPrice: number;
+
+    if (isBogoActive && item.quantity >= 2) {
+      unitPrice = product.offerPrice!;
+      totalPrice = calcBogoTotal(item.quantity, product.offerPrice!, product.price, modifierTotal);
+    } else {
+      unitPrice = product.price;
+      totalPrice = (product.price + modifierTotal) * item.quantity;
+    }
 
     validatedItems.push({
       productId: product.id,
       productName: product.name,
       quantity: item.quantity,
-      unitPrice: product.price,
+      unitPrice,
       modifiers: validatedModifiers,
       totalPrice,
     });

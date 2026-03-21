@@ -177,10 +177,9 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
 
   const { tenantId } = await context.params;
 
-  const tenant = await prisma.tenant.update({
+  await prisma.tenant.delete({
     where: { id: tenantId },
-    data: { isActive: false },
   });
 
-  return NextResponse.json(tenant);
+  return NextResponse.json({ success: true });
 }

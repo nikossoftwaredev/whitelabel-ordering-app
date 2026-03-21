@@ -1,7 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2,Save } from "lucide-react";
+import { Download, Loader2, QrCode, Save } from "lucide-react";
+import { useCallback, useRef } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useEffect,useState } from "react";
 import { toast } from "sonner";
 
@@ -97,6 +99,34 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
   const tenant = useTenant();
   const resolvedTenantId = tenantId || tenant.id;
   const queryClient = useQueryClient();
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  const storeUrl = typeof window !== "undefined"
+    ? `${window.location.protocol}//${tenant.slug}.${window.location.host.replace(/^[^.]+\./, "")}/order`
+    : `https://${tenant.slug}.example.com/order`;
+
+  const downloadQr = useCallback(() => {
+    const svg = qrRef.current?.querySelector("svg");
+    if (!svg) return;
+    const canvas = document.createElement("canvas");
+    const size = 720;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    img.onload = () => {
+      const pad = 40;
+      ctx.drawImage(img, pad, pad, size - pad * 2, size - pad * 2);
+      const a = document.createElement("a");
+      a.download = `${tenant.slug}-qr-code.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    };
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgData);
+  }, [tenant.slug]);
 
   // Form state
   const [name, setName] = useState("");
@@ -514,6 +544,46 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
               </p>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* QR Code */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <QrCode className="size-5" />
+            QR Code
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Print this QR code so customers can scan it to open your store and install the app on their phone.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div
+              ref={qrRef}
+              className="bg-white p-4 rounded-xl border shadow-sm"
+            >
+              <QRCodeSVG
+                value={storeUrl}
+                size={180}
+                level="H"
+                includeMargin={false}
+              />
+            </div>
+            <div className="flex flex-col gap-2 text-center sm:text-left">
+              <p className="text-xs text-muted-foreground break-all">{storeUrl}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={downloadQr}
+              >
+                <Download className="size-4" />
+                Download PNG
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

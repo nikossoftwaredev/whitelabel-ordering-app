@@ -3,7 +3,6 @@
 import {
   ChevronDown,
   MapPin,
-  Search,
   ShoppingCart,
 } from "lucide-react";
 import Image from "next/image";
@@ -97,22 +96,6 @@ export const CustomerHeader = () => {
 
           {/* Spacer */}
           <div className="flex-1" />
-
-          {/* Search Bar — desktop only */}
-          <div className="flex-1 max-w-md hidden sm:block">
-            <div className="relative">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 size-4 ${iconDimClass}`} />
-              <input
-                type="text"
-                placeholder={`Search in ${tenant.name}...`}
-                className={`w-full h-9 pl-9 pr-4 rounded-lg text-sm transition-all duration-200 focus:outline-none focus:ring-1 ${
-                  scrolled
-                    ? "bg-muted placeholder:text-muted-foreground border border-border focus:ring-ring"
-                    : "bg-white/15 backdrop-blur-sm placeholder:text-white/40 border border-white/10 focus:ring-white/30"
-                }`}
-              />
-            </div>
-          </div>
 
           {/* Right side actions */}
           <div className="flex items-center gap-1">

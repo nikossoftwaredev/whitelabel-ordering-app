@@ -62,6 +62,10 @@ export async function POST(
     isSpicy,
     allergens,
     modifierGroupIds,
+    offerType,
+    offerPrice,
+    offerStart,
+    offerEnd,
   } = body;
 
   if (!name || !categoryId || price === undefined) {
@@ -94,6 +98,10 @@ export async function POST(
       containsNuts: containsNuts ?? false,
       isSpicy: isSpicy ?? false,
       allergens,
+      offerType: offerType || null,
+      offerPrice: offerPrice ?? null,
+      offerStart: offerStart ? new Date(offerStart) : null,
+      offerEnd: offerEnd ? new Date(offerEnd) : null,
       ...(modifierGroupIds?.length && {
         modifierGroups: {
           create: modifierGroupIds.map((groupId: string, i: number) => ({

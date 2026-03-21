@@ -16,8 +16,7 @@
       "system": "System",
       "finance": "Finance",
       "users": "Users",
-      "settings": "Settings",
-      "expenses": "Expenses"
+      "settings": "Settings"
     },
     "users": {
       "title": "Users",
@@ -26,10 +25,6 @@
     "settings": {
       "title": "Settings",
       "description": "Manage your application preferences and configuration."
-    },
-    "expenses": {
-      "title": "Expenses",
-      "description": "Track and manage your organization's expenses."
     }
   },
   "Auth": {
@@ -303,7 +298,8 @@
     "day3": "Wednesday",
     "day4": "Thursday",
     "day5": "Friday",
-    "day6": "Saturday"
+    "day6": "Saturday",
+    "tapToCall": "Tap to call"
   },
   "Product": {
     "vegan": "Vegan",

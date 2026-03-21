@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { DollarSign, Languages, Leaf, Loader2, Tag } from "lucide-react";
+import { DollarSign, Gift, Languages, Leaf, Loader2, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -26,7 +26,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { centsToEuros, eurosToCents } from "@/lib/general/formatters";
+import { centsToDecimal, decimalToCents } from "@/lib/general/formatters";
+import { OFFER_TYPE_BOGO } from "@/lib/orders/offers";
 
 interface Category {
   id: string;
@@ -52,6 +53,10 @@ interface Product {
   description: string | null;
   categoryId: string;
   modifierGroups?: { modifierGroup: ModifierGroupRef }[];
+  offerType?: string | null;
+  offerPrice?: number | null;
+  offerStart?: string | null;
+  offerEnd?: string | null;
 }
 
 interface ProductFormDialogProps {
@@ -95,13 +100,17 @@ export const ProductFormDialog = ({
   const [dietary, setDietary] = useState<Record<string, boolean>>({});
   const [allergens, setAllergens] = useState("");
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [offerEnabled, setOfferEnabled] = useState(false);
+  const [offerPrice, setOfferPrice] = useState("");
+  const [offerStart, setOfferStart] = useState("");
+  const [offerEnd, setOfferEnd] = useState("");
 
   useEffect(() => {
     if (product) {
       setName(product.name);
       setNameEl(product.nameEl || "");
       setDescription(product.description || "");
-      setPrice(centsToEuros(product.price));
+      setPrice(centsToDecimal(product.price));
       setImageUrl(product.image || null);
       setSelectedCategoryId(product.categoryId);
       setDietary({
@@ -112,6 +121,10 @@ export const ProductFormDialog = ({
       setSelectedGroupIds(
         product.modifierGroups?.map((mg) => mg.modifierGroup.id) ?? []
       );
+      setOfferEnabled(product.offerType === OFFER_TYPE_BOGO);
+      setOfferPrice(product.offerPrice ? centsToDecimal(product.offerPrice) : "");
+      setOfferStart(product.offerStart ? product.offerStart.slice(0, 16) : "");
+      setOfferEnd(product.offerEnd ? product.offerEnd.slice(0, 16) : "");
     } else {
       setName("");
       setNameEl("");
@@ -123,12 +136,16 @@ export const ProductFormDialog = ({
       setDietary({});
       setAllergens("");
       setSelectedGroupIds([]);
+      setOfferEnabled(false);
+      setOfferPrice("");
+      setOfferStart("");
+      setOfferEnd("");
     }
   }, [product, categoryId, open]);
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const priceInCents = eurosToCents(price);
+      const priceInCents = decimalToCents(price);
 
       const url = isEditing
         ? `/api/admin/${tenantId}/products/${product.id}`
@@ -147,6 +164,10 @@ export const ProductFormDialog = ({
           categoryId: selectedCategoryId,
           allergens: allergens || null,
           modifierGroupIds: selectedGroupIds,
+          offerType: offerEnabled ? OFFER_TYPE_BOGO : null,
+          offerPrice: offerEnabled && offerPrice ? decimalToCents(offerPrice) : null,
+          offerStart: offerEnabled && offerStart ? new Date(offerStart).toISOString() : null,
+          offerEnd: offerEnabled && offerEnd ? new Date(offerEnd).toISOString() : null,
           ...dietary,
         }),
       });
@@ -313,6 +334,56 @@ export const ProductFormDialog = ({
                 onChange={(e) => setAllergens(e.target.value)}
                 placeholder="e.g. sesame, soy"
               />
+            </div>
+
+            {/* 1+1 Offer */}
+            <div className="space-y-3">
+              <Label>
+                <Gift className="inline size-3.5" /> 1+1 Offer
+              </Label>
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <span className="text-sm">Enable 1+1 (Buy One Get One)</span>
+                <Switch
+                  checked={offerEnabled}
+                  onCheckedChange={setOfferEnabled}
+                />
+              </div>
+              {offerEnabled && (
+                <div className="space-y-3 pl-1">
+                  <div className="space-y-2">
+                    <Label htmlFor="offer-price">Pair Price (EUR)</Label>
+                    <Input
+                      id="offer-price"
+                      type="number"
+                      step="0.05"
+                      min="0"
+                      value={offerPrice}
+                      onChange={(e) => setOfferPrice(e.target.value)}
+                      placeholder="e.g. 3.50 for 2 items"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="offer-start">Start (optional)</Label>
+                      <Input
+                        id="offer-start"
+                        type="datetime-local"
+                        value={offerStart}
+                        onChange={(e) => setOfferStart(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="offer-end">End (optional)</Label>
+                      <Input
+                        id="offer-end"
+                        type="datetime-local"
+                        value={offerEnd}
+                        onChange={(e) => setOfferEnd(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modifier Groups */}

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { calcBogoTotal, OFFER_TYPE_BOGO } from "@/lib/orders/offers";
+
 interface CartItemModifier {
   modifierOptionId: string;
   name: string;
@@ -17,6 +19,8 @@ interface CartItem {
   modifiers: CartItemModifier[];
   notes: string;
   totalPrice: number;
+  offerType?: string | null;
+  offerPrice?: number | null;
 }
 
 interface CartStore {
@@ -37,6 +41,11 @@ const calcTotal = (item: Omit<CartItem, "totalPrice" | "cartItemId">) => {
     (sum, m) => sum + m.priceAdjustment,
     0
   );
+
+  if (item.offerType === OFFER_TYPE_BOGO && item.offerPrice != null && item.quantity >= 2) {
+    return calcBogoTotal(item.quantity, item.offerPrice, item.basePrice, modifierTotal);
+  }
+
   return (item.basePrice + modifierTotal) * item.quantity;
 };
 
@@ -91,7 +100,7 @@ export const useCartStore = create<CartStore>()(
         if (current && current !== slug) {
           // Different tenant — clear cart
           set({ items: [], tenantSlug: slug });
-        } else {
+        } else if (current !== slug) {
           set({ tenantSlug: slug });
         }
       },

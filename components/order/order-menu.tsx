@@ -3,19 +3,15 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   Bike,
-  Clock,
   Info,
   Leaf,
-  Mail,
-  MapPin,
-  Minus,
   Package,
-  Phone,
   Plus,
   Search,
   SlidersHorizontal,
   Store,
   WheatOff,
+  X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback,useEffect, useMemo, useRef, useState } from "react";
@@ -30,19 +26,17 @@ import {
 } from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { useDialogStore } from "@/lib/stores/dialog-store";
+import { STORE_INFO_DIALOG, type StoreInfoDialogData } from "@/components/order/store-info-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { hasActiveOffer } from "@/lib/orders/offers";
 import { queryKeys } from "@/lib/query/keys";
 import { useCartStore } from "@/lib/stores/cart-store";
 
 import { CartSheet } from "./cart-sheet";
 import { ProductDetailSheet } from "./product-detail-sheet";
+import { QuantityStepper } from "./quantity-stepper";
 
 /* ─────────────── Types ─────────────── */
 interface ModifierOption {
@@ -78,6 +72,10 @@ interface Product {
   isSpicy: boolean;
   allergens: string | null;
   modifierGroups: ModifierGroup[];
+  offerType?: string | null;
+  offerPrice?: number | null;
+  offerStart?: string | null;
+  offerEnd?: string | null;
 }
 
 interface Category {
@@ -117,6 +115,7 @@ interface OrderMenuProps {
   logo: string | null;
 }
 
+
 const dietaryFilters = [
   { key: "isVegan", labelKey: "vegan", icon: Leaf },
   { key: "isVegetarian", labelKey: "vegetarian", icon: Leaf },
@@ -153,34 +152,38 @@ function PopularCard({
             <Store className="size-8 text-muted-foreground/30" />
           </div>
         )}
-        <div
-          className="absolute top-2 right-2 flex items-center rounded-full shadow-lg overflow-hidden bg-black/80 backdrop-blur-sm transition-all duration-300 ease-in-out"
-          style={{ width: quantity > 0 ? 96 : 34, height: 34 }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {quantity > 0 ? (
-            <>
-              <button className="size-8 flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-200 cursor-pointer shrink-0" onClick={onQuickRemove}>
-                <Minus className="size-3.5" />
-              </button>
-              <span className="text-[13px] font-bold text-white tabular-nums flex-1 text-center">{quantity}</span>
-              <button className="size-8 flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-200 cursor-pointer shrink-0" onClick={onIncrement}>
-                <Plus className="size-3.5" />
-              </button>
-            </>
-          ) : (
-            <button
-              className="size-8.5 flex items-center justify-center text-white cursor-pointer hover:bg-white/20 transition-colors duration-200"
-              onClick={hasRequiredModifiers ? () => onClick() : onQuickAdd}
-            >
-              <Plus className="size-4" />
-            </button>
-          )}
-        </div>
+        {quantity > 0 ? (
+          <QuantityStepper
+            variant="overlay"
+            quantity={quantity}
+            onDecrement={onQuickRemove}
+            onIncrement={onIncrement}
+            className="absolute top-2 right-2 shadow-lg"
+          />
+        ) : (
+          <button
+            className="absolute top-2 right-2 size-8.5 flex items-center justify-center rounded-full bg-black/80 backdrop-blur-sm text-white cursor-pointer hover:bg-white/20 transition-colors duration-200"
+            onClick={(e) => { e.stopPropagation(); (hasRequiredModifiers ? () => onClick() : onQuickAdd)(e); }}
+          >
+            <Plus className="size-4" />
+          </button>
+        )}
+        {hasActiveOffer(product) && (
+          <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md">
+            1+1
+          </div>
+        )}
       </div>
       <div className="mt-2 px-0.5">
         <h3 className="text-[13px] font-semibold leading-tight line-clamp-2">{product.name}</h3>
-        <p className="text-[13px] text-muted-foreground mt-0.5 font-medium">{formatPrice(product.price)}</p>
+        {hasActiveOffer(product) ? (
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[13px] font-medium" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.offerPrice!)}</span>
+            <span className="text-[11px] text-muted-foreground line-through">{formatPrice(product.price * 2)}</span>
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted-foreground mt-0.5 font-medium">{formatPrice(product.price)}</p>
+        )}
       </div>
     </div>
   );
@@ -226,7 +229,15 @@ function ProductCard({
           {product.isVegetarian && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">{t("vegetarian")}</span>}
           {product.isGlutenFree && <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">{t("glutenFree")}</span>}
         </div>
-        <p className="text-[14px] font-semibold mt-1.5" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.price)}</p>
+        {hasActiveOffer(product) ? (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">1+1</span>
+            <span className="text-[14px] font-semibold" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.offerPrice!)}</span>
+            <span className="text-[12px] text-muted-foreground line-through">{formatPrice(product.price * 2)}</span>
+          </div>
+        ) : (
+          <p className="text-[14px] font-semibold mt-1.5" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.price)}</p>
+        )}
       </div>
       <div className="relative shrink-0 w-[100px] h-[100px] md:w-[130px] md:h-[130px] rounded-xl overflow-hidden bg-muted">
         {product.image ? (
@@ -236,30 +247,22 @@ function ProductCard({
             <Store className="size-6 text-muted-foreground/20" />
           </div>
         )}
-        <div
-          className="absolute top-0 right-0 flex items-center rounded-full shadow-md overflow-hidden bg-black/80 backdrop-blur-sm m-1 transition-all duration-300 ease-in-out"
-          style={{ width: quantity > 0 ? 96 : 34, height: 34 }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {quantity > 0 ? (
-            <>
-              <button className="size-8 flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-200 cursor-pointer shrink-0" onClick={onQuickRemove}>
-                <Minus className="size-3.5" />
-              </button>
-              <span className="text-[13px] font-bold text-white tabular-nums flex-1 text-center">{quantity}</span>
-              <button className="size-8 flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-200 cursor-pointer shrink-0" onClick={onIncrement}>
-                <Plus className="size-3.5" />
-              </button>
-            </>
-          ) : (
-            <button
-              className="size-8.5 flex items-center justify-center text-white cursor-pointer hover:bg-white/20 transition-colors duration-200"
-              onClick={hasRequiredModifiers ? onDetail : onQuickAdd}
-            >
-              <Plus className="size-4" />
-            </button>
-          )}
-        </div>
+        {quantity > 0 ? (
+          <QuantityStepper
+            quantity={quantity}
+            onDecrement={onQuickRemove}
+            onIncrement={onIncrement}
+            variant="overlay"
+            className="absolute top-0 right-0 m-1 shadow-md"
+          />
+        ) : (
+          <button
+            className="absolute top-0 right-0 m-1 size-8.5 flex items-center justify-center rounded-full bg-black/80 backdrop-blur-sm shadow-md text-white cursor-pointer hover:bg-white/20 transition-colors duration-200"
+            onClick={(e) => { e.stopPropagation(); (hasRequiredModifiers ? onDetail : onQuickAdd)(e); }}
+          >
+            <Plus className="size-4" />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -291,7 +294,14 @@ function VariantCard({
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <h3 className="font-semibold text-[15px] leading-tight line-clamp-2">{product.name}</h3>
         <p className="text-[13px] text-muted-foreground line-clamp-1 mt-0.5 leading-snug">{modifierSummary}</p>
-        <p className="text-[14px] font-semibold mt-1" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.price)}</p>
+        {hasActiveOffer(product) ? (
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">1+1</span>
+            <span className="text-[14px] font-semibold" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.offerPrice!)}</span>
+          </div>
+        ) : (
+          <p className="text-[14px] font-semibold mt-1" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.price)}</p>
+        )}
       </div>
       <div className="relative shrink-0 w-[100px] h-[100px] md:w-[130px] md:h-[130px] rounded-xl overflow-hidden bg-muted">
         {product.image ? (
@@ -301,19 +311,13 @@ function VariantCard({
             <Store className="size-6 text-muted-foreground/20" />
           </div>
         )}
-        <div
-          className="absolute top-0 right-0 flex items-center rounded-full shadow-md overflow-hidden bg-black/80 backdrop-blur-sm m-1"
-          style={{ width: 96, height: 34 }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button className="size-8 flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-200 cursor-pointer shrink-0" onClick={onDecrement}>
-            <Minus className="size-3.5" />
-          </button>
-          <span className="text-[13px] font-bold text-white tabular-nums flex-1 text-center">{quantity}</span>
-          <button className="size-8 flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-200 cursor-pointer shrink-0" onClick={onIncrement}>
-            <Plus className="size-3.5" />
-          </button>
-        </div>
+        <QuantityStepper
+          variant="overlay"
+          quantity={quantity}
+          onDecrement={onDecrement}
+          onIncrement={onIncrement}
+          className="absolute top-0 right-0 shadow-md m-1"
+        />
       </div>
     </div>
   );
@@ -373,7 +377,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingCartItem, setEditingCartItem] = useState<{ cartItemId: string; quantity: number; modifiers: { modifierOptionId: string; name: string; priceAdjustment: number }[]; notes?: string } | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
-  const [storeInfoOpen, setStoreInfoOpen] = useState(false);
+  const openDialog = useDialogStore((s) => s.openDialog);
 
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -544,7 +548,12 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       const defaultModifiers = product.modifierGroups.flatMap((group) =>
         group.options.filter((o) => o.isDefault).map((o) => ({ modifierOptionId: o.id, name: o.name, priceAdjustment: o.priceAdjustment }))
       );
-      cart.addItem({ productId: product.id, productName: product.name, productImage: product.image, basePrice: product.price, quantity: 1, modifiers: defaultModifiers, notes: "" });
+      const isBogo = hasActiveOffer(product);
+      cart.addItem({
+        productId: product.id, productName: product.name, productImage: product.image,
+        basePrice: product.price, quantity: isBogo ? 2 : 1, modifiers: defaultModifiers, notes: "",
+        ...(isBogo && { offerType: product.offerType, offerPrice: product.offerPrice }),
+      });
     },
     [cart]
   );
@@ -669,7 +678,14 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
             </div>
           )}
           <button
-            onClick={() => setStoreInfoOpen(true)}
+            onClick={() => openDialog(STORE_INFO_DIALOG, {
+              storeName,
+              description: data?.tenant.description,
+              phone: data?.tenant.phone,
+              email: data?.tenant.email,
+              address: data?.tenant.address,
+              operatingHours: data?.tenant.operatingHours,
+            } satisfies StoreInfoDialogData)}
             className="flex items-center gap-1.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
           >
             <Info className="size-3.5" />
@@ -683,11 +699,20 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            id="menu-search"
             placeholder={t("searchIn", { storeName })}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 sm:h-12 rounded-xl bg-muted/50 border border-border/50 text-sm sm:text-[15px] focus-visible:ring-1 focus-visible:ring-(--brand-primary,hsl(var(--ring)))"
+            className="pl-10 pr-9 h-10 sm:h-12 rounded-xl bg-muted/50 border border-border/50 text-sm sm:text-[15px] focus-visible:ring-1 focus-visible:ring-(--brand-primary,hsl(var(--ring)))"
           />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 size-5 flex items-center justify-center rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/30 transition-colors cursor-pointer"
+            >
+              <X className="size-3 text-foreground" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -833,78 +858,6 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       <ProductDetailSheet product={selectedProduct} editingCartItem={editingCartItem} onClose={() => { setSelectedProduct(null); setEditingCartItem(null); }} />
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} tenantSlug={tenantSlug} />
 
-      {/* ═══ STORE INFO SHEET ═══ */}
-      <Sheet open={storeInfoOpen} onOpenChange={setStoreInfoOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
-          <SheetHeader className="text-left">
-            <SheetTitle className="text-lg">{storeName}</SheetTitle>
-            {data?.tenant.description && (
-              <p className="text-sm text-muted-foreground">{data.tenant.description}</p>
-            )}
-          </SheetHeader>
-
-          <div className="flex flex-col gap-5 mt-5 pb-4">
-            {/* Operating Hours */}
-            {data?.tenant.operatingHours && data.tenant.operatingHours.length > 0 && (
-              <div className="rounded-xl border bg-card p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="size-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{t("hours")}</span>
-                </div>
-                <div className="space-y-1.5">
-                  {data.tenant.operatingHours.map((h) => {
-                    const today = new Date().getDay();
-                    const isToday = h.dayOfWeek === today;
-                    return (
-                      <div
-                        key={h.dayOfWeek}
-                        className={`flex items-center justify-between text-sm px-2 py-1 rounded-md ${
-                          isToday ? "bg-primary/5 font-medium" : ""
-                        }`}
-                      >
-                        <span>{t(`day${h.dayOfWeek}`)}</span>
-                        <span className={h.isClosed ? "text-destructive" : "text-muted-foreground"}>
-                          {h.isClosed ? t("closed") : `${h.openTime} – ${h.closeTime}`}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Contact & Location */}
-            {(data?.tenant.phone || data?.tenant.email || data?.tenant.address) && (
-              <div className="rounded-xl border bg-card p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Store className="size-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{t("contactInfo")}</span>
-                </div>
-                <div className="space-y-3">
-                  {data?.tenant.phone && (
-                    <a href={`tel:${data.tenant.phone}`} className="flex items-center gap-3 text-sm hover:text-primary transition-colors">
-                      <Phone className="size-4 text-muted-foreground shrink-0" />
-                      <span>{data.tenant.phone}</span>
-                    </a>
-                  )}
-                  {data?.tenant.email && (
-                    <a href={`mailto:${data.tenant.email}`} className="flex items-center gap-3 text-sm hover:text-primary transition-colors">
-                      <Mail className="size-4 text-muted-foreground shrink-0" />
-                      <span>{data.tenant.email}</span>
-                    </a>
-                  )}
-                  {data?.tenant.address && (
-                    <div className="flex items-start gap-3 text-sm">
-                      <MapPin className="size-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <span>{data.tenant.address}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 };

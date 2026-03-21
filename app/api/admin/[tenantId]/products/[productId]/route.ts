@@ -28,6 +28,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
     isSpicy,
     allergens,
     modifierGroupIds,
+    offerType,
+    offerPrice,
+    offerStart,
+    offerEnd,
   } = body;
 
   // Update modifier group attachments if provided
@@ -64,6 +68,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
       ...(containsNuts !== undefined && { containsNuts }),
       ...(isSpicy !== undefined && { isSpicy }),
       ...(allergens !== undefined && { allergens }),
+      ...(offerType !== undefined && { offerType: offerType || null }),
+      ...(offerPrice !== undefined && { offerPrice: offerPrice ?? null }),
+      ...(offerStart !== undefined && { offerStart: offerStart ? new Date(offerStart) : null }),
+      ...(offerEnd !== undefined && { offerEnd: offerEnd ? new Date(offerEnd) : null }),
     },
     include: {
       category: { select: { id: true, name: true } },

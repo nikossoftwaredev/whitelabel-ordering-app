@@ -61,6 +61,10 @@ export async function GET(
           containsNuts: true,
           isSpicy: true,
           allergens: true,
+          offerType: true,
+          offerPrice: true,
+          offerStart: true,
+          offerEnd: true,
           modifierGroups: {
             orderBy: { sortOrder: "asc" },
             select: {

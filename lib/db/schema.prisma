@@ -290,6 +290,12 @@ model Product {
   sortOrder     Int       @default(0) @map("sort_order")
   isActive      Boolean   @default(true) @map("is_active")
 
+  // 1+1 / Buy-one-get-one offers
+  offerType     String?   @map("offer_type")   // "BOGO" or null
+  offerPrice    Int?      @map("offer_price")  // cents — price for the pair
+  offerStart    DateTime? @map("offer_start")
+  offerEnd      DateTime? @map("offer_end")
+
   // Dietary/allergen tags
   isVegan       Boolean   @default(false) @map("is_vegan")
   isVegetarian  Boolean   @default(false) @map("is_vegetarian")

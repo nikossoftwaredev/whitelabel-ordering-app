@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Home, Minus, Plus, ShoppingCart, X } from "lucide-react";
+import { ChevronDown, Home, ShoppingCart, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -29,6 +29,7 @@ import { useCartStore } from "@/lib/stores/cart-store";
 
 import { AddressManagerSheet } from "./address-manager-sheet";
 import { AuthDialog } from "./auth-dialog";
+import { QuantityStepper } from "./quantity-stepper";
 
 interface CartSheetProps {
   open: boolean;
@@ -104,33 +105,20 @@ const CartContents = ({
                   )}
 
                   {/* Quantity controls overlaid at bottom */}
-                  <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between bg-background/80 backdrop-blur-sm rounded-lg overflow-hidden border border-border">
-                    <button
-                      className="size-8 flex items-center justify-center hover:bg-muted transition-colors duration-200 cursor-pointer"
-                      style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                      onClick={() => {
-                        if (item.quantity <= 1) {
-                          setRemoveConfirm({ cartItemId: item.cartItemId, name: item.productName });
-                        } else {
-                          cart.updateQuantity(item.cartItemId, item.quantity - 1);
-                        }
-                      }}
-                    >
-                      <Minus className="size-3.5" />
-                    </button>
-                    <span className="text-sm font-bold text-foreground tabular-nums">
-                      {item.quantity}
-                    </span>
-                    <button
-                      className="size-8 flex items-center justify-center hover:bg-muted transition-colors duration-200 cursor-pointer"
-                      style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                      onClick={() =>
-                        cart.updateQuantity(item.cartItemId, item.quantity + 1)
+                  <QuantityStepper
+                    quantity={item.quantity}
+                    onDecrement={() => {
+                      if (item.quantity <= 1) {
+                        setRemoveConfirm({ cartItemId: item.cartItemId, name: item.productName });
+                      } else {
+                        cart.updateQuantity(item.cartItemId, item.quantity - 1);
                       }
-                    >
-                      <Plus className="size-3.5" />
-                    </button>
-                  </div>
+                    }}
+                    onIncrement={() => {
+                      cart.updateQuantity(item.cartItemId, item.quantity + 1);
+                    }}
+                    className="absolute bottom-1 left-1 right-1 justify-between"
+                  />
                 </div>
               </div>
             ))}

@@ -155,7 +155,7 @@ async function deleteTenant(id: string): Promise<void> {
   const res = await fetch(`/api/admin/tenants/${id}`, {
     method: "DELETE",
   });
-  if (!res.ok) throw new Error("Failed to deactivate tenant");
+  if (!res.ok) throw new Error("Failed to delete tenant");
 }
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -418,7 +418,7 @@ export function TenantManagement() {
     mutationFn: deleteTenant,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tenants.all() });
-      toast.success("Tenant deactivated");
+      toast.success("Tenant deleted permanently");
       setDeleteConfirm(null);
     },
     onError: (err: Error) => {
@@ -936,11 +936,12 @@ export function TenantManagement() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Deactivate Tenant</DialogTitle>
+            <DialogTitle>Delete Tenant Permanently</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to deactivate this tenant? The tenant will no
-            longer accept new orders. This can be reversed later.
+            Are you sure you want to permanently delete this tenant? This will
+            remove all orders, products, categories, customers, and settings.
+            This action cannot be undone.
           </p>
           <div className="flex justify-end gap-2 pt-4">
             <Button
@@ -956,7 +957,7 @@ export function TenantManagement() {
                 if (deleteConfirm) deleteMutation.mutate(deleteConfirm);
               }}
             >
-              {deleteMutation.isPending ? "Deactivating..." : "Deactivate"}
+              {deleteMutation.isPending ? "Deleting..." : "Delete Permanently"}
             </Button>
           </div>
         </DialogContent>

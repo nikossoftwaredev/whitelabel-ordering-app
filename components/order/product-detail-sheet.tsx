@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare, Minus, Plus, Square, SquareCheck, Store, X } from "lucide-react";
+import { MessageSquare, Square, SquareCheck, Store, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
@@ -10,7 +10,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { calcBogoTotal, hasActiveOffer } from "@/lib/orders/offers";
 import { useCartStore } from "@/lib/stores/cart-store";
+
+import { QuantityStepper } from "./quantity-stepper";
 
 interface ModifierOption {
   id: string;
@@ -45,6 +48,10 @@ interface Product {
   isSpicy: boolean;
   allergens: string | null;
   modifierGroups: ModifierGroup[];
+  offerType?: string | null;
+  offerPrice?: number | null;
+  offerStart?: string | null;
+  offerEnd?: string | null;
 }
 
 function getRequiredLabel(minSelect: number, t: (key: string, values?: Record<string, string | number | Date>) => string) {
@@ -103,7 +110,8 @@ export const ProductDetailSheet = ({
         setSelectedModifiers(modMap);
       } else {
         setIsEditing(false);
-        setQuantity(1);
+        // Default to 2 for BOGO products so they get the deal
+        setQuantity(hasActiveOffer(product) ? 2 : 1);
         setNotes("");
         setShowNotes(false);
         const defaults = new Map<string, Set<string>>();
@@ -144,6 +152,8 @@ export const ProductDetailSheet = ({
 
   if (!product) return null;
 
+  const isBogoActive = hasActiveOffer(product);
+
   const modifierTotal = product.modifierGroups.reduce((sum, group) => {
     const selected = selectedModifiers.get(group.id) || new Set();
     for (const opt of group.options) {
@@ -152,7 +162,12 @@ export const ProductDetailSheet = ({
     return sum;
   }, 0);
 
-  const totalPrice = (product.price + modifierTotal) * quantity;
+  let totalPrice: number;
+  if (isBogoActive && quantity >= 2) {
+    totalPrice = calcBogoTotal(quantity, product.offerPrice!, product.price, modifierTotal);
+  } else {
+    totalPrice = (product.price + modifierTotal) * quantity;
+  }
 
   const buildModifiers = () =>
     product.modifierGroups.flatMap((group) => {
@@ -180,6 +195,10 @@ export const ProductDetailSheet = ({
         quantity,
         modifiers,
         notes: notes.trim(),
+        ...(isBogoActive && {
+          offerType: product.offerType,
+          offerPrice: product.offerPrice,
+        }),
       });
     }
 
@@ -244,12 +263,29 @@ export const ProductDetailSheet = ({
 
             {/* Price */}
             <div className="flex items-center gap-2 mt-2">
-              <span
-                className="text-lg font-bold"
-                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-              >
-                {formatPrice(product.price)}
-              </span>
+              {isBogoActive ? (
+                <>
+                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    1+1
+                  </span>
+                  <span
+                    className="text-lg font-bold"
+                    style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+                  >
+                    {formatPrice(product.offerPrice!)}
+                  </span>
+                  <span className="text-sm text-muted-foreground line-through">
+                    {formatPrice(product.price * 2)}
+                  </span>
+                </>
+              ) : (
+                <span
+                  className="text-lg font-bold"
+                  style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+                >
+                  {formatPrice(product.price)}
+                </span>
+              )}
             </div>
 
             {/* Description */}
@@ -391,25 +427,12 @@ export const ProductDetailSheet = ({
           )}
           <div className="flex items-center gap-3 p-4 pb-6 sm:pb-4">
             {/* Quantity */}
-            <div className="flex items-center gap-0 bg-muted rounded-xl overflow-hidden">
-              <button
-                className="size-11 flex items-center justify-center hover:bg-muted/80 transition-colors duration-200 cursor-pointer"
-                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              >
-                <Minus className="size-5" />
-              </button>
-              <span className="text-base font-bold w-8 text-center tabular-nums text-foreground">
-                {quantity}
-              </span>
-              <button
-                className="size-11 flex items-center justify-center hover:bg-muted/80 transition-colors duration-200 cursor-pointer"
-                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                onClick={() => setQuantity(quantity + 1)}
-              >
-                <Plus className="size-5" />
-              </button>
-            </div>
+            <QuantityStepper
+              variant="detail"
+              quantity={quantity}
+              onDecrement={(e) => { e.stopPropagation(); setQuantity(Math.max(isBogoActive ? 2 : 1, quantity - 1)); }}
+              onIncrement={(e) => { e.stopPropagation(); setQuantity(quantity + 1); }}
+            />
 
             {/* Submit button */}
             <button

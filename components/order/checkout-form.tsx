@@ -13,12 +13,9 @@ import {
   Loader2,
   MapPin,
   MessageSquare,
-  Minus,
-  Plus,
   ShoppingBag,
   Store,
   Tag,
-  Trash2,
   X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -48,6 +45,7 @@ import { useAddressStore } from "@/lib/stores/address-store";
 import { useCartStore } from "@/lib/stores/cart-store";
 
 import { AddressManagerSheet } from "./address-manager-sheet";
+import { QuantityStepper } from "./quantity-stepper";
 import { StripePayment } from "./stripe-payment";
 
 type OrderType = "PICKUP" | "DELIVERY";
@@ -659,46 +657,19 @@ export const CheckoutForm = () => {
                       </div>
 
                       {/* Quantity control */}
-                      <div className="flex items-center border border-border rounded-lg shrink-0">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          className="size-7 rounded-l-lg rounded-r-none hover:bg-muted"
-                          onClick={() => {
-                            if (item.quantity <= 1)
-                              cart.removeItem(item.cartItemId);
-                            else
-                              cart.updateQuantity(
-                                item.cartItemId,
-                                item.quantity - 1
-                              );
-                          }}
-                        >
-                          {item.quantity <= 1 ? (
-                            <Trash2 className="size-3 text-destructive" />
-                          ) : (
-                            <Minus className="size-3" />
-                          )}
-                        </Button>
-                        <span className="text-xs font-bold w-6 text-center tabular-nums">
-                          {item.quantity}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          className="size-7 rounded-r-lg rounded-l-none hover:bg-muted"
-                          onClick={() =>
-                            cart.updateQuantity(
-                              item.cartItemId,
-                              item.quantity + 1
-                            )
-                          }
-                        >
-                          <Plus className="size-3" />
-                        </Button>
-                      </div>
+                      <QuantityStepper
+                        quantity={item.quantity}
+                        onDecrement={() => {
+                          if (item.quantity <= 1)
+                            cart.removeItem(item.cartItemId);
+                          else
+                            cart.updateQuantity(item.cartItemId, item.quantity - 1);
+                        }}
+                        onIncrement={() => {
+                          cart.updateQuantity(item.cartItemId, item.quantity + 1);
+                        }}
+                        className="shrink-0"
+                      />
                     </div>
 
                     <p className="text-sm font-semibold mt-1.5 tabular-nums">
