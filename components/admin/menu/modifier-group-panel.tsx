@@ -4,9 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight,Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 import { ModifierGroupFormDialog } from "./modifier-group-form-dialog";
 
@@ -35,6 +38,7 @@ interface Props {
 
 export function ModifierGroupPanel({ tenantId }: Props) {
   const queryClient = useQueryClient();
+  const openDialog = useDialogStore((s) => s.openDialog);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<ModifierGroup | null>(null);
@@ -132,9 +136,15 @@ export function ModifierGroupPanel({ tenantId }: Props) {
                       className="size-7 text-muted-foreground hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm(`Delete "${group.name}"?`)) {
-                          deleteMutation.mutate(group.id);
-                        }
+                        openDialog(
+                          CONFIRM_DIALOG,
+                          {
+                            title: `Delete "${group.name}"?`,
+                            description: "This will permanently delete this modifier group and cannot be undone.",
+                            actionLabel: "Delete",
+                          },
+                          () => deleteMutation.mutate(group.id)
+                        );
                       }}
                     >
                       <Trash2 className="size-3.5" />

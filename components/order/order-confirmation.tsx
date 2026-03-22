@@ -18,11 +18,13 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import type { OrderStatus } from "@/lib/general/status-config";
 import { cn } from "@/lib/general/utils";
 import { Link } from "@/lib/i18n/navigation";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 // Step indices for pickup orders (4 steps)
 const PICKUP_STATUS_ORDER: Record<OrderStatus, number> = {
@@ -50,6 +52,7 @@ const DELIVERY_STATUS_ORDER: Record<OrderStatus, number> = {
 
 export const OrderConfirmation = () => {
   const t = useTranslations("OrderConfirmation");
+  const openDialog = useDialogStore((s) => s.openDialog);
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId") || "";
   const orderNumber = searchParams.get("orderNumber") || "---";
@@ -78,9 +81,15 @@ export const OrderConfirmation = () => {
   });
 
   const handleCancel = () => {
-    if (window.confirm(t("cancelConfirm"))) {
-      cancelMutation.mutate();
-    }
+    openDialog(
+      CONFIRM_DIALOG,
+      {
+        title: t("cancelConfirm"),
+        description: t("cancelConfirm"),
+        actionLabel: t("cancelOrder"),
+      },
+      () => cancelMutation.mutate()
+    );
   };
 
   const isDelivery = orderType === "DELIVERY";

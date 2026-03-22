@@ -3,8 +3,10 @@
 import { Loader2, Upload, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/general/utils";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 // Track which ImageUpload instance is currently active for paste
 let activeUploadId: string | null = null;
@@ -27,6 +29,7 @@ export const ImageUpload = ({
   className,
   disabled,
 }: ImageUploadProps) => {
+  const openDialog = useDialogStore((s) => s.openDialog);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(false);
@@ -137,7 +140,17 @@ export const ImageUpload = ({
             variant="destructive"
             size="icon"
             className="absolute -top-2 -right-2 h-6 w-6"
-            onClick={handleRemove}
+            onClick={() =>
+              openDialog(
+                CONFIRM_DIALOG,
+                {
+                  title: "Remove image?",
+                  description: "This will delete the uploaded image.",
+                  actionLabel: "Remove",
+                },
+                handleRemove
+              )
+            }
             disabled={disabled}
           >
             <X className="h-3 w-3" />

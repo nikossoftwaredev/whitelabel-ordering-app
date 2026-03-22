@@ -12,6 +12,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { queryKeys } from "@/lib/query/keys";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 import { CategoryFormDialog } from "./category-form-dialog";
 import { ModifierGroupPanel } from "./modifier-group-panel";
@@ -60,6 +62,7 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
   const tenant = useTenant();
   const tenantId = propTenantId || tenant.id;
   const formatPrice = useFormatPrice();
+  const openDialog = useDialogStore((s) => s.openDialog);
   const queryClient = useQueryClient();
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -230,9 +233,15 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
                         className="size-7 cursor-pointer text-destructive hover:text-destructive"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (confirm(`Delete "${cat.name}"?`)) {
-                            deleteCategoryMutation.mutate(cat.id);
-                          }
+                          openDialog(
+                            CONFIRM_DIALOG,
+                            {
+                              title: `Delete "${cat.name}"?`,
+                              description: "This will permanently delete this category and cannot be undone.",
+                              actionLabel: "Delete",
+                            },
+                            () => deleteCategoryMutation.mutate(cat.id)
+                          );
                         }}
                       >
                         <Trash2 className="size-3" />
@@ -349,11 +358,17 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
                         variant="ghost"
                         size="icon"
                         className="size-7 cursor-pointer text-destructive hover:text-destructive"
-                        onClick={() => {
-                          if (confirm(`Delete "${product.name}"?`)) {
-                            deleteProductMutation.mutate(product.id);
-                          }
-                        }}
+                        onClick={() =>
+                          openDialog(
+                            CONFIRM_DIALOG,
+                            {
+                              title: `Delete "${product.name}"?`,
+                              description: "This will permanently delete this product and cannot be undone.",
+                              actionLabel: "Delete",
+                            },
+                            () => deleteProductMutation.mutate(product.id)
+                          )
+                        }
                       >
                         <Trash2 className="size-3" />
                       </Button>

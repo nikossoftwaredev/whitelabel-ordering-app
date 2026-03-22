@@ -13,6 +13,7 @@ import {
 import { useCallback,useState } from "react";
 import { toast } from "sonner";
 
+import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +37,7 @@ import {
 import { formatAmount, formatDateShort, formatInvoiceNumber } from "@/lib/general/formatters";
 import { InvoiceStatus,invoiceStatusConfig } from "@/lib/general/status-config";
 import { queryKeys } from "@/lib/query/keys";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 // -- Types -------------------------------------------------------------------
 
@@ -86,6 +88,7 @@ interface InvoiceManagementProps {
 
 export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
   const queryClient = useQueryClient();
+  const openDialog = useDialogStore((s) => s.openDialog);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -315,7 +318,17 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
                       size="sm"
                       className="cursor-pointer"
                       disabled={cancelMutation.isPending}
-                      onClick={() => cancelMutation.mutate(inv.id)}
+                      onClick={() =>
+                        openDialog(
+                          CONFIRM_DIALOG,
+                          {
+                            title: "Cancel invoice?",
+                            description: "This will permanently cancel this invoice. This action cannot be undone.",
+                            actionLabel: "Cancel Invoice",
+                          },
+                          () => cancelMutation.mutate(inv.id)
+                        )
+                      }
                     >
                       <Ban className="size-4" />
                       Cancel Invoice
@@ -494,7 +507,17 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
                               size="sm"
                               className="cursor-pointer text-red-600 hover:text-red-700 dark:text-red-400"
                               disabled={cancelMutation.isPending}
-                              onClick={() => cancelMutation.mutate(invoice.id)}
+                              onClick={() =>
+                                openDialog(
+                                  CONFIRM_DIALOG,
+                                  {
+                                    title: "Cancel invoice?",
+                                    description: "This will permanently cancel this invoice. This action cannot be undone.",
+                                    actionLabel: "Cancel Invoice",
+                                  },
+                                  () => cancelMutation.mutate(invoice.id)
+                                )
+                              }
                             >
                               <Ban className="size-4" />
                             </Button>

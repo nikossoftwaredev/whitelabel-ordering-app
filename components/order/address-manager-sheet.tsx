@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { useTenant } from "@/components/tenant-provider";
 import {
   Dialog,
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { type Address, useAddressStore } from "@/lib/stores/address-store";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 import { AuthDialog } from "./auth-dialog";
 import {
@@ -67,6 +69,7 @@ export function AddressManagerSheet({
   onOpenChange,
 }: AddressManagerSheetProps) {
   const t = useTranslations("Address");
+  const openDialog = useDialogStore((s) => s.openDialog);
   const tenant = useTenant();
   const { data: session } = useSession();
   const {
@@ -371,7 +374,17 @@ export function AddressManagerSheet({
                             </div>
                           </button>
                           <button
-                            onClick={() => deleteMutation.mutate(addr.id)}
+                            onClick={() =>
+                              openDialog(
+                                CONFIRM_DIALOG,
+                                {
+                                  title: "Delete address?",
+                                  description: "This will permanently delete this saved address.",
+                                  actionLabel: "Delete",
+                                },
+                                () => deleteMutation.mutate(addr.id)
+                              )
+                            }
                             disabled={deleteMutation.isPending}
                             className="size-9 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors duration-200 cursor-pointer shrink-0 mr-2"
                           >

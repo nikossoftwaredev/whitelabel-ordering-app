@@ -68,9 +68,6 @@ export const StoreInfoDialog = () => {
                 <Phone className="size-5" />
                 <span>{phone}</span>
               </a>
-              <span className="text-xs text-muted-foreground">
-                {t("tapToCall")}
-              </span>
             </div>
           )}
 

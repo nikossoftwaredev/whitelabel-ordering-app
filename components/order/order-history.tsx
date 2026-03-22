@@ -13,6 +13,7 @@ import {
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import { ACTIVE_ORDER_STATUSES, OrderStatus, orderStatusConfig } from "@/lib/gen
 import { Link } from "@/lib/i18n/navigation";
 import { queryKeys } from "@/lib/query/keys";
 import { useCartStore } from "@/lib/stores/cart-store";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 interface OrderItem {
   productName: string;
@@ -49,6 +51,7 @@ interface OrderHistoryResponse {
 export const OrderHistory = () => {
   const t = useTranslations("OrderHistory");
   const tStatus = useTranslations("OrderStatus");
+  const openDialog = useDialogStore((s) => s.openDialog);
   const tenant = useTenant();
   const formatPrice = useFormatPrice();
   const addItem = useCartStore((s) => s.addItem);
@@ -85,9 +88,15 @@ export const OrderHistory = () => {
   });
 
   const handleCancel = (orderId: string) => {
-    if (window.confirm(t("cancelConfirm"))) {
-      cancelMutation.mutate(orderId);
-    }
+    openDialog(
+      CONFIRM_DIALOG,
+      {
+        title: t("cancelConfirm"),
+        description: t("cancelConfirm"),
+        actionLabel: t("cancelOrder"),
+      },
+      () => cancelMutation.mutate(orderId)
+    );
   };
 
   const handleReorder = (order: Order) => {

@@ -14,6 +14,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/table";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { decimalToCents, formatDate } from "@/lib/general/formatters";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 import { queryKeys } from "@/lib/query/keys";
 
 interface PromoCode {
@@ -101,6 +103,7 @@ function PromoStatusBadge({ promo, isExpired, isMaxedOut }: { promo: PromoCode; 
 
 export function PromoCodeManagement({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient();
+  const openDialog = useDialogStore((s) => s.openDialog);
   const formatPrice = useFormatPrice();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -418,13 +421,15 @@ export function PromoCodeManagement({ tenantId }: { tenantId: string }) {
                           className="size-8 text-destructive hover:text-destructive cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (
-                              window.confirm(
-                                "Delete this promo code? This cannot be undone."
-                              )
-                            ) {
-                              deleteMutation.mutate(promo.id);
-                            }
+                            openDialog(
+                              CONFIRM_DIALOG,
+                              {
+                                title: "Delete promo code?",
+                                description: "This will permanently delete this promo code and cannot be undone.",
+                                actionLabel: "Delete",
+                              },
+                              () => deleteMutation.mutate(promo.id)
+                            );
                           }}
                         >
                           <Trash2 className="size-4" />
