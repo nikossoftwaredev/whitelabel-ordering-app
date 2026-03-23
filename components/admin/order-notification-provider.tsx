@@ -1,5 +1,6 @@
 "use client";
 
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import { useFormatPrice } from "@/hooks/use-format-price";
 import { useNotificationSound } from "@/hooks/use-notification-sound";
 import type { OrderEvent } from "@/lib/events/order-events";
 import { queryKeys } from "@/lib/query/keys";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface OrderNotificationProviderProps {
   tenantId: string;
@@ -18,11 +20,10 @@ export function OrderNotificationProvider({
 }: OrderNotificationProviderProps) {
   const queryClient = useQueryClient();
   const formatPrice = useFormatPrice();
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { playSound } = useNotificationSound();
   const playSoundRef = useRef(playSound);
   const formatPriceRef = useRef(formatPrice);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     playSoundRef.current = playSound;
@@ -35,18 +36,12 @@ export function OrderNotificationProvider({
   useEffect(() => {
     if (!tenantId) return;
 
-    let stopped = false;
+    const supabase = getSupabaseBrowserClient();
 
-    function connect() {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-
-      const es = new EventSource(`/api/admin/${tenantId}/orders/stream`);
-      eventSourceRef.current = es;
-
-      es.addEventListener("new_order", (e) => {
-        const event: OrderEvent = JSON.parse(e.data);
+    const channel = supabase
+      .channel(`orders:${tenantId}`)
+      .on("broadcast", { event: "new_order" }, ({ payload }) => {
+        const event = payload as OrderEvent;
 
         playSoundRef.current();
 
@@ -67,33 +62,22 @@ export function OrderNotificationProvider({
         queryClient.invalidateQueries({
           queryKey: queryKeys.stats.dashboard(tenantId),
         });
-      });
-
-      es.addEventListener("status_change", () => {
+      })
+      .on("broadcast", { event: "status_change" }, () => {
         queryClient.invalidateQueries({
           queryKey: queryKeys.orders.all(tenantId),
         });
         queryClient.invalidateQueries({
           queryKey: queryKeys.stats.dashboard(tenantId),
         });
-      });
+      })
+      .subscribe();
 
-      es.onerror = () => {
-        es.close();
-        if (!stopped) {
-          reconnectTimeoutRef.current = setTimeout(connect, 3000);
-        }
-      };
-    }
-
-    connect();
+    channelRef.current = channel;
 
     return () => {
-      stopped = true;
-      eventSourceRef.current?.close();
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
+      supabase.removeChannel(channel);
+      channelRef.current = null;
     };
   }, [tenantId, queryClient]);
 

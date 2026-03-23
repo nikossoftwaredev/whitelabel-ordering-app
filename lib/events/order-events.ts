@@ -1,4 +1,4 @@
-import { EventEmitter } from "events";
+import { broadcastEvent } from "@/lib/supabase/server";
 
 export interface OrderEvent {
   tenantId: string;
@@ -9,29 +9,26 @@ export interface OrderEvent {
   customerName: string | null;
 }
 
-class OrderEventBus extends EventEmitter {
+/**
+ * Broadcast order events via Supabase Realtime.
+ *
+ * Two channels per tenant:
+ * - `orders:${tenantId}` — admin dashboard listens here (all orders)
+ * - `order:${orderId}`   — customer tracks their specific order
+ */
+export const orderEvents = {
   /** Fired when a new order is created (status: NEW) */
-  emitNewOrder(event: OrderEvent) {
-    this.emit("order:new", event);
-  }
+  async emitNewOrder(event: OrderEvent) {
+    await broadcastEvent(`orders:${event.tenantId}`, "new_order", event as unknown as Record<string, unknown>);
+  },
 
   /** Fired when an order's status changes */
-  emitStatusChange(event: OrderEvent) {
-    this.emit("order:status", event);
-  }
-}
-
-// Singleton — survives hot reloads in dev
-const globalForEvents = globalThis as unknown as {
-  orderEvents: OrderEventBus | undefined;
+  async emitStatusChange(event: OrderEvent) {
+    // Notify admin dashboard
+    await Promise.all([
+      broadcastEvent(`orders:${event.tenantId}`, "status_change", event as unknown as Record<string, unknown>),
+      // Notify the specific customer tracking this order
+      broadcastEvent(`order:${event.orderId}`, "status_change", event as unknown as Record<string, unknown>),
+    ]);
+  },
 };
-
-export const orderEvents =
-  globalForEvents.orderEvents ?? new OrderEventBus();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForEvents.orderEvents = orderEvents;
-}
-
-// Prevent MaxListeners warning (many SSE connections)
-orderEvents.setMaxListeners(100);

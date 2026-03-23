@@ -1,5 +1,6 @@
 "use client";
 
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   Check,
   ChefHat,
@@ -18,6 +19,7 @@ import { useFormatPrice } from "@/hooks/use-format-price";
 import type { OrderStatus } from "@/lib/general/status-config";
 import { cn } from "@/lib/general/utils";
 import { Link } from "@/lib/i18n/navigation";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type ActiveOrderStatus = Extract<OrderStatus, "NEW" | "ACCEPTED" | "PREPARING" | "READY">;
 
@@ -50,7 +52,7 @@ export function ActiveOrderBanner() {
   const tenant = useTenant();
   const formatPrice = useFormatPrice();
   const [order, setOrder] = useState<ActiveOrder | null>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const [visible, setVisible] = useState(false);
 
   // Fetch active order on mount
@@ -68,56 +70,37 @@ export function ActiveOrderBanner() {
       .catch(() => {});
   }, [session?.user?.id, tenant.slug]);
 
-  // SSE for live updates on active order
+  // Subscribe to Supabase Broadcast for live order updates
   useEffect(() => {
-    if (!order || !tenant.slug) return;
+    if (!order) return;
 
     const orderId = order.id;
-    let stopped = false;
-    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    const supabase = getSupabaseBrowserClient();
 
-    function connect() {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-
-      const es = new EventSource(
-        `/api/tenants/${tenant.slug}/orders/${orderId}/stream`
-      );
-      eventSourceRef.current = es;
-
-      es.addEventListener("status_change", (e) => {
-        const data = JSON.parse(e.data);
-        const newStatus = data.status as string;
+    const channel = supabase
+      .channel(`order:${orderId}`)
+      .on("broadcast", { event: "status_change" }, ({ payload }) => {
+        const newStatus = payload.status as string;
 
         if (newStatus === "COMPLETED" || newStatus === "REJECTED") {
-          stopped = true;
           setVisible(false);
           setTimeout(() => setOrder(null), 300);
-          es.close();
+          supabase.removeChannel(channel);
         } else {
           setOrder((prev) =>
             prev ? { ...prev, status: newStatus as ActiveOrderStatus } : prev
           );
         }
-      });
+      })
+      .subscribe();
 
-      es.onerror = () => {
-        es.close();
-        if (!stopped) {
-          reconnectTimeout = setTimeout(connect, 3000);
-        }
-      };
-    }
-
-    connect();
+    channelRef.current = channel;
 
     return () => {
-      stopped = true;
-      eventSourceRef.current?.close();
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      supabase.removeChannel(channel);
+      channelRef.current = null;
     };
-  }, [order?.id, tenant.slug]);
+  }, [order?.id]);
 
   if (!order) return null;
 

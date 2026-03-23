@@ -1,5 +1,6 @@
 "use client";
 
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -10,12 +11,13 @@ import {
   Clock,
   HandPlatter,
   Loader2,
+  PartyPopper,
   Truck,
   XCircle,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
@@ -25,29 +27,52 @@ import type { OrderStatus } from "@/lib/general/status-config";
 import { cn } from "@/lib/general/utils";
 import { Link } from "@/lib/i18n/navigation";
 import { useDialogStore } from "@/lib/stores/dialog-store";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-// Step indices for pickup orders (4 steps)
-const PICKUP_STATUS_ORDER: Record<OrderStatus, number> = {
-  NEW: 0,
-  ACCEPTED: 1,
-  PREPARING: 2,
-  READY: 3,
-  DELIVERING: 3,
-  COMPLETED: 4,
-  REJECTED: -1,
-  CANCELLED: -1,
+// ── Progress ring config ──────────────────────────────────────
+const RING_SIZE = 220;
+const STROKE_WIDTH = 10;
+const RADIUS = (RING_SIZE - STROKE_WIDTH) / 2;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+// Step progress percentages per status
+const PICKUP_PROGRESS: Record<string, number> = {
+  NEW: 0.1,
+  ACCEPTED: 0.35,
+  PREPARING: 0.65,
+  READY: 1.0,
+  COMPLETED: 1.0,
+};
+const DELIVERY_PROGRESS: Record<string, number> = {
+  NEW: 0.08,
+  ACCEPTED: 0.25,
+  PREPARING: 0.5,
+  READY: 0.75,
+  DELIVERING: 0.9,
+  COMPLETED: 1.0,
 };
 
-// Step indices for delivery orders (5 steps)
-const DELIVERY_STATUS_ORDER: Record<OrderStatus, number> = {
-  NEW: 0,
-  ACCEPTED: 1,
-  PREPARING: 2,
-  READY: 3,
-  DELIVERING: 4,
-  COMPLETED: 5,
-  REJECTED: -1,
-  CANCELLED: -1,
+// Step definitions for the mini stepper
+const PICKUP_STEPS = ["NEW", "ACCEPTED", "PREPARING", "READY"] as const;
+const DELIVERY_STEPS = ["NEW", "ACCEPTED", "PREPARING", "READY", "DELIVERING"] as const;
+
+const STEP_ICONS: Record<string, typeof Clock> = {
+  NEW: Clock,
+  ACCEPTED: Check,
+  PREPARING: ChefHat,
+  READY: HandPlatter,
+  DELIVERING: Truck,
+  COMPLETED: PartyPopper,
+};
+
+// Ring color per status
+const RING_COLORS: Record<string, string> = {
+  NEW: "#f59e0b",       // amber
+  ACCEPTED: "#3b82f6",  // blue
+  PREPARING: "#f97316",  // orange
+  READY: "#22c55e",     // green
+  DELIVERING: "#8b5cf6", // violet
+  COMPLETED: "#22c55e", // green
 };
 
 export const OrderConfirmation = () => {
@@ -61,7 +86,8 @@ export const OrderConfirmation = () => {
   const [orderType, setOrderType] = useState<"PICKUP" | "DELIVERY" | "DINE_IN">("PICKUP");
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const [orderCreatedAt, setOrderCreatedAt] = useState<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -92,93 +118,123 @@ export const OrderConfirmation = () => {
     );
   };
 
-  const isDelivery = orderType === "DELIVERY";
-  const STATUS_ORDER = isDelivery ? DELIVERY_STATUS_ORDER : PICKUP_STATUS_ORDER;
-
-  const STEPS = isDelivery
-    ? [
-        { status: "NEW" as const, label: t("stepReceived"), icon: Clock },
-        { status: "ACCEPTED" as const, label: t("stepAccepted"), icon: Check },
-        { status: "PREPARING" as const, label: t("stepPreparing"), icon: ChefHat },
-        { status: "READY" as const, label: t("stepReady"), icon: HandPlatter },
-        { status: "DELIVERING" as const, label: t("stepDelivering"), icon: Truck },
-      ]
-    : [
-        { status: "NEW" as const, label: t("stepReceived"), icon: Clock },
-        { status: "ACCEPTED" as const, label: t("stepAccepted"), icon: Check },
-        { status: "PREPARING" as const, label: t("stepPreparing"), icon: ChefHat },
-        { status: "READY" as const, label: t("stepReady"), icon: HandPlatter },
-      ];
-
+  // Fetch initial order state
   useEffect(() => {
     if (!orderId || !tenant.slug) return;
 
-    let stopped = false;
-    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    function connect() {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-
-      const es = new EventSource(
-        `/api/tenants/${tenant.slug}/orders/${orderId}/stream`
-      );
-      eventSourceRef.current = es;
-
-      es.addEventListener("connected", (e) => {
-        const data = JSON.parse(e.data);
-        setStatus(data.status);
-        if (data.orderType) setOrderType(data.orderType);
-        if (data.scheduledFor) setScheduledFor(data.scheduledFor);
-        setConnected(true);
-      });
-
-      es.addEventListener("status_change", (e) => {
-        const data = JSON.parse(e.data);
-        setStatus(data.status);
-      });
-
-      es.onerror = () => {
-        setConnected(false);
-        es.close();
-        if (!stopped) {
-          reconnectTimeout = setTimeout(connect, 3000);
+    fetch(`/api/tenants/${tenant.slug}/orders/active`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.order) {
+          setStatus(data.order.status);
+          if (data.order.orderType) setOrderType(data.order.orderType);
+          if (data.order.scheduledFor) setScheduledFor(data.order.scheduledFor);
+          if (data.order.createdAt) setOrderCreatedAt(data.order.createdAt);
         }
-      };
-    }
-
-    connect();
-
-    return () => {
-      stopped = true;
-      eventSourceRef.current?.close();
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-    };
+        setConnected(true);
+      })
+      .catch(() => {});
   }, [orderId, tenant.slug]);
 
+  // Subscribe to Supabase Broadcast for live status updates
+  useEffect(() => {
+    if (!orderId) return;
+
+    const supabase = getSupabaseBrowserClient();
+
+    const channel = supabase
+      .channel(`order:${orderId}`)
+      .on("broadcast", { event: "status_change" }, ({ payload }) => {
+        setStatus(payload.status as OrderStatus);
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
+  }, [orderId]);
+
+  const isDelivery = orderType === "DELIVERY";
   const isRejected = status === "REJECTED";
   const isCancelled = status === "CANCELLED";
   const isCompleted = status === "COMPLETED";
-  const currentStepIndex = STATUS_ORDER[status];
+  const isReady = status === "READY";
+  const isTerminal = isCompleted || isRejected || isCancelled;
 
-  const displayNumber = orderNumber.startsWith("#")
-    ? orderNumber
-    : `#${orderNumber}`;
+  const progressMap = isDelivery ? DELIVERY_PROGRESS : PICKUP_PROGRESS;
+  const progress = progressMap[status] ?? 0;
+  const strokeOffset = CIRCUMFERENCE * (1 - progress);
+  const ringColor = RING_COLORS[status] ?? RING_COLORS.NEW;
 
-  if (isRejected) {
+  const steps = isDelivery ? DELIVERY_STEPS : PICKUP_STEPS;
+  const currentStepIdx = (steps as readonly string[]).indexOf(status);
+
+  // Estimated time remaining
+  const estimatedMinutes = useMemo(() => {
+    const prep = tenant.prepTimeMinutes || 20;
+    if (isTerminal || isReady) return 0;
+    if (status === "NEW") return prep;
+    if (status === "ACCEPTED") return Math.round(prep * 0.85);
+    if (status === "PREPARING") return Math.round(prep * 0.5);
+    if (status === "DELIVERING") return Math.round(prep * 0.3);
+    return prep;
+  }, [status, tenant.prepTimeMinutes, isTerminal, isReady]);
+
+  // Friendly messages per status
+  const friendlyTitle = useMemo(() => {
+    if (isCompleted) return t("friendlyCompleted");
+    if (status === "NEW") return t("friendlyNew");
+    if (status === "ACCEPTED") return t("friendlyAccepted");
+    if (status === "PREPARING") return t("friendlyPreparing");
+    if (status === "READY") return t("friendlyReady");
+    if (status === "DELIVERING") return t("friendlyDelivering");
+    return "";
+  }, [status, isCompleted, t]);
+
+  const friendlySub = useMemo(() => {
+    if (isCompleted) return t("friendlyCompletedSub");
+    if (status === "NEW") return t("friendlyNewSub");
+    if (status === "ACCEPTED") return t("friendlyAcceptedSub");
+    if (status === "PREPARING") return t("friendlyPreparingSub");
+    if (status === "READY") return t("friendlyReadySub");
+    if (status === "DELIVERING") return t("friendlyDeliveringSub");
+    return "";
+  }, [status, isCompleted, t]);
+
+  const displayNumber = orderNumber.startsWith("#") ? orderNumber : `#${orderNumber}`;
+
+  const StatusIcon = STEP_ICONS[status] ?? Clock;
+
+  // ── Rejected / Cancelled states ─────────────────────────────
+  if (isRejected || isCancelled) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
-        <div className="relative mb-6">
-          <XCircle className="size-20 text-red-500" />
+      <div className="min-h-[80vh] flex flex-col items-center justify-center px-6 text-center">
+        <div className="relative mb-8">
+          <div className={cn(
+            "size-32 rounded-full flex items-center justify-center",
+            isRejected ? "bg-red-500/10" : "bg-orange-500/10"
+          )}>
+            <XCircle className={cn(
+              "size-16",
+              isRejected ? "text-red-500" : "text-orange-500"
+            )} />
+          </div>
         </div>
+
         <h1 className="text-2xl font-bold mb-2">
-          {t("orderDeclined", { number: displayNumber })}
+          {isRejected
+            ? t("orderDeclined", { number: displayNumber })
+            : t("orderCancelled", { number: displayNumber })
+          }
         </h1>
-        <p className="text-muted-foreground max-w-sm mb-8">
-          {t("declinedDesc")}
+        <p className="text-muted-foreground max-w-sm mb-10 text-sm leading-relaxed">
+          {isRejected ? t("declinedDesc") : t("cancelledDesc")}
         </p>
-        <Button asChild>
+
+        <Button asChild size="lg" className="rounded-full px-8">
           <Link href="/order">
             <ArrowLeft className="size-4 mr-2" />
             {t("backToMenu")}
@@ -188,40 +244,26 @@ export const OrderConfirmation = () => {
     );
   }
 
-  if (isCancelled) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
-        <div className="relative mb-6">
-          <XCircle className="size-20 text-orange-500" />
-        </div>
-        <h1 className="text-2xl font-bold mb-2">
-          {t("orderCancelled", { number: displayNumber })}
-        </h1>
-        <p className="text-muted-foreground max-w-sm mb-8">
-          {t("cancelledDesc")}
-        </p>
-        <Button asChild>
-          <Link href="/order">
-            <ArrowLeft className="size-4 mr-2" />
-            {t("backToMenu")}
-          </Link>
-        </Button>
-      </div>
-    );
-  }
-
+  // ── Main tracking view ──────────────────────────────────────
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
-      {/* Header */}
-      <h1 className="text-2xl font-bold mb-1">{t("orderTitle", { number: displayNumber })}</h1>
-      <p className="text-muted-foreground mb-4">
-        {isCompleted ? t("orderComplete") : t("trackingLive")}
-      </p>
+    <div className="min-h-[80vh] flex flex-col items-center px-6 pt-8 pb-32">
+      {/* Order number badge */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+          {t("orderTitle", { number: displayNumber })}
+        </span>
+        {connected && !isTerminal && (
+          <span className="relative flex size-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full size-2 bg-green-500" />
+          </span>
+        )}
+      </div>
 
       {/* Scheduled badge */}
       {scheduledFor && (
-        <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-2 mb-6 text-sm font-medium">
-          <CalendarClock className="size-4 shrink-0" />
+        <div className="flex items-center gap-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-4 py-1.5 mb-4 text-xs font-medium">
+          <CalendarClock className="size-3.5 shrink-0" />
           <span>
             {t("scheduledForTime", {
               time: new Date(scheduledFor).toLocaleString(undefined, {
@@ -234,88 +276,127 @@ export const OrderConfirmation = () => {
         </div>
       )}
 
-      {/* Status stepper */}
-      <div className="w-full max-w-md mb-10">
-        <div className="flex items-center justify-between relative">
-          {/* Progress line behind icons */}
-          <div className="absolute top-5 left-[10%] right-[10%] h-0.5 bg-muted" />
-          <div
-            className="absolute top-5 left-[10%] h-0.5 bg-primary transition-all duration-500"
-            style={{
-              width: `${Math.min(currentStepIndex / (STEPS.length - 1), 1) * 80}%`,
-            }}
+      {/* ── Circular progress ring ─────────────────────────── */}
+      <div className="relative my-6">
+        {/* Outer glow */}
+        <div
+          className="absolute inset-0 rounded-full blur-2xl opacity-20 transition-colors duration-700"
+          style={{ backgroundColor: ringColor }}
+        />
+
+        <svg
+          width={RING_SIZE}
+          height={RING_SIZE}
+          className="transform -rotate-90"
+        >
+          {/* Background track */}
+          <circle
+            cx={RING_SIZE / 2}
+            cy={RING_SIZE / 2}
+            r={RADIUS}
+            fill="none"
+            stroke="currentColor"
+            className="text-muted/30"
+            strokeWidth={STROKE_WIDTH}
           />
+          {/* Progress arc */}
+          <circle
+            cx={RING_SIZE / 2}
+            cy={RING_SIZE / 2}
+            r={RADIUS}
+            fill="none"
+            stroke={ringColor}
+            strokeWidth={STROKE_WIDTH}
+            strokeLinecap="round"
+            strokeDasharray={CIRCUMFERENCE}
+            strokeDashoffset={strokeOffset}
+            className="transition-all duration-1000 ease-out"
+          />
+        </svg>
 
-          {STEPS.map((step, idx) => {
-            const isDone = currentStepIndex > idx;
-            const isCurrent = currentStepIndex === idx;
-            const Icon = step.icon;
-
-            return (
-              <div
-                key={step.status}
-                className="flex flex-col items-center relative z-10"
+        {/* Center content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          {isCompleted ? (
+            <PartyPopper className="size-12 text-green-500" />
+          ) : isReady ? (
+            <>
+              <HandPlatter className="size-10 text-green-500 mb-1" />
+              <span className="text-xs font-semibold text-green-500">{t("stepReady")}</span>
+            </>
+          ) : estimatedMinutes > 0 ? (
+            <>
+              <span
+                className="text-4xl font-black tabular-nums leading-none"
+                style={{ color: ringColor }}
               >
-                <div
-                  className={cn(
-                    "flex items-center justify-center size-10 rounded-full border-2 transition-all duration-300",
-                    isDone &&
-                      "bg-primary border-primary text-primary-foreground",
-                    isCurrent &&
-                      "bg-primary/10 border-primary text-primary animate-pulse",
-                    !isDone &&
-                      !isCurrent &&
-                      "bg-background border-muted text-muted-foreground"
-                  )}
-                >
-                  {isDone && <Check className="size-5" />}
-                  {!isDone && isCurrent && <Icon className="size-5" />}
-                  {!isDone && !isCurrent && <Icon className="size-4" />}
-                </div>
-                <span
-                  className={cn(
-                    "text-xs mt-2 font-medium",
-                    isDone && "text-primary",
-                    isCurrent && "text-primary",
-                    !isDone && !isCurrent && "text-muted-foreground"
-                  )}
-                >
-                  {step.label}
-                </span>
-              </div>
-            );
-          })}
+                {estimatedMinutes}
+              </span>
+              <span className="text-xs text-muted-foreground mt-1 font-medium">
+                {t("minutes")}
+              </span>
+            </>
+          ) : (
+            <StatusIcon className="size-10" style={{ color: ringColor }} />
+          )}
         </div>
       </div>
 
-      {/* Current status message */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
-        {!isCompleted && connected && (
-          <>
-            <Loader2 className="size-4 animate-spin" />
-            <span>
-              {status === "NEW" && t("waitingForStore")}
-              {status === "ACCEPTED" && t("storeAccepted")}
-              {status === "PREPARING" && t("preparing")}
-              {status === "READY" && (isDelivery ? t("readyForDelivery") : t("readyForPickup"))}
-              {status === "DELIVERING" && t("outForDelivery")}
-            </span>
-          </>
-        )}
-        {!isCompleted && !connected && !orderId && (
-          <span>{t("orderSubmitted")}</span>
-        )}
+      {/* Store name */}
+      <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">
+        {tenant.name}
+      </p>
+
+      {/* ── Friendly message ───────────────────────────────── */}
+      <h2 className="text-xl font-bold mb-1 transition-all duration-300">
+        {friendlyTitle}
+      </h2>
+      <p className="text-sm text-muted-foreground max-w-xs leading-relaxed mb-8">
+        {friendlySub}
+      </p>
+
+      {/* ── Mini step indicators ───────────────────────────── */}
+      <div className="flex items-center gap-1 mb-10">
+        {steps.map((step, idx) => {
+          const isDone = currentStepIdx > idx;
+          const isCurrent = currentStepIdx === idx;
+          const StepIcon = STEP_ICONS[step];
+
+          return (
+            <div key={step} className="flex items-center">
+              <div
+                className={cn(
+                  "flex items-center justify-center rounded-full transition-all duration-500",
+                  isDone && "size-8 bg-primary text-primary-foreground",
+                  isCurrent && "size-10 border-2 border-primary bg-primary/10 text-primary",
+                  !isDone && !isCurrent && "size-8 bg-muted/50 text-muted-foreground/40"
+                )}
+              >
+                {isDone ? (
+                  <Check className="size-4" />
+                ) : (
+                  <StepIcon className={cn("size-4", isCurrent && "size-5")} />
+                )}
+              </div>
+              {idx < steps.length - 1 && (
+                <div className={cn(
+                  "w-6 h-0.5 transition-colors duration-500",
+                  isDone ? "bg-primary" : "bg-muted/50"
+                )} />
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
-        <Button asChild className="flex-1">
+      {/* ── Action buttons ─────────────────────────────────── */}
+      <div className="flex gap-3 w-full max-w-xs">
+        <Button asChild variant="outline" className="flex-1 rounded-full" size="lg">
           <Link href="/order">
             <ArrowLeft className="size-4 mr-2" />
             {t("backToMenu")}
           </Link>
         </Button>
-        <Button variant="outline" asChild className="flex-1">
+        <Button asChild variant="outline" className="flex-1 rounded-full" size="lg">
           <Link href="/order/orders">
             <ClipboardList className="size-4 mr-2" />
             {t("orderHistory")}
@@ -323,23 +404,21 @@ export const OrderConfirmation = () => {
         </Button>
       </div>
 
-      {/* Cancel button - only for NEW orders */}
+      {/* Cancel — only for NEW orders */}
       {status === "NEW" && (
-        <div className="mt-4 w-full max-w-xs">
-          <Button
-            variant="outline"
-            className="w-full text-destructive border-destructive/50 hover:bg-destructive/10 cursor-pointer"
-            onClick={handleCancel}
-            disabled={cancelMutation.isPending}
-          >
-            {cancelMutation.isPending ? (
-              <Loader2 className="size-4 mr-2 animate-spin" />
-            ) : (
-              <XCircle className="size-4 mr-2" />
-            )}
-            {t("cancelOrder")}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          className="mt-4 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full cursor-pointer"
+          onClick={handleCancel}
+          disabled={cancelMutation.isPending}
+        >
+          {cancelMutation.isPending ? (
+            <Loader2 className="size-4 mr-2 animate-spin" />
+          ) : (
+            <XCircle className="size-4 mr-2" />
+          )}
+          {t("cancelOrder")}
+        </Button>
       )}
     </div>
   );

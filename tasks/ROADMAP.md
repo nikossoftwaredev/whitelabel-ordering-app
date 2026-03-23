@@ -58,9 +58,10 @@ The core ordering flow works: menu browsing, cart, checkout (Stripe Connect), or
 - **Priority:** HIGH — friction at login = lost orders
 
 ### 1.3 Push Notifications (Store Admin)
-- **Status:** SSE works for real-time, browser sound notifications exist
-- **Need:** Web push notifications so store owners get alerts even when browser tab is closed
-- **Work:** Web Push API with service worker (depends on Phase 0.2)
+- **Status:** Service worker has push *handler* ready (`sw.js` listens for `push` events). SSE + toast + sound notifications work in-browser. But **no server-side push sending exists** — no VAPID keys, no `web-push` library, no subscription endpoint.
+- **Result:** Notifications only work while admin tab is open. If store owner closes the browser, they miss orders.
+- **Need:** Complete the Web Push pipeline: VAPID key generation, subscription API endpoint, store subscriptions in DB, send push from backend when new order arrives
+- **Work:** Add `web-push` package, create `/api/push/subscribe` endpoint, save `PushSubscription` per user, trigger push in order creation flow
 - **Priority:** HIGH — missed order notification = unhappy store owner
 
 ### 1.4 Order Printing (Thermal Printer)
