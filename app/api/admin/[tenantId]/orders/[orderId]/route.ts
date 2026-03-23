@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { sendOrderStatusUpdate } from "@/lib/email/send";
 import { orderEvents } from "@/lib/events/order-events";
 import type { OrderStatus } from "@/lib/general/status-config";
+import { sendPushToCustomer } from "@/lib/push/send";
 
 type Params = { params: Promise<{ tenantId: string; orderId: string }> };
 
@@ -118,6 +119,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     data: updateData,
     include: {
       items: { include: { modifiers: true } },
+      customer: { select: { userId: true } },
     },
   });
 
@@ -130,6 +132,25 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     total: updated.total,
     customerName: updated.customerName,
     estimatedReadyAt: updated.estimatedReadyAt?.toISOString() ?? null,
+  });
+
+  // Push notification to customer (fire-and-forget)
+  const statusMessages: Record<string, string> = {
+    ACCEPTED: "Your order has been accepted!",
+    PREPARING: "Your order is being prepared",
+    READY: "Your order is ready for pickup!",
+    DELIVERING: "Your order is on the way!",
+    COMPLETED: "Your order has been completed",
+    CANCELLED: "Your order has been cancelled",
+  };
+
+  const pushMessage = statusMessages[status] || `Order status: ${status}`;
+
+  sendPushToCustomer(tenantId, updated.customer?.userId ?? null, {
+    title: `Order #${updated.orderNumber}`,
+    body: pushMessage,
+    icon: "/api/pwa-icon?size=192",
+    url: "/order",
   });
 
   // Send status email (fire-and-forget)

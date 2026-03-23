@@ -186,7 +186,11 @@
     "friendlyCompleted": "Καλή απόλαυση!",
     "friendlyCompletedSub": "Ευχαριστούμε που παρήγγειλες. Τα λέμε σύντομα!",
     "orderPlaced": "Παραγγελία καταχωρήθηκε",
-    "liveUpdates": "Ζωντανές ενημερώσεις"
+    "liveUpdates": "Ζωντανές ενημερώσεις",
+    "pushPromptTitle": "Ενημερώσεις παραγγελίας",
+    "pushPromptDescription": "Θα σας ειδοποιήσουμε όταν αλλάξει η κατάσταση της παραγγελίας σας.",
+    "pushPromptAccept": "Ενεργοποίηση ειδοποιήσεων",
+    "pushPromptDismiss": "Όχι, ευχαριστώ"
   },
   "ActiveOrderBanner": {
     "statusPlaced": "Υποβλήθηκε",

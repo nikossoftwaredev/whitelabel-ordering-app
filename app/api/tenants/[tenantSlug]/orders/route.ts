@@ -10,6 +10,7 @@ import { generateOrderNumber } from "@/lib/orders/order-number";
 import { isStoreOpen } from "@/lib/orders/store-hours";
 import { validateCart } from "@/lib/orders/validate-cart";
 import { validatePromoCode } from "@/lib/promo/validate";
+import { sendPushToAdmins } from "@/lib/push/send";
 import { createOrderSchema } from "@/lib/validations/order";
 
 export async function POST(
@@ -289,6 +290,14 @@ export async function POST(
 
   // Send confirmation email (fire-and-forget)
   sendOrderConfirmation(order, tenant).catch(() => {});
+
+  // Push notification to admins (fire-and-forget)
+  sendPushToAdmins(tenant.id, {
+    title: `New Order #${orderNumber}`,
+    body: `${order.customerName} placed an order for ${tenant.currency} ${total.toFixed(2)}`,
+    icon: "/api/pwa-icon?size=192",
+    url: "/admin/orders",
+  });
 
   // Update customer stats
   await prisma.customer.update({

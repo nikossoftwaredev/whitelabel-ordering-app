@@ -160,7 +160,7 @@ const LocaleLayout = async ({ children, params }: BaseLayoutProps) => {
         {/* Capture beforeinstallprompt before React hydrates so it's never missed */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaInstallPrompt=e;});`,
+            __html: `window.addEventListener('beforeinstallprompt',function(e){window.__pwaInstallPrompt=e;});`,
           }}
         />
       </head>

@@ -186,7 +186,11 @@
     "friendlyCompleted": "Enjoy your meal!",
     "friendlyCompletedSub": "Thank you for ordering. See you next time!",
     "orderPlaced": "Order placed",
-    "liveUpdates": "Live updates"
+    "liveUpdates": "Live updates",
+    "pushPromptTitle": "Get order updates",
+    "pushPromptDescription": "We'll notify you when your order status changes.",
+    "pushPromptAccept": "Enable notifications",
+    "pushPromptDismiss": "No thanks"
   },
   "ActiveOrderBanner": {
     "statusPlaced": "Placed",

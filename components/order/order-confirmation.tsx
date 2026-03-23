@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
+import { usePushSubscription } from "@/hooks/use-push-subscription";
 import type { OrderStatus } from "@/lib/general/status-config";
 import { cn } from "@/lib/general/utils";
 import { Link } from "@/lib/i18n/navigation";
@@ -89,6 +90,9 @@ export const OrderConfirmation = () => {
   const [orderCreatedAt, setOrderCreatedAt] = useState<string | null>(null);
   const [estimatedReadyAt, setEstimatedReadyAt] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const { isSupported: pushSupported, permission, isSubscribed, subscribe } = usePushSubscription("customer");
+  const [pushDismissed, setPushDismissed] = useState(false);
+  const showPushPrompt = pushSupported && permission === "default" && !isSubscribed && !pushDismissed;
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -398,6 +402,24 @@ export const OrderConfirmation = () => {
           );
         })}
       </div>
+
+      {/* ── Push notification prompt ────────────────────────── */}
+      {showPushPrompt && (
+        <div className="rounded-xl border bg-card p-4 space-y-3 w-full max-w-xs mb-6">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-sm">{t("pushPromptTitle")}</h3>
+            <p className="text-sm text-muted-foreground">{t("pushPromptDescription")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => subscribe()}>
+              {t("pushPromptAccept")}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setPushDismissed(true)}>
+              {t("pushPromptDismiss")}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ── Action buttons ─────────────────────────────────── */}
       <div className="flex gap-3 w-full max-w-xs">

@@ -48,10 +48,12 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     ? [
         { src: "/api/pwa-icon?size=192", sizes: "192x192", type: "image/png", purpose: "any" },
         { src: "/api/pwa-icon?size=512", sizes: "512x512", type: "image/png", purpose: "any" },
+        { src: "/api/pwa-icon?size=512", sizes: "512x512", type: "image/png", purpose: "maskable" },
       ]
     : [
         { src: "/images/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
         { src: "/images/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+        { src: "/images/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
       ];
 
   return {
@@ -66,5 +68,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     theme_color: config?.pwaThemeColor || config?.primaryColor || "#000000",
     orientation: "portrait",
     icons,
+    prefer_related_applications: false,
+    categories: ["food", "shopping"],
   };
 }

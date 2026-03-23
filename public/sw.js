@@ -1,21 +1,33 @@
-// ─── Install ────────────────────────────────────────────────
-// No custom caching — rely on the browser's normal HTTP cache.
-// The SW exists only for PWA installability and push notifications.
-self.addEventListener("install", () => {
+// --- Install: cache offline fallback ---
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open("offline-v1").then((cache) => cache.add("/offline.html"))
+  );
   self.skipWaiting();
 });
 
-// ─── Activate — clean up any old caches from previous SW versions ─
+// --- Activate: clean up old caches ---
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.map((key) => caches.delete(key)))
+      Promise.all(keys.filter((k) => k !== "offline-v1").map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
 });
 
-// ─── Push notifications ─────────────────────────────────────
+// --- Fetch: offline fallback for navigation ---
+self.addEventListener("fetch", (event) => {
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        caches.match("/offline.html")
+      )
+    );
+  }
+});
+
+// --- Push notifications ---
 self.addEventListener("push", (event) => {
   if (event.data) {
     const data = event.data.json();
@@ -34,19 +46,17 @@ self.addEventListener("push", (event) => {
   }
 });
 
-// ─── Notification click — open the app ──────────────────────
+// --- Notification click: open the app ---
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url || "/order";
   event.waitUntil(
     self.clients.matchAll({ type: "window" }).then((clients) => {
-      // Focus existing window if available
       for (const client of clients) {
         if (client.url.includes(url) && "focus" in client) {
           return client.focus();
         }
       }
-      // Otherwise open new window
       return self.clients.openWindow(url);
     })
   );
