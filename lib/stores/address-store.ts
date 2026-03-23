@@ -37,11 +37,16 @@ export const useAddressStore = create<AddressStore>()(
       addAddress: (address) =>
         set({ addresses: [...get().addresses, address] }),
       removeAddress: (id) =>
-        set((state) => ({
-          addresses: state.addresses.filter((a) => a.id !== id),
-          selectedAddress:
-            state.selectedAddress?.id === id ? null : state.selectedAddress,
-        })),
+        set((state) => {
+          const remaining = state.addresses.filter((a) => a.id !== id);
+          return {
+            addresses: remaining,
+            selectedAddress:
+              state.selectedAddress?.id === id
+                ? remaining[0] ?? null
+                : state.selectedAddress,
+          };
+        }),
       updateAddress: (id, updates) =>
         set((state) => ({
           addresses: state.addresses.map((a) =>

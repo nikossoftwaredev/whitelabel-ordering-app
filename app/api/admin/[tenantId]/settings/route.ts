@@ -46,6 +46,8 @@ export async function PUT(
     deliveryFee,
     freeDeliveryThreshold,
     deliveryRangeKm,
+    storeLat,
+    storeLng,
     config,
     operatingHours,
   } = body;
@@ -68,6 +70,8 @@ export async function PUT(
     ...(deliveryFee !== undefined && { deliveryFee }),
     ...(freeDeliveryThreshold !== undefined && { freeDeliveryThreshold }),
     ...(deliveryRangeKm !== undefined && { deliveryRangeKm }),
+    ...(storeLat !== undefined && { storeLat }),
+    ...(storeLng !== undefined && { storeLng }),
   };
 
   // currency lives on Tenant, not TenantConfig
@@ -78,7 +82,6 @@ export async function PUT(
   }
 
   // Batch all writes in a single transaction
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const operations: any[] = [
     prisma.tenant.update({ where: { id: tenantId }, data: tenantData }),
   ];

@@ -13,6 +13,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -149,14 +151,10 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Menu</h1>
-          <p className="text-muted-foreground">
-            Manage categories, products, and modifiers
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Menu"
+        description="Manage categories, products, and modifiers"
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr_300px]">
         {/* Categories Panel */}
@@ -283,12 +281,7 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
               </div>
             )}
             {!loadingProducts && products.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 p-12 text-center">
-                <Package className="size-10 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">
-                  No products in this category
-                </p>
-              </div>
+              <EmptyState icon={Package} title="No products in this category" />
             ) : (
               <div className="divide-y">
                 {products.map((product: Product) => (

@@ -27,7 +27,7 @@ export const Providers = ({ children, messages, locale, session }: Props) => {
           enableSystem
           disableTransitionOnChange
         >
-          <NextIntlClientProvider messages={messages} locale={locale}>
+          <NextIntlClientProvider messages={messages} locale={locale} timeZone="Europe/Athens">
             <TooltipProvider>
               {children}
             </TooltipProvider>

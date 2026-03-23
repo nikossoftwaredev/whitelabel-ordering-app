@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   ChevronRight,
   Loader2,
   Package,
@@ -114,21 +113,7 @@ export const OrderHistory = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-        <div className="mx-auto max-w-2xl px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Link href="/order">
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <ArrowLeft className="size-5" />
-              </Button>
-            </Link>
-            <h1 className="text-lg font-bold">{t("title")}</h1>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-background pt-14">
       {/* Content */}
       <main className="mx-auto max-w-2xl px-4 py-6">
         {isLoading && (

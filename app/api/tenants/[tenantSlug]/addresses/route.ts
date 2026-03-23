@@ -50,7 +50,7 @@ export async function GET(
 
   const addresses = await prisma.address.findMany({
     where: { customerId: customer.id },
-    orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
 
   return NextResponse.json({ addresses });

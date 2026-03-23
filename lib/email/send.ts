@@ -1,5 +1,9 @@
 import { EMAIL_FROM, resend } from "./resend";
-import { orderConfirmationEmail, orderStatusEmail } from "./templates";
+import {
+  orderConfirmationEmail,
+  orderStatusEmail,
+  refundEmail,
+} from "./templates";
 
 interface OrderForEmail {
   orderNumber: string;
@@ -85,5 +89,42 @@ export async function sendOrderStatusUpdate(
     });
   } catch (err) {
     console.error("[Email] Failed to send status update:", err);
+  }
+}
+
+interface RefundForEmail {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  refundAmount: number;
+  orderTotal: number;
+  reason: string | null;
+}
+
+export async function sendRefundNotification(
+  data: RefundForEmail,
+  tenant: TenantForEmail
+): Promise<void> {
+  if (!resend || !data.customerEmail) return;
+
+  const email = refundEmail({
+    orderNumber: data.orderNumber,
+    customerName: data.customerName,
+    refundAmount: data.refundAmount,
+    orderTotal: data.orderTotal,
+    storeName: tenant.name,
+    reason: data.reason,
+    primaryColor: tenant.config?.primaryColor,
+  });
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: data.customerEmail,
+      subject: email.subject,
+      html: email.html,
+    });
+  } catch (err) {
+    console.error("[Email] Failed to send refund notification:", err);
   }
 }

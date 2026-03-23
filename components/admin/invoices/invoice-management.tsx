@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Ban,
   ChevronLeft,
-  ChevronRight,
   Eye,
   FileText,
   Receipt,
@@ -14,6 +13,9 @@ import { useCallback,useState } from "react";
 import { toast } from "sonner";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
+import { PaginationControls } from "@/components/pagination-controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -177,8 +179,6 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
   const invoices = data?.invoices ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const hasNext = page < totalPages - 1;
-  const hasPrev = page > 0;
 
   // -- Detail view -----------------------------------------------------------
 
@@ -347,12 +347,10 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
-        <p className="text-muted-foreground">
-          View and manage invoices for your orders.
-        </p>
-      </div>
+      <PageHeader
+        title="Invoices"
+        description="View and manage invoices for your orders."
+      />
 
       {/* Filters */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -417,15 +415,15 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
             </div>
           )}
           {!isLoading && invoices.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <Receipt className="size-12 text-muted-foreground/30" />
-              <p className="text-muted-foreground">No invoices found</p>
-              {(statusFilter !== "all" || debouncedSearch) && (
-                <p className="text-sm text-muted-foreground">
-                  Try adjusting your filters or search query.
-                </p>
-              )}
-            </div>
+            <EmptyState
+              icon={Receipt}
+              title="No invoices found"
+              description={
+                statusFilter !== "all" || debouncedSearch
+                  ? "Try adjusting your filters or search query."
+                  : undefined
+              }
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -534,35 +532,11 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
       </Card>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {page + 1} of {totalPages}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="cursor-pointer"
-              disabled={!hasPrev}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              <ChevronLeft className="size-4" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="cursor-pointer"
-              disabled={!hasNext}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <PaginationControls
+        page={page + 1}
+        totalPages={totalPages}
+        onPageChange={(p) => setPage(p - 1)}
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   Clock,
   Package,
   Phone,
+  RotateCcw,
   Truck,
   User,
   X,
@@ -16,6 +17,8 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +59,8 @@ interface Order {
   orderNumber: string;
   status: OrderStatus;
   orderType: "PICKUP" | "DELIVERY" | "DINE_IN";
+  paymentStatus: "PENDING" | "PAID" | "REFUNDED" | "FAILED" | "DISPUTED";
+  paymentMethod: "STRIPE" | "CASH";
   tipAmount: number;
   discount: number;
   promoCode: string | null;
@@ -87,6 +92,10 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
   const [rejectionReason, setRejectionReason] = useState("");
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
   const [estimatedMinutes, setEstimatedMinutes] = useState(15);
+  const [refundingOrderId, setRefundingOrderId] = useState<string | null>(null);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundReason, setRefundReason] = useState("");
+  const [isFullRefund, setIsFullRefund] = useState(true);
 
   // ── Query ──────────────────────────────────────────────────────────────────
 
@@ -175,6 +184,45 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
     },
   });
 
+  const refundOrder = useMutation({
+    mutationFn: async ({
+      orderId,
+      amount,
+      reason,
+    }: {
+      orderId: string;
+      amount?: number;
+      reason?: string;
+    }) => {
+      const res = await fetch(
+        `/api/admin/${tenantId}/orders/${orderId}/refund`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount, reason }),
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to process refund");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Refund processed successfully");
+      setRefundingOrderId(null);
+      setRefundAmount("");
+      setRefundReason("");
+      setIsFullRefund(true);
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.orders.all(tenantId),
+      });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
   // ── Derived data ───────────────────────────────────────────────────────────
 
   const orders = data?.orders ?? [];
@@ -228,6 +276,25 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
 
   const handleComplete = (orderId: string) =>
     updateStatus.mutate({ orderId, status: "COMPLETED" });
+
+  const handleRefund = (order: Order) => {
+    if (refundingOrderId === order.id) {
+      // Confirm refund
+      const amount = isFullRefund
+        ? undefined
+        : parseInt(refundAmount) || undefined;
+      refundOrder.mutate({
+        orderId: order.id,
+        amount,
+        reason: refundReason.trim() || undefined,
+      });
+    } else {
+      setRefundingOrderId(order.id);
+      setRefundAmount(String(order.total));
+      setRefundReason("");
+      setIsFullRefund(true);
+    }
+  };
 
   // ── Render helpers ─────────────────────────────────────────────────────────
 
@@ -347,6 +414,83 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
             <p className="mt-2 text-sm text-orange-600 dark:text-orange-400">
               Cancelled by customer
             </p>
+          )}
+
+          {/* Refunded badge */}
+          {order.paymentStatus === "REFUNDED" && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-green-600 dark:text-green-400 bg-green-500/10 rounded-lg px-2.5 py-1 w-fit">
+              <RotateCcw className="size-3" />
+              Refunded
+            </div>
+          )}
+
+          {/* Refund inline form */}
+          {refundingOrderId === order.id && (
+            <div className="mt-3 space-y-2 p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={isFullRefund}
+                    onChange={() => setIsFullRefund(true)}
+                  />
+                  Full refund ({formatPrice(order.total)})
+                </label>
+                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={!isFullRefund}
+                    onChange={() => setIsFullRefund(false)}
+                  />
+                  Partial
+                </label>
+              </div>
+              {!isFullRefund && (
+                <Input
+                  type="number"
+                  placeholder="Amount in cents"
+                  value={refundAmount}
+                  onChange={(e) => setRefundAmount(e.target.value)}
+                  className="h-8"
+                  min={1}
+                  max={order.total}
+                />
+              )}
+              <Textarea
+                placeholder="Reason for refund (optional)"
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                rows={2}
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="cursor-pointer"
+                  disabled={
+                    refundOrder.isPending ||
+                    (!isFullRefund &&
+                      (!refundAmount || parseInt(refundAmount) <= 0))
+                  }
+                  onClick={() => handleRefund(order)}
+                >
+                  Confirm Refund
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setRefundingOrderId(null);
+                    setRefundAmount("");
+                    setRefundReason("");
+                    setIsFullRefund(true);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
           )}
 
           {/* Rejection textarea (inline) */}
@@ -509,6 +653,22 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
                   Delivered
                 </Button>
               )}
+              {(order.status === "COMPLETED" ||
+                order.status === "REJECTED") &&
+                order.paymentStatus === "PAID" &&
+                order.paymentMethod === "STRIPE" &&
+                refundingOrderId !== order.id && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 cursor-pointer text-orange-600 border-orange-200 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-950"
+                    onClick={() => handleRefund(order)}
+                    disabled={refundOrder.isPending}
+                  >
+                    <RotateCcw className="size-4" />
+                    Refund
+                  </Button>
+                )}
             </div>
           )}
         </CardContent>
@@ -518,12 +678,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
 
   const renderOrderList = (orderList: Order[]) => {
     if (orderList.length === 0) {
-      return (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <Package className="size-12 text-muted-foreground/30" />
-          <p className="text-muted-foreground">No orders in this category</p>
-        </div>
-      );
+      return <EmptyState icon={Package} title="No orders in this category" />;
     }
 
     return (
@@ -535,12 +690,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
 
   const renderActiveOrders = () => {
     if (activeOrders.length === 0) {
-      return (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <Package className="size-12 text-muted-foreground/30" />
-          <p className="text-muted-foreground">No active orders</p>
-        </div>
-      );
+      return <EmptyState icon={Package} title="No active orders" />;
     }
 
     const groups: { status: OrderStatus; label: string; icon: React.ReactNode }[] = [
@@ -605,12 +755,10 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-        <p className="text-muted-foreground">
-          Manage incoming orders and track their status.
-        </p>
-      </div>
+      <PageHeader
+        title="Orders"
+        description="Manage incoming orders and track their status."
+      />
 
       <Tabs defaultValue="active">
         <TabsList>

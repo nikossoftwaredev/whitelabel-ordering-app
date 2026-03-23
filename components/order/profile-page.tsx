@@ -1,32 +1,52 @@
 "use client";
 
-import { ArrowLeft, User } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { MapPin, Plus, Trash2, User } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
+import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
+import { AddressManagerSheet } from "@/components/order/address-manager-sheet";
+import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, usePathname, useRouter } from "@/lib/i18n/navigation";
-
-const LANGUAGES = [
-  { code: "el", label: "Ελληνικά", flag: "🇬🇷" },
-  { code: "en", label: "English", flag: "🇬🇧" },
-] as const;
+import { useAddressStore } from "@/lib/stores/address-store";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 export function ProfilePage() {
   const t = useTranslations("Profile");
-  const locale = useLocale();
-  const router = useRouter();
-  const pathname = usePathname();
+  const tAddr = useTranslations("Address");
   const { data: session, update } = useSession();
+  const tenant = useTenant();
+  const openDialog = useDialogStore((s) => s.openDialog);
+  const addresses = useAddressStore((s) => s.addresses);
+  const selectedAddress = useAddressStore((s) => s.selectedAddress);
+  const setSelectedAddress = useAddressStore((s) => s.setSelectedAddress);
+  const removeAddress = useAddressStore((s) => s.removeAddress);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(
+        `/api/tenants/${tenant.slug}/addresses/${id}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error("Failed to delete");
+      return id;
+    },
+    onSuccess: (id) => {
+      removeAddress(id);
+    },
+  });
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [addressOpen, setAddressOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/user/profile")
@@ -60,19 +80,7 @@ export function ProfilePage() {
   else if (saved) saveLabel = t("saved");
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-        <div className="mx-auto max-w-2xl px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Link href="/order">
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <ArrowLeft className="size-5" />
-              </Button>
-            </Link>
-            <h1 className="text-lg font-bold">{t("title")}</h1>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background pt-14">
       <main className="mx-auto max-w-2xl px-4 py-6">
         <Card>
           <CardContent className="p-6 space-y-5">
@@ -113,26 +121,70 @@ export function ProfilePage() {
               />
             </div>
 
-            {/* Language switcher */}
+            {/* Addresses */}
             <div className="space-y-1.5">
-              <Label>{t("language")}</Label>
-              <div className="flex gap-2">
-                {LANGUAGES.map((lang) => (
-                  <button
-                    key={lang.code}
-                    type="button"
-                    onClick={() => router.replace(pathname, { locale: lang.code })}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
-                      locale === lang.code
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
-                    }`}
-                  >
-                    <span>{lang.flag}</span>
-                    <span>{lang.label}</span>
-                  </button>
-                ))}
-              </div>
+              <Label>{t("addresses")}</Label>
+              {addresses.length > 0 ? (
+                <div className="space-y-2">
+                  {addresses.map((addr) => (
+                    <div
+                      key={addr.id}
+                      className={`flex items-center rounded-lg border transition-colors hover:bg-muted/50 ${
+                        selectedAddress?.id === addr.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAddress(addr)}
+                        className="flex-1 flex items-start gap-2.5 p-3 cursor-pointer text-left"
+                      >
+                        <MapPin className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{addr.street}</p>
+                          {addr.city && (
+                            <p className="text-xs text-muted-foreground">{addr.city}</p>
+                          )}
+                        </div>
+                        {addr.label && (
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            {addr.label}
+                          </Badge>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openDialog(
+                            CONFIRM_DIALOG,
+                            {
+                              title: "Delete address?",
+                              description: "This will permanently delete this saved address.",
+                              actionLabel: "Delete",
+                            },
+                            () => deleteMutation.mutate(addr.id)
+                          )
+                        }
+                        disabled={deleteMutation.isPending}
+                        className="size-9 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors duration-200 cursor-pointer shrink-0 mr-2"
+                      >
+                        <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t("noAddressesYet")}</p>
+              )}
+              <Button
+                variant="outline"
+                className="w-full mt-2"
+                onClick={() => setAddressOpen(true)}
+              >
+                <Plus className="size-4" />
+                {tAddr("addNewAddress")}
+              </Button>
             </div>
 
             <Button onClick={handleSave} disabled={saving} className="w-full">
@@ -141,6 +193,12 @@ export function ProfilePage() {
           </CardContent>
         </Card>
       </main>
+
+      <AddressManagerSheet
+        open={addressOpen}
+        onOpenChange={setAddressOpen}
+        initialView="search"
+      />
     </div>
   );
 }

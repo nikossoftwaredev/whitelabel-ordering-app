@@ -60,7 +60,6 @@ function ChartSkeleton() {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ChartTooltipContent({ active, payload, label, valueFormatter }: any) {
   if (!active || !payload?.length) return null;
   return (

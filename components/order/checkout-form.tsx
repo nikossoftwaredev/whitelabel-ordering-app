@@ -25,8 +25,8 @@ import { toast } from "sonner";
 
 import { SignInForm } from "@/components/auth/signin-form";
 import { useTenant } from "@/components/tenant-provider";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormatPrice } from "@/hooks/use-format-price";
@@ -64,6 +65,7 @@ export const CheckoutForm = () => {
   const [orderType, setOrderType] = useState<OrderType>("PICKUP");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [phoneCode, setPhoneCode] = useState("+30");
   const [customerEmail, setCustomerEmail] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "STRIPE">("CASH");
   const [notes, setNotes] = useState("");
@@ -117,7 +119,16 @@ export const CheckoutForm = () => {
     fetch("/api/user/profile")
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
-        if (data?.phone) setCustomerPhone((prev) => prev || data.phone);
+        if (data?.phone) {
+          const saved = data.phone as string;
+          const codeMatch = saved.match(/^(\+\d{1,3})/);
+          if (codeMatch) {
+            setPhoneCode(codeMatch[1]);
+            setCustomerPhone((prev) => prev || saved.slice(codeMatch[1].length));
+          } else {
+            setCustomerPhone((prev) => prev || saved);
+          }
+        }
         const hasName = (data?.name || userName || "").trim().length > 0;
         const hasPhone = (data?.phone || "").trim().length > 0;
         if (!hasName || !hasPhone) {
@@ -140,12 +151,14 @@ export const CheckoutForm = () => {
   }, [userId, tenant.slug]);
 
   // Save phone to profile on blur
+  const fullPhone = customerPhone.trim() ? `${phoneCode}${customerPhone.trim()}` : "";
+
   const handlePhoneBlur = () => {
-    if (session?.user && customerPhone.trim()) {
+    if (session?.user) {
       fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: customerPhone.trim() }),
+        body: JSON.stringify({ phone: fullPhone || null }),
       }).catch(() => {});
     }
   };
@@ -160,7 +173,14 @@ export const CheckoutForm = () => {
         body: JSON.stringify({ name: profileName.trim(), phone: profilePhone.trim() }),
       });
       setCustomerName(profileName.trim());
-      setCustomerPhone(profilePhone.trim());
+      const savedPhone = profilePhone.trim();
+      const profileCodeMatch = savedPhone.match(/^(\+\d{1,3})/);
+      if (profileCodeMatch) {
+        setPhoneCode(profileCodeMatch[1]);
+        setCustomerPhone(savedPhone.slice(profileCodeMatch[1].length));
+      } else {
+        setCustomerPhone(savedPhone);
+      }
       // Suppress the old ProfilePromptSheet since profile is now complete
       sessionStorage.setItem("profile-prompt-shown", "1");
       setProfileDialogOpen(false);
@@ -205,12 +225,20 @@ export const CheckoutForm = () => {
         orderType,
         paymentMethod,
         customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
+        customerPhone: fullPhone,
         customerEmail: customerEmail.trim() || undefined,
         notes: notes.trim() || undefined,
         deliveryAddress:
           orderType === "DELIVERY" && selectedAddress
             ? `${selectedAddress.street}${selectedAddress.city ? `, ${selectedAddress.city}` : ""}${selectedAddress.postalCode ? ` ${selectedAddress.postalCode}` : ""}`
+            : undefined,
+        deliveryLat:
+          orderType === "DELIVERY" && selectedAddress?.lat != null
+            ? selectedAddress.lat
+            : undefined,
+        deliveryLng:
+          orderType === "DELIVERY" && selectedAddress?.lng != null
+            ? selectedAddress.lng
             : undefined,
         tipAmount,
         scheduledFor: scheduleMode && scheduledDate && scheduledTime
@@ -312,7 +340,7 @@ export const CheckoutForm = () => {
   const loyaltyDiscount = loyaltyRedeem && loyaltyData?.isEligible
     ? Math.min(loyaltyData.rewardAmount, subtotal)
     : 0;
-  const discount = loyaltyDiscount || (appliedPromo?.discount || 0);
+  const discount = loyaltyRedeem ? loyaltyDiscount : (appliedPromo?.discount ?? 0);
   const orderTotal = subtotal - discount + tipAmount;
 
   const validatePromoCode = async () => {
@@ -382,23 +410,7 @@ export const CheckoutForm = () => {
   };
 
   return (
-    <div className={`max-w-2xl mx-auto pb-32 ${isBlocked ? "pointer-events-none select-none" : ""}`}>
-      {/* ═══ Header ═══ */}
-      <div className="px-4 pt-6 pb-2">
-        <div className="flex items-center gap-3 mb-1">
-          <Link
-            href="/order"
-            className="flex items-center justify-center size-9 rounded-full hover:bg-muted transition-colors duration-200"
-          >
-            <ArrowLeft className="size-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold leading-tight">{t("title")}</h1>
-            <p className="text-sm text-muted-foreground">{tenant.name}</p>
-          </div>
-        </div>
-      </div>
-
+    <div className={`max-w-2xl mx-auto pt-14 pb-32 ${isBlocked ? "pointer-events-none select-none" : ""}`}>
       <form onSubmit={handleSubmit}>
         {/* ═══ Order Type Toggle ═══ */}
         {tenant.deliveryEnabled && (
@@ -702,15 +714,29 @@ export const CheckoutForm = () => {
               required
               className="h-11 rounded-xl bg-muted/30 border-border/50"
             />
-            <Input
-              type="tel"
-              placeholder={t("phonePlaceholder")}
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              onBlur={handlePhoneBlur}
-              required
-              className="h-11 rounded-xl bg-muted/30 border-border/50"
-            />
+            <div className="flex gap-2">
+              <Select value={phoneCode} onValueChange={setPhoneCode}>
+                <SelectTrigger className="h-11 w-25 rounded-xl bg-muted/30 border-border/50 shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="+30">+30 GR</SelectItem>
+                  <SelectItem value="+357">+357 CY</SelectItem>
+                  <SelectItem value="+44">+44 UK</SelectItem>
+                  <SelectItem value="+49">+49 DE</SelectItem>
+                  <SelectItem value="+1">+1 US</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="tel"
+                placeholder={t("phonePlaceholder")}
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                onBlur={handlePhoneBlur}
+                required
+                className="h-11 rounded-xl bg-muted/30 border-border/50 placeholder:text-muted-foreground/50 placeholder:italic"
+              />
+            </div>
             <Input
               type="email"
               placeholder={t("emailOptionalPlaceholder")}

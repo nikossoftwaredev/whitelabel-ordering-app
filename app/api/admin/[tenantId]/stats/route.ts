@@ -20,7 +20,7 @@ export async function GET(
   // Today's stats
   const todayOrders = await prisma.order.findMany({
     where: { tenantId, createdAt: { gte: todayStart } },
-    select: { total: true, tipAmount: true, status: true },
+    select: { total: true, tipAmount: true, status: true, paymentStatus: true, refundAmount: true },
   });
 
   const completedToday = todayOrders.filter((o) => o.status !== "REJECTED");
@@ -29,11 +29,14 @@ export async function GET(
 
   const todayCount = completedToday.length;
 
+  const refundedToday = todayOrders.filter((o) => o.paymentStatus === "REFUNDED");
+  const todayRefundCount = refundedToday.length;
+  const todayRefundAmount = refundedToday.reduce((sum, o) => sum + (o.refundAmount || 0), 0);
+
   // Active orders (not completed/rejected)
   const activeOrders = await prisma.order.count({
     where: {
       tenantId,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- app OrderStatus includes DELIVERING, Prisma's doesn't until next `prisma generate`
       status: { in: ACTIVE_ORDER_STATUSES as any },
     },
   });
@@ -67,7 +70,7 @@ export async function GET(
   });
 
   return NextResponse.json({
-    today: { revenue: todayRevenue, orders: todayCount, tips: todayTips },
+    today: { revenue: todayRevenue, orders: todayCount, tips: todayTips, refunds: todayRefundCount, refundAmount: todayRefundAmount },
     activeOrders,
     weekRevenue,
     popularProducts: popularProducts.map((p) => ({

@@ -4,6 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Gift, Mail, Phone, Search, ShoppingBag, Users, X } from "lucide-react";
 import { useState } from "react";
 
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
+import { PaginationControls } from "@/components/pagination-controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UserAvatar } from "@/components/user-avatar";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { formatDate } from "@/lib/general/formatters";
 import { ORDER_STATUS_COLORS } from "@/lib/general/status-config";
@@ -92,39 +96,6 @@ function CustomerTableSkeleton() {
   );
 }
 
-// ── Avatar ────────────────────────────────────────────────────────────────────
-
-function CustomerAvatar({
-  customer,
-  size = "md",
-}: {
-  customer: Customer;
-  size?: "sm" | "md";
-}) {
-  const sizeClasses = size === "sm" ? "h-8 w-8 text-xs" : "h-10 w-10 text-sm";
-
-  if (customer.image) {
-    return (
-      <img
-        src={customer.image}
-        alt={customer.name || "Customer"}
-        className={`${sizeClasses} rounded-full object-cover`}
-      />
-    );
-  }
-
-  const initial = (customer.name || customer.email || "?")
-    .charAt(0)
-    .toUpperCase();
-  return (
-    <div
-      className={`flex ${sizeClasses} items-center justify-center rounded-full bg-primary/10 font-semibold text-primary`}
-    >
-      {initial}
-    </div>
-  );
-}
-
 // ── Main Component ────────────────────────────────────────────────────────────
 
 interface CustomerManagementProps {
@@ -182,12 +153,10 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-        <p className="text-muted-foreground">
-          View and manage your customer base.
-        </p>
-      </div>
+      <PageHeader
+        title="Customers"
+        description="View and manage your customer base."
+      />
 
       {/* Search bar + sort */}
       <div className="flex flex-wrap items-center gap-3">
@@ -243,16 +212,14 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
       )}
       {!isLoading && !error && customers.length === 0 && (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <Users className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-lg font-medium text-muted-foreground">
-              {debouncedSearch ? "No customers found" : "No customers yet"}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {debouncedSearch
+          <CardContent>
+            <EmptyState
+              icon={Users}
+              title={debouncedSearch ? "No customers found" : "No customers yet"}
+              description={debouncedSearch
                 ? "Try adjusting your search terms."
                 : "Customers will appear here after they place their first order."}
-            </p>
+            />
           </CardContent>
         </Card>
       )}
@@ -293,7 +260,7 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <CustomerAvatar customer={customer} />
+                        <UserAvatar src={customer.image} name={customer.name} email={customer.email} />
                         <div className="min-w-0">
                           <p className="truncate font-medium">
                             {customer.name || "Unnamed"}
@@ -346,31 +313,11 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
           </Card>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {page} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <PaginationControls
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </>
       )}
 
@@ -389,7 +336,7 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
               <div className="mt-6 space-y-6">
                 {/* Profile */}
                 <div className="flex items-center gap-4">
-                  <CustomerAvatar customer={selectedCustomer} />
+                  <UserAvatar src={selectedCustomer.image} name={selectedCustomer.name} email={selectedCustomer.email} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-lg font-semibold">
                       {selectedCustomer.name || "Unnamed"}
