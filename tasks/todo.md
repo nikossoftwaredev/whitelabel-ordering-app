@@ -52,11 +52,11 @@
 
 ---
 
-### 14. Extract Reusable Components — NOT STARTED
-- [ ] `EmptyState` — icon + title + description (4+ duplications across admin pages)
-- [ ] `UserAvatar` — image with initials fallback (3 duplications)
-- [ ] `PageHeader` — title + description section header (7+ duplications)
-- [ ] `PaginationControls` — prev/next with page count (3 duplications)
+### 14. Extract Reusable Components — DONE
+- [x] `EmptyState` — icon + title + description (`components/empty-state.tsx`)
+- [x] `UserAvatar` — image with initials fallback (`components/user-avatar.tsx`)
+- [x] `PageHeader` — title + description section header (`components/page-header.tsx`)
+- [x] `PaginationControls` — prev/next with page count (`components/pagination-controls.tsx`)
 
 ---
 
@@ -103,7 +103,7 @@
 | 5 | Address Overhaul (map + details) | Large | **Done** |
 | 11 | Push Notifications | Medium | **Done** |
 | 13 | Live Chat Support | Large | Not started |
-| 14 | Extract Reusable Components | Small | Not started |
+| 14 | Extract Reusable Components | Small | **Done** |
 | 15 | PWA Back Button Dialog Handling | Small | **Done** |
 | 16 | Product Popularity Tracking & Display | Medium | **Done** |
 | 17 | Phone Input Component | Small | **Done** |
