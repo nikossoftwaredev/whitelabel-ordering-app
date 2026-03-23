@@ -10,22 +10,27 @@ export async function broadcastEvent(
   event: string,
   payload: Record<string, unknown>
 ) {
-  const res = await fetch(`${supabaseUrl}/realtime/v1/api/broadcast`, {
-    method: "POST",
-    headers: {
-      apikey: serviceRoleKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messages: [{ topic, event, payload }],
-    }),
-  });
+  try {
+    const res = await fetch(`${supabaseUrl}/realtime/v1/api/broadcast`, {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messages: [{ topic, event, payload }],
+      }),
+    });
 
-  if (!res.ok) {
-    console.error(
-      `[broadcast] Failed to send "${event}" to "${topic}":`,
-      res.status,
-      await res.text().catch(() => "")
-    );
+    if (!res.ok) {
+      console.error(
+        `[broadcast] Failed to send "${event}" to "${topic}":`,
+        res.status,
+        await res.text().catch(() => "")
+      );
+    }
+  } catch (err) {
+    // Never let a broadcast failure crash the caller (e.g. order creation)
+    console.error(`[broadcast] Network error for "${event}" to "${topic}":`, err);
   }
 }
