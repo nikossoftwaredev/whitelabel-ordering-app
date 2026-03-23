@@ -105,6 +105,21 @@ export async function GET(
     })),
   }));
 
+  // Popular products — top 5 by order volume (last 7 days)
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 7);
+  const popularRaw = await prisma.orderItem.groupBy({
+    by: ["productId"],
+    where: {
+      order: { tenantId: tenant.id, createdAt: { gte: weekStart } },
+      product: { isActive: true },
+    },
+    _sum: { quantity: true },
+    orderBy: { _sum: { quantity: "desc" } },
+    take: 5,
+  });
+  const popularProductIds = popularRaw.map((p) => p.productId);
+
   return NextResponse.json({
     tenant: {
       name: tenant.name,
@@ -121,5 +136,6 @@ export async function GET(
       operatingHours: tenant.operatingHours,
     },
     categories: formattedCategories,
+    popularProductIds,
   });
 }

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
+import { PhoneInput } from "@/components/phone-input";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -110,11 +111,10 @@ export function ProfilePage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="edit-phone">{t("phone")}</Label>
-              <Input
+              <PhoneInput
                 id="edit-phone"
-                type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={setPhone}
                 placeholder={t("phonePlaceholder")}
               />
             </div>

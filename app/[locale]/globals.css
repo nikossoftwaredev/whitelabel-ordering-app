@@ -165,10 +165,22 @@
   display: none;
 }
 
-/* Smooth scroll behavior + prevent layout shift when modals hide scrollbar */
-html {
+/* ── Prevent layout shift when Radix dialogs open ──
+   Radix injects scroll-locking styles that hide the scrollbar and add
+   compensating margin/padding, causing the page to jump. Override all
+   of that so the scrollbar stays visible and the layout never moves. */
+html,
+html.with-scroll-bars-hidden {
   scroll-behavior: smooth;
-  scrollbar-gutter: stable;
+  overflow-y: scroll !important;
+  padding-right: 0 !important;
+}
+
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
 }
 
 /* Google Places autocomplete dropdown — must sit above Radix dialogs */

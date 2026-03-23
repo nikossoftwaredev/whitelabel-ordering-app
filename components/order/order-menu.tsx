@@ -19,13 +19,6 @@ import { useCallback,useEffect, useMemo, useRef, useState } from "react";
 
 import { STORE_INFO_DIALOG, type StoreInfoDialogData } from "@/components/order/store-info-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -108,6 +101,7 @@ interface MenuData {
     operatingHours: OperatingHour[];
   };
   categories: Category[];
+  popularProductIds?: string[];
 }
 
 interface OrderMenuProps {
@@ -124,72 +118,6 @@ const dietaryFilters = [
 ] as const;
 
 
-/* ─────────────── Popular Carousel Card ─────────────── */
-function PopularCard({
-  product,
-  onClick,
-  onQuickAdd,
-  onQuickRemove,
-  onIncrement,
-  formatPrice,
-  quantity,
-}: {
-  product: Product;
-  onClick: () => void;
-  onQuickAdd: (e: React.MouseEvent) => void;
-  onQuickRemove: (e: React.MouseEvent) => void;
-  onIncrement: (e: React.MouseEvent) => void;
-  formatPrice: (cents: number) => string;
-  quantity: number;
-}) {
-  const hasRequiredModifiers = product.modifierGroups.some((g) => g.required);
-  return (
-    <div className="cursor-pointer group" onClick={onClick}>
-      <div className="relative overflow-hidden rounded-2xl aspect-square bg-muted">
-        {product.image ? (
-          <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover transition-transform duration-300 group-hover:scale-105" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
-            <Store className="size-8 text-muted-foreground/30" />
-          </div>
-        )}
-        {quantity > 0 ? (
-          <QuantityStepper
-            variant="overlay"
-            quantity={quantity}
-            onDecrement={onQuickRemove}
-            onIncrement={onIncrement}
-            className="absolute top-2 right-2 shadow-lg"
-          />
-        ) : (
-          <button
-            className="absolute top-2 right-2 size-8.5 flex items-center justify-center rounded-full bg-black/80 backdrop-blur-sm text-white cursor-pointer hover:bg-white/20 transition-colors duration-200"
-            onClick={(e) => { e.stopPropagation(); (hasRequiredModifiers ? () => onClick() : onQuickAdd)(e); }}
-          >
-            <Plus className="size-4" />
-          </button>
-        )}
-        {hasActiveOffer(product) && (
-          <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md">
-            1+1
-          </div>
-        )}
-      </div>
-      <div className="mt-2 px-0.5">
-        <h3 className="text-[13px] font-semibold leading-tight line-clamp-2">{product.name}</h3>
-        {hasActiveOffer(product) ? (
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[13px] font-medium" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.offerPrice!)}</span>
-            <span className="text-[11px] text-muted-foreground line-through">{formatPrice(product.price * 2)}</span>
-          </div>
-        ) : (
-          <p className="text-[13px] text-muted-foreground mt-0.5 font-medium">{formatPrice(product.price)}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* ─────────────── Wolt-style Horizontal Product Card ─────────────── */
 function ProductCard({
   product,
@@ -200,6 +128,7 @@ function ProductCard({
   formatPrice,
   quantity,
   modifierSummary,
+  rankBadge,
 }: {
   product: Product;
   onQuickAdd: (e: React.MouseEvent) => void;
@@ -209,6 +138,7 @@ function ProductCard({
   formatPrice: (cents: number) => string;
   quantity: number;
   modifierSummary?: string;
+  rankBadge?: string;
 }) {
   const t = useTranslations("Menu");
   const hasRequiredModifiers = product.modifierGroups.some((g) => g.required);
@@ -238,6 +168,9 @@ function ProductCard({
           </div>
         ) : (
           <p className="text-[14px] font-semibold mt-1.5" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.price)}</p>
+        )}
+        {rankBadge && (
+          <p className="text-[12px] font-semibold text-orange-600 dark:text-orange-400 mt-1">🔥 {rankBadge}</p>
         )}
       </div>
       <div className="relative shrink-0 w-[100px] h-[100px] md:w-[130px] md:h-[130px] rounded-xl overflow-hidden bg-muted">
@@ -472,9 +405,13 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   }, [data?.categories, search, activeFilters]);
 
   const popularProducts = useMemo(() => {
-    if (!data?.categories) return [];
-    return data.categories.flatMap((c) => c.products).slice(0, 8);
-  }, [data?.categories]);
+    if (!data?.categories || !data.popularProductIds?.length) return [];
+    const allProducts = data.categories.flatMap((c) => c.products);
+    const productMap = new Map(allProducts.map((p) => [p.id, p]));
+    return data.popularProductIds
+      .map((id) => productMap.get(id))
+      .filter((p): p is Product => !!p);
+  }, [data?.categories, data?.popularProductIds]);
 
   useEffect(() => {
     if (filteredCategories.length > 0 && !activeCategoryId) {
@@ -781,21 +718,45 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           </div>
         ) : (
           <>
-            {/* Popular carousel */}
+            {/* Popular section */}
             {!search && activeFilters.size === 0 && popularProducts.length > 0 && (
-              <section className="pt-6 pb-1 px-4">
-                <h2 className="text-xl font-bold tracking-tight mb-3">{t("popular")}</h2>
-                <Carousel opts={{ align: "start", dragFree: true, watchDrag: true }} className="-mx-1.5">
-                  <CarouselContent className="-ml-3">
-                    {popularProducts.map((product) => (
-                      <CarouselItem key={product.id} className="pl-3 basis-37.5 md:basis-45">
-                        <PopularCard product={product} onClick={() => openProduct(product)} onQuickAdd={handleQuickAdd(product)} onQuickRemove={handleQuickRemove(product)} onIncrement={handleIncrement(product)} formatPrice={formatPrice} quantity={quantityByProduct[product.id] || 0} />
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious className="hidden md:flex -left-3 size-8" />
-                  <CarouselNext className="hidden md:flex -right-3 size-8" />
-                </Carousel>
+              <section className="px-4 pt-6">
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="text-xl font-bold tracking-tight">{t("popular")}</h2>
+                </div>
+                <div className="h-px bg-border mb-1" />
+                <div className="divide-y divide-border/50">
+                  {popularProducts.map((product, index) => {
+                    const variants = cartItemsByProduct[product.id] || [];
+                    return (
+                      <div key={product.id} className="divide-y divide-border/50">
+                        <ProductCard
+                          product={product}
+                          onDetail={() => openProduct(product)}
+                          onQuickAdd={handleQuickAdd(product)}
+                          onQuickRemove={handleQuickRemove(product)}
+                          onIncrement={handleIncrement(product)}
+                          formatPrice={formatPrice}
+                          quantity={variants.length > 1 ? variants[variants.length - 1].quantity : (quantityByProduct[product.id] || 0)}
+                          modifierSummary={variants.length > 1 ? (variants[variants.length - 1].modifiers.map((m) => m.name).join(", ") || "Default") : undefined}
+                          rankBadge={index < 3 ? t("rankInOrders", { rank: index + 1 }) : undefined}
+                        />
+                        {variants.length > 1 && variants.slice(0, -1).map((ci) => (
+                          <VariantCard
+                            key={ci.cartItemId}
+                            product={product}
+                            modifierSummary={ci.modifiers.map((m) => m.name).join(", ") || "Default"}
+                            quantity={ci.quantity}
+                            onEdit={() => openCartItemEdit(product, ci.cartItemId)}
+                            onIncrement={(e) => { e.stopPropagation(); cart.updateQuantity(ci.cartItemId, ci.quantity + 1); }}
+                            onDecrement={(e) => { e.stopPropagation(); cart.updateQuantity(ci.cartItemId, ci.quantity - 1); }}
+                            formatPrice={formatPrice}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
               </section>
             )}
 

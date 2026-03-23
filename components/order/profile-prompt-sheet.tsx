@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
+import { PhoneInput } from "@/components/phone-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -99,11 +100,10 @@ export function ProfilePromptSheet() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="profile-phone">{t("phone")}</Label>
-            <Input
+            <PhoneInput
               id="profile-phone"
-              type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={setPhone}
               placeholder={t("phonePlaceholder")}
             />
           </div>

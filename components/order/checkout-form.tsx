@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PhoneInput } from "@/components/phone-input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormatPrice } from "@/hooks/use-format-price";
@@ -72,7 +72,6 @@ export const CheckoutForm = () => {
   const [orderType, setOrderType] = useState<OrderType>("PICKUP");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [phoneCode, setPhoneCode] = useState("+30");
   const [customerEmail, setCustomerEmail] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "STRIPE">("CASH");
   const [notes, setNotes] = useState("");
@@ -127,14 +126,7 @@ export const CheckoutForm = () => {
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (data?.phone) {
-          const saved = data.phone as string;
-          const codeMatch = saved.match(/^(\+\d{1,3})/);
-          if (codeMatch) {
-            setPhoneCode(codeMatch[1]);
-            setCustomerPhone((prev) => prev || saved.slice(codeMatch[1].length));
-          } else {
-            setCustomerPhone((prev) => prev || saved);
-          }
+          setCustomerPhone((prev) => prev || (data.phone as string));
         }
         const hasName = (data?.name || userName || "").trim().length > 0;
         const hasPhone = (data?.phone || "").trim().length > 0;
@@ -158,14 +150,12 @@ export const CheckoutForm = () => {
   }, [userId, tenant.slug]);
 
   // Save phone to profile on blur
-  const fullPhone = customerPhone.trim() ? `${phoneCode}${customerPhone.trim()}` : "";
-
   const handlePhoneBlur = () => {
     if (session?.user) {
       fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: fullPhone || null }),
+        body: JSON.stringify({ phone: customerPhone.trim() || null }),
       }).catch(() => {});
     }
   };
@@ -180,14 +170,7 @@ export const CheckoutForm = () => {
         body: JSON.stringify({ name: profileName.trim(), phone: profilePhone.trim() }),
       });
       setCustomerName(profileName.trim());
-      const savedPhone = profilePhone.trim();
-      const profileCodeMatch = savedPhone.match(/^(\+\d{1,3})/);
-      if (profileCodeMatch) {
-        setPhoneCode(profileCodeMatch[1]);
-        setCustomerPhone(savedPhone.slice(profileCodeMatch[1].length));
-      } else {
-        setCustomerPhone(savedPhone);
-      }
+      setCustomerPhone(profilePhone.trim());
       // Suppress the old ProfilePromptSheet since profile is now complete
       sessionStorage.setItem("profile-prompt-shown", "1");
       setProfileDialogOpen(false);
@@ -232,7 +215,7 @@ export const CheckoutForm = () => {
         orderType,
         paymentMethod,
         customerName: customerName.trim(),
-        customerPhone: fullPhone,
+        customerPhone: customerPhone.trim(),
         customerEmail: customerEmail.trim() || undefined,
         notes: notes.trim() || undefined,
         deliveryAddress:
@@ -739,29 +722,14 @@ export const CheckoutForm = () => {
               required
               className="h-11 rounded-xl bg-muted/30 border-border/50"
             />
-            <div className="flex gap-2">
-              <Select value={phoneCode} onValueChange={setPhoneCode}>
-                <SelectTrigger className="h-11 w-25 rounded-xl bg-muted/30 border-border/50 shrink-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="+30">+30 GR</SelectItem>
-                  <SelectItem value="+357">+357 CY</SelectItem>
-                  <SelectItem value="+44">+44 UK</SelectItem>
-                  <SelectItem value="+49">+49 DE</SelectItem>
-                  <SelectItem value="+1">+1 US</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                type="tel"
-                placeholder={t("phonePlaceholder")}
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                onBlur={handlePhoneBlur}
-                required
-                className="h-11 rounded-xl bg-muted/30 border-border/50 placeholder:text-muted-foreground/50 placeholder:italic"
-              />
-            </div>
+            <PhoneInput
+              value={customerPhone}
+              onChange={setCustomerPhone}
+              onBlur={handlePhoneBlur}
+              placeholder={t("phonePlaceholder")}
+              required
+              className="[&_button]:h-11 [&_button]:rounded-l-xl [&_button]:bg-muted/30 [&_button]:border-border/50 [&_input]:h-11 [&_input]:rounded-r-xl [&_input]:bg-muted/30 [&_input]:border-border/50"
+            />
             <Input
               type="email"
               placeholder={t("emailOptionalPlaceholder")}
@@ -1260,13 +1228,12 @@ export const CheckoutForm = () => {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="checkout-profile-phone">{t("phoneLabel")}</Label>
-              <Input
+              <PhoneInput
                 id="checkout-profile-phone"
-                type="tel"
                 value={profilePhone}
-                onChange={(e) => setProfilePhone(e.target.value)}
+                onChange={setProfilePhone}
                 placeholder={t("phonePlaceholder")}
-                className="h-11"
+                className="[&_button]:h-11 [&_input]:h-11"
               />
             </div>
             <Button
