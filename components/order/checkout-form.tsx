@@ -45,7 +45,7 @@ import { Link,useRouter } from "@/lib/i18n/navigation";
 import { useAddressStore } from "@/lib/stores/address-store";
 import { useCartStore } from "@/lib/stores/cart-store";
 
-import { AddressManagerSheet } from "./address-manager-sheet";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 import { QuantityStepper } from "./quantity-stepper";
 import { StripePayment } from "./stripe-payment";
 
@@ -61,7 +61,7 @@ export const CheckoutForm = () => {
   const formatPrice = useFormatPrice();
   const { isClosed: storeClosed } = useStoreStatus();
   const selectedAddress = useAddressStore((s) => s.selectedAddress);
-  const [addressSheetOpen, setAddressSheetOpen] = useState(false);
+  const openDialog = useDialogStore((s) => s.openDialog);
   const [orderType, setOrderType] = useState<OrderType>("PICKUP");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -480,7 +480,7 @@ export const CheckoutForm = () => {
             </h3>
             <button
               type="button"
-              onClick={() => setAddressSheetOpen(true)}
+              onClick={() => openDialog("address-manager")}
               className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all duration-200 text-left ${
                 selectedAddress
                   ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
@@ -1150,11 +1150,6 @@ export const CheckoutForm = () => {
         </div>
       </form>
 
-      {/* Address Manager Sheet */}
-      <AddressManagerSheet
-        open={addressSheetOpen}
-        onOpenChange={setAddressSheetOpen}
-      />
 
       {/* Stripe Payment Dialog */}
       <Dialog

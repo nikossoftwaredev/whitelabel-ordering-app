@@ -13,7 +13,6 @@ import {
   Plus,
   Search,
   Trash2,
-  X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
@@ -22,29 +21,19 @@ import { toast } from "sonner";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { useTenant } from "@/components/tenant-provider";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { type Address, useAddressStore } from "@/lib/stores/address-store";
-import { useDialogStore } from "@/lib/stores/dialog-store";
+import { selectDialogData, useDialogStore } from "@/lib/stores/dialog-store";
 import {
   getPlaceDetails,
   type PlacePrediction,
   searchPlaces,
 } from "@/server_actions/googleSearchActions";
 
-import { AuthDialog } from "./auth-dialog";
+export const ADDRESS_MANAGER_DIALOG = "address-manager";
 
 type ViewState = "list" | "search" | "form";
-
-interface AddressManagerSheetProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  initialView?: ViewState;
-}
 
 const LABEL_OPTIONS = ["Home", "Work", "Other"] as const;
 type LabelOption = (typeof LABEL_OPTIONS)[number];
@@ -65,13 +54,14 @@ const LABEL_TRANSLATION_KEYS: Record<string, string> = {
   Other: "other",
 };
 
-export function AddressManagerSheet({
-  open,
-  onOpenChange,
-  initialView = "list",
-}: AddressManagerSheetProps) {
+export function AddressManagerContent() {
   const t = useTranslations("Address");
   const openDialog = useDialogStore((s) => s.openDialog);
+  const closeAll = useDialogStore((s) => s.closeAll);
+  const dialogData = useDialogStore(selectDialogData) as
+    | { initialView?: ViewState }
+    | null
+    | undefined;
   const tenant = useTenant();
   const { data: session } = useSession();
   const {
@@ -82,8 +72,9 @@ export function AddressManagerSheet({
     removeAddress,
   } = useAddressStore();
 
-  const [view, setView] = useState<ViewState>("list");
-  const [authOpen, setAuthOpen] = useState(false);
+  const initialView = dialogData?.initialView ?? "list";
+
+  const [view, setView] = useState<ViewState>(initialView);
 
   // Add-address form state
   const [newLabel, setNewLabel] = useState<LabelOption>("Home");
@@ -101,13 +92,12 @@ export function AddressManagerSheet({
   const [selectingPlace, setSelectingPlace] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset to initial view when opening
+  // Reset form on mount
   useEffect(() => {
-    if (open) {
-      setView(initialView);
-      resetForm();
-    }
-  }, [open, initialView]);
+    setView(initialView);
+    resetForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function resetForm() {
     setNewLabel("Home");
@@ -287,342 +277,319 @@ export function AddressManagerSheet({
   const handleSelectAddress = useCallback(
     (addr: Address) => {
       setSelectedAddress(addr);
-      onOpenChange(false);
+      closeAll();
     },
-    [setSelectedAddress, onOpenChange]
+    [setSelectedAddress, closeAll]
   );
 
   const handleAddAddress = useCallback(() => {
     if (!session) {
-      setAuthOpen(true);
+      openDialog("auth");
     } else {
       setView("search");
     }
-  }, [session]);
+  }, [session, openDialog]);
 
   const handleBack = () => {
     if (view === "form") setView("search");
-    else if (view === "search" && initialView !== "search") setView("list");
-    else onOpenChange(false);
+    else if (view === "search") setView("list");
+    // list view: handled by DialogProvider's back/close buttons
   };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
-          className="bg-background text-foreground border-0 p-0 sm:max-w-md sm:max-h-[85vh] overflow-hidden shadow-2xl"
-          showCloseButton={false}
-        >
-          {/* ═══ LIST VIEW ═══ */}
-          {view === "list" && (
-            <>
-              <div className="px-5 pt-5 shrink-0 flex items-center justify-between">
-                <button
-                  onClick={() => onOpenChange(false)}
-                  className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
-                >
-                  <ArrowLeft className="size-5 text-foreground" />
-                </button>
-                <button
-                  onClick={() => onOpenChange(false)}
-                  className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
-                >
-                  <X className="size-5 text-foreground" />
-                </button>
-              </div>
-              <div className="px-6 pb-2 shrink-0">
-                <DialogTitle className="text-2xl font-bold text-foreground">
-                  {t("chooseAddress")}
-                </DialogTitle>
-              </div>
+    <div className="flex flex-col overflow-y-auto flex-1">
+      {/* list view */}
+      {view === "list" && (
+        <>
+          <div className="px-6 pb-2 shrink-0">
+            <DialogTitle className="text-2xl font-bold text-foreground">
+              {t("chooseAddress")}
+            </DialogTitle>
+          </div>
 
-              <div className="overflow-y-auto flex-1 px-3">
-                {addresses.length > 0 ? (
-                  <div>
-                    {addresses.map((addr) => {
-                      const isSelected = selectedAddress?.id === addr.id;
-                      return (
-                        <div
-                          key={addr.id}
-                          className={`flex items-center gap-1 rounded-xl my-1 transition-all duration-200 hover:bg-muted/50 ${
-                            isSelected
-                              ? "ring-2 ring-(--brand-primary,hsl(var(--primary)))"
-                              : ""
-                          }`}
-                        >
-                          <button
-                            onClick={() => handleSelectAddress(addr)}
-                            className="flex-1 flex items-start gap-3 px-3 py-3.5 rounded-xl transition-colors duration-200 cursor-pointer text-left"
-                          >
-                            <MapPin
-                              className="size-5 shrink-0 mt-0.5 text-muted-foreground"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-[15px] text-foreground leading-tight">
-                                {addr.street}
-                              </p>
-                              <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
-                                {[addr.city, addr.postalCode]
-                                  .filter(Boolean)
-                                  .join(", ")}
-                              </p>
-                              {addr.label && (
-                                <p className="text-[12px] text-muted-foreground/70 mt-0.5 truncate">
-                                  {addr.label}
-                                </p>
-                              )}
-                            </div>
-                          </button>
-                          <button
-                            onClick={() =>
-                              openDialog(
-                                CONFIRM_DIALOG,
-                                {
-                                  title: "Delete address?",
-                                  description: "This will permanently delete this saved address.",
-                                  actionLabel: "Delete",
-                                },
-                                () => deleteMutation.mutate(addr.id)
-                              )
-                            }
-                            disabled={deleteMutation.isPending}
-                            className="size-9 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors duration-200 cursor-pointer shrink-0 mr-2"
-                          >
-                            <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                    <div className="size-16 rounded-full bg-muted/60 flex items-center justify-center mb-4">
-                      <MapPinOff className="size-7 text-muted-foreground" />
-                    </div>
-                    <p className="text-base font-semibold text-foreground mb-1">
-                      {t("noAddresses")}
-                    </p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {t("noAddressesDesc")}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="px-6 py-5 shrink-0">
-                <button
-                  onClick={handleAddAddress}
-                  className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98]"
-                  style={{
-                    background:
-                      "var(--brand-primary, hsl(var(--primary)))",
-                    color: "white",
-                  }}
-                >
-                  <Plus className="size-4.5" />
-                  {t("addNewAddress")}
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* ═══ SEARCH VIEW ═══ */}
-          {view === "search" && (
-            <>
-              <div className="px-5 pt-5 shrink-0">
-                <button
-                  onClick={handleBack}
-                  className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
-                >
-                  <ArrowLeft className="size-5 text-foreground" />
-                </button>
-              </div>
-
-              <div className="px-6 pt-4 pb-2">
-                <DialogTitle className="text-2xl font-bold text-foreground">
-                  {t("addNewAddressTitle")}
-                </DialogTitle>
-                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                  {t("addNewAddressDesc")}
-                </p>
-              </div>
-
-              <div className="px-6 pt-4 pb-1">
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder={t("searchPlaceholder")}
-                    className="w-full h-12 pl-10 pr-4 rounded-xl bg-muted/50 border border-border text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-(--brand-primary,hsl(var(--ring))) transition-all duration-200"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && query.trim()) {
-                        e.preventDefault();
-                        setNewStreet(query.trim());
-                        setView("form");
-                      }
-                    }}
-                  />
-                  {searching && (
-                    <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground animate-spin" />
-                  )}
-                </div>
-              </div>
-
-              {predictions.length > 0 && (
-                <div className="px-6 pb-2 max-h-48 overflow-y-auto">
-                  {selectingPlace && (
-                    <div className="flex items-center justify-center py-3">
-                      <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
-                  {!selectingPlace &&
-                    predictions.map((p) => (
+          <div className="overflow-y-auto flex-1 px-3">
+            {addresses.length > 0 ? (
+              <div>
+                {addresses.map((addr) => {
+                  const isSelected = selectedAddress?.id === addr.id;
+                  return (
+                    <div
+                      key={addr.id}
+                      className={`flex items-center gap-1 rounded-xl my-1 transition-all duration-200 hover:bg-muted/50 ${
+                        isSelected
+                          ? "ring-2 ring-(--brand-primary,hsl(var(--primary)))"
+                          : ""
+                      }`}
+                    >
                       <button
-                        key={p.place_id}
-                        onClick={() => handleSelectPrediction(p)}
-                        className="w-full flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/50 transition-colors duration-200 cursor-pointer text-left"
+                        onClick={() => handleSelectAddress(addr)}
+                        className="flex-1 flex items-start gap-3 px-3 py-3.5 rounded-xl transition-colors duration-200 cursor-pointer text-left"
                       >
-                        <MapPin className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">
-                            {p.structured_formatting.main_text}
+                        <MapPin
+                          className="size-5 shrink-0 mt-0.5 text-muted-foreground"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-[15px] text-foreground leading-tight">
+                            {addr.street}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {p.structured_formatting.secondary_text}
+                          <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
+                            {[addr.city, addr.postalCode]
+                              .filter(Boolean)
+                              .join(", ")}
                           </p>
+                          {addr.label && (
+                            <p className="text-[12px] text-muted-foreground/70 mt-0.5 truncate">
+                              {addr.label}
+                            </p>
+                          )}
                         </div>
                       </button>
-                    ))}
+                      <button
+                        onClick={() =>
+                          openDialog(
+                            CONFIRM_DIALOG,
+                            {
+                              title: "Delete address?",
+                              description: "This will permanently delete this saved address.",
+                              actionLabel: "Delete",
+                            },
+                            () => deleteMutation.mutate(addr.id)
+                          )
+                        }
+                        disabled={deleteMutation.isPending}
+                        className="size-9 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors duration-200 cursor-pointer shrink-0 mr-2"
+                      >
+                        <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                <div className="size-16 rounded-full bg-muted/60 flex items-center justify-center mb-4">
+                  <MapPinOff className="size-7 text-muted-foreground" />
                 </div>
-              )}
-
-              {locationError && (
-                <p className="text-xs text-destructive text-center px-6">
-                  {locationError}
+                <p className="text-base font-semibold text-foreground mb-1">
+                  {t("noAddresses")}
                 </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {t("noAddressesDesc")}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="px-6 py-5 shrink-0">
+            <button
+              onClick={handleAddAddress}
+              className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98]"
+              style={{
+                background:
+                  "var(--brand-primary, hsl(var(--primary)))",
+                color: "white",
+              }}
+            >
+              <Plus className="size-4.5" />
+              {t("addNewAddress")}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* search view */}
+      {view === "search" && (
+        <>
+          <div className="px-5 shrink-0">
+            <button
+              onClick={handleBack}
+              className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
+            >
+              <ArrowLeft className="size-5 text-foreground" />
+            </button>
+          </div>
+
+          <div className="px-6 pt-4 pb-2">
+            <DialogTitle className="text-2xl font-bold text-foreground">
+              {t("addNewAddressTitle")}
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+              {t("addNewAddressDesc")}
+            </p>
+          </div>
+
+          <div className="px-6 pt-4 pb-1">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("searchPlaceholder")}
+                className="w-full h-12 pl-10 pr-4 rounded-xl bg-muted/50 border border-border text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-(--brand-primary,hsl(var(--ring))) transition-all duration-200"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && query.trim()) {
+                    e.preventDefault();
+                    setNewStreet(query.trim());
+                    setView("form");
+                  }
+                }}
+              />
+              {searching && (
+                <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground animate-spin" />
               )}
+            </div>
+          </div>
 
-              <div className="px-6 pb-6 pt-3">
-                <button
-                  onClick={handleUseCurrentLocation}
-                  disabled={locating}
-                  className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2.5 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
-                  style={{
-                    background:
-                      "var(--brand-primary, hsl(var(--primary)))",
-                    color: "white",
-                  }}
-                >
-                  <Crosshair
-                    className={`size-5 ${locating ? "animate-pulse" : ""}`}
-                  />
-                  {locating ? t("locating") : t("detectLocation")}
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* ═══ FORM VIEW ═══ */}
-          {view === "form" && (
-            <>
-              <div className="px-5 pt-5 shrink-0">
-                <button
-                  onClick={handleBack}
-                  className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
-                >
-                  <ArrowLeft className="size-5 text-foreground" />
-                </button>
-              </div>
-
-              <div className="px-6 pt-2 pb-6">
-                <DialogTitle className="text-2xl font-bold text-foreground mb-4">
-                  {t("confirmAddress")}
-                </DialogTitle>
-
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    {LABEL_OPTIONS.map((label) => {
-                      const isActive = newLabel === label;
-                      return (
-                        <button
-                          key={label}
-                          onClick={() => setNewLabel(label)}
-                          className={`flex-1 h-11 rounded-xl text-[14px] font-medium flex items-center justify-center gap-2 border transition-all duration-200 cursor-pointer ${
-                            isActive
-                              ? "border-transparent text-white"
-                              : "border-border text-muted-foreground hover:border-foreground/30"
-                          }`}
-                          style={
-                            isActive
-                              ? {
-                                  background:
-                                    "var(--brand-primary, hsl(var(--primary)))",
-                                }
-                              : undefined
-                          }
-                        >
-                          {getLabelIcon(label)}
-                          {t(LABEL_TRANSLATION_KEYS[label])}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div>
-                    <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
-                      {t("streetAddress")}
-                    </label>
-                    <Input
-                      value={newStreet}
-                      onChange={(e) => setNewStreet(e.target.value)}
-                      placeholder={t("streetPlaceholder")}
-                      className="h-12 rounded-xl text-[15px]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
-                      {t("city")}
-                    </label>
-                    <Input
-                      value={newCity}
-                      onChange={(e) => setNewCity(e.target.value)}
-                      placeholder={t("cityPlaceholder")}
-                      className="h-12 rounded-xl text-[15px]"
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleSave}
-                    disabled={
-                      !newStreet.trim() || createMutation.isPending
-                    }
-                    className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60 mt-2"
-                    style={{
-                      background:
-                        "var(--brand-primary, hsl(var(--primary)))",
-                      color: "white",
-                    }}
-                  >
-                    {createMutation.isPending ? (
-                      <Loader2 className="size-4.5 animate-spin" />
-                    ) : (
-                      <Check className="size-4.5" />
-                    )}
-                    {createMutation.isPending
-                      ? t("saving")
-                      : t("saveAddress")}
-                  </button>
+          {predictions.length > 0 && (
+            <div className="px-6 pb-2 max-h-48 overflow-y-auto">
+              {selectingPlace && (
+                <div className="flex items-center justify-center py-3">
+                  <Loader2 className="size-5 animate-spin text-muted-foreground" />
                 </div>
-              </div>
-            </>
+              )}
+              {!selectingPlace &&
+                predictions.map((p) => (
+                  <button
+                    key={p.place_id}
+                    onClick={() => handleSelectPrediction(p)}
+                    className="w-full flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/50 transition-colors duration-200 cursor-pointer text-left"
+                  >
+                    <MapPin className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {p.structured_formatting.main_text}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {p.structured_formatting.secondary_text}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+            </div>
           )}
-        </DialogContent>
-      </Dialog>
 
-      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
-    </>
+          {locationError && (
+            <p className="text-xs text-destructive text-center px-6">
+              {locationError}
+            </p>
+          )}
+
+          <div className="px-6 pb-6 pt-3">
+            <button
+              onClick={handleUseCurrentLocation}
+              disabled={locating}
+              className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2.5 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
+              style={{
+                background:
+                  "var(--brand-primary, hsl(var(--primary)))",
+                color: "white",
+              }}
+            >
+              <Crosshair
+                className={`size-5 ${locating ? "animate-pulse" : ""}`}
+              />
+              {locating ? t("locating") : t("detectLocation")}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* form view */}
+      {view === "form" && (
+        <>
+          <div className="px-5 shrink-0">
+            <button
+              onClick={handleBack}
+              className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
+            >
+              <ArrowLeft className="size-5 text-foreground" />
+            </button>
+          </div>
+
+          <div className="px-6 pt-2 pb-6">
+            <DialogTitle className="text-2xl font-bold text-foreground mb-4">
+              {t("confirmAddress")}
+            </DialogTitle>
+
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                {LABEL_OPTIONS.map((label) => {
+                  const isActive = newLabel === label;
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => setNewLabel(label)}
+                      className={`flex-1 h-11 rounded-xl text-[14px] font-medium flex items-center justify-center gap-2 border transition-all duration-200 cursor-pointer ${
+                        isActive
+                          ? "border-transparent text-white"
+                          : "border-border text-muted-foreground hover:border-foreground/30"
+                      }`}
+                      style={
+                        isActive
+                          ? {
+                              background:
+                                "var(--brand-primary, hsl(var(--primary)))",
+                            }
+                          : undefined
+                      }
+                    >
+                      {getLabelIcon(label)}
+                      {t(LABEL_TRANSLATION_KEYS[label])}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div>
+                <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
+                  {t("streetAddress")}
+                </label>
+                <Input
+                  value={newStreet}
+                  onChange={(e) => setNewStreet(e.target.value)}
+                  placeholder={t("streetPlaceholder")}
+                  className="h-12 rounded-xl text-[15px]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
+                  {t("city")}
+                </label>
+                <Input
+                  value={newCity}
+                  onChange={(e) => setNewCity(e.target.value)}
+                  placeholder={t("cityPlaceholder")}
+                  className="h-12 rounded-xl text-[15px]"
+                />
+              </div>
+
+              <button
+                onClick={handleSave}
+                disabled={
+                  !newStreet.trim() || createMutation.isPending
+                }
+                className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60 mt-2"
+                style={{
+                  background:
+                    "var(--brand-primary, hsl(var(--primary)))",
+                  color: "white",
+                }}
+              >
+                {createMutation.isPending ? (
+                  <Loader2 className="size-4.5 animate-spin" />
+                ) : (
+                  <Check className="size-4.5" />
+                )}
+                {createMutation.isPending
+                  ? t("saving")
+                  : t("saveAddress")}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

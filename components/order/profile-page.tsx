@@ -7,7 +7,6 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
-import { AddressManagerSheet } from "@/components/order/address-manager-sheet";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,7 +45,6 @@ export function ProfilePage() {
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [addressOpen, setAddressOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/user/profile")
@@ -180,7 +178,7 @@ export function ProfilePage() {
               <Button
                 variant="outline"
                 className="w-full mt-2"
-                onClick={() => setAddressOpen(true)}
+                onClick={() => openDialog("address-manager", { initialView: "search" })}
               >
                 <Plus className="size-4" />
                 {tAddr("addNewAddress")}
@@ -194,11 +192,6 @@ export function ProfilePage() {
         </Card>
       </main>
 
-      <AddressManagerSheet
-        open={addressOpen}
-        onOpenChange={setAddressOpen}
-        initialView="search"
-      />
     </div>
   );
 }

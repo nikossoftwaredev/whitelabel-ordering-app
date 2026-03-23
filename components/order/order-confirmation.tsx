@@ -87,6 +87,7 @@ export const OrderConfirmation = () => {
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [orderCreatedAt, setOrderCreatedAt] = useState<string | null>(null);
+  const [estimatedReadyAt, setEstimatedReadyAt] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const cancelMutation = useMutation({
@@ -130,6 +131,7 @@ export const OrderConfirmation = () => {
           if (data.order.orderType) setOrderType(data.order.orderType);
           if (data.order.scheduledFor) setScheduledFor(data.order.scheduledFor);
           if (data.order.createdAt) setOrderCreatedAt(data.order.createdAt);
+          if (data.order.estimatedReadyAt) setEstimatedReadyAt(data.order.estimatedReadyAt);
         }
         setConnected(true);
       })
@@ -146,6 +148,7 @@ export const OrderConfirmation = () => {
       .channel(`order:${orderId}`)
       .on("broadcast", { event: "status_change" }, ({ payload }) => {
         setStatus(payload.status as OrderStatus);
+        if (payload.estimatedReadyAt) setEstimatedReadyAt(payload.estimatedReadyAt as string);
       })
       .subscribe();
 
@@ -172,16 +175,23 @@ export const OrderConfirmation = () => {
   const steps = isDelivery ? DELIVERY_STEPS : PICKUP_STEPS;
   const currentStepIdx = (steps as readonly string[]).indexOf(status);
 
-  // Estimated time remaining
+  // Live countdown based on server-calculated estimatedReadyAt
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (isTerminal || isReady || !estimatedReadyAt) return;
+    const interval = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, [isTerminal, isReady, estimatedReadyAt]);
+
   const estimatedMinutes = useMemo(() => {
-    const prep = tenant.prepTimeMinutes || 20;
     if (isTerminal || isReady) return 0;
-    if (status === "NEW") return prep;
-    if (status === "ACCEPTED") return Math.round(prep * 0.85);
-    if (status === "PREPARING") return Math.round(prep * 0.5);
-    if (status === "DELIVERING") return Math.round(prep * 0.3);
-    return prep;
-  }, [status, tenant.prepTimeMinutes, isTerminal, isReady]);
+    if (estimatedReadyAt) {
+      const remaining = Math.round((new Date(estimatedReadyAt).getTime() - now) / 60_000);
+      return Math.max(1, remaining);
+    }
+    // Fallback: use tenant prep time if no estimatedReadyAt yet (NEW status)
+    return tenant.prepTimeMinutes || 20;
+  }, [status, estimatedReadyAt, now, tenant.prepTimeMinutes, isTerminal, isReady]);
 
   // Friendly messages per status
   const friendlyTitle = useMemo(() => {
@@ -316,28 +326,29 @@ export const OrderConfirmation = () => {
 
         {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {isCompleted ? (
-            <PartyPopper className="size-12 text-green-500" />
-          ) : isReady ? (
-            <>
-              <HandPlatter className="size-10 text-green-500 mb-1" />
-              <span className="text-xs font-semibold text-green-500">{t("stepReady")}</span>
-            </>
-          ) : estimatedMinutes > 0 ? (
-            <>
-              <span
-                className="text-4xl font-black tabular-nums leading-none"
-                style={{ color: ringColor }}
-              >
-                {estimatedMinutes}
-              </span>
-              <span className="text-xs text-muted-foreground mt-1 font-medium">
-                {t("minutes")}
-              </span>
-            </>
-          ) : (
-            <StatusIcon className="size-10" style={{ color: ringColor }} />
-          )}
+          {(() => {
+            if (isCompleted) return <PartyPopper className="size-12 text-green-500" />;
+            if (isReady) return (
+              <>
+                <HandPlatter className="size-10 text-green-500 mb-1" />
+                <span className="text-xs font-semibold text-green-500">{t("stepReady")}</span>
+              </>
+            );
+            if (estimatedMinutes > 0) return (
+              <>
+                <span
+                  className="text-4xl font-black tabular-nums leading-none"
+                  style={{ color: ringColor }}
+                >
+                  {estimatedMinutes}
+                </span>
+                <span className="text-xs text-muted-foreground mt-1 font-medium">
+                  {t("minutes")}
+                </span>
+              </>
+            );
+            return <StatusIcon className="size-10" style={{ color: ringColor }} />;
+          })()}
         </div>
       </div>
 

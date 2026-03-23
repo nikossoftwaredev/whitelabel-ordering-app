@@ -1,6 +1,6 @@
 "use client"
 
-import { XIcon } from "lucide-react"
+import { ArrowLeft, XIcon } from "lucide-react"
 import { Dialog as DialogPrimitive } from "radix-ui"
 import * as React from "react"
 
@@ -59,10 +59,14 @@ function DialogContent({
   children,
   showCloseButton = true,
   variant = "responsive",
+  onBack,
+  onCloseAll,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
   variant?: "responsive" | "default"
+  onBack?: () => void
+  onCloseAll?: () => void
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
@@ -91,15 +95,34 @@ function DialogContent({
         )}
         {...props}
       >
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="absolute top-4 left-4 z-10 size-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
+          >
+            <ArrowLeft className="size-5" />
+            <span className="sr-only">Back</span>
+          </button>
+        )}
         {children}
         {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
-          >
-            <XIcon />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
+          onCloseAll ? (
+            <button
+              onClick={onCloseAll}
+              className="absolute top-4 right-4 z-10 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden cursor-pointer [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            >
+              <XIcon />
+              <span className="sr-only">Close</span>
+            </button>
+          ) : (
+            <DialogPrimitive.Close
+              data-slot="dialog-close"
+              className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            >
+              <XIcon />
+              <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
+          )
         )}
       </DialogPrimitive.Content>
     </DialogPortal>

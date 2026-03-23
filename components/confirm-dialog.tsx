@@ -1,17 +1,13 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { buttonVariants } from "@/components/ui/button";
-import { useDialogStore } from "@/lib/stores/dialog-store";
+  selectDialogData,
+  selectOnSuccess,
+  selectStackDepth,
+  useDialogStore,
+} from "@/lib/stores/dialog-store";
 
 export const CONFIRM_DIALOG = "confirm";
 
@@ -21,42 +17,47 @@ interface ConfirmDialogData {
   actionLabel: string;
 }
 
-export const ConfirmDialog = () => {
-  const open = useDialogStore((s) => s.currentDialog === CONFIRM_DIALOG);
-  const dialogData = useDialogStore((s) => s.dialogData);
-  const onSuccess = useDialogStore((s) => s.onSuccess);
-  const closeDialog = useDialogStore((s) => s.closeDialog);
+export const ConfirmContent = () => {
+  const dialogData = useDialogStore(selectDialogData);
+  const onSuccess = useDialogStore(selectOnSuccess);
+  const stackDepth = useDialogStore(selectStackDepth);
+  const goBack = useDialogStore((s) => s.goBack);
+  const closeAll = useDialogStore((s) => s.closeAll);
 
   const { title, description, actionLabel } =
     (dialogData as ConfirmDialogData) ?? {};
 
   const handleConfirm = () => {
     onSuccess?.();
-    closeDialog(CONFIRM_DIALOG);
+    if (stackDepth > 1) {
+      goBack();
+    } else {
+      closeAll();
+    }
+  };
+
+  const handleCancel = () => {
+    if (stackDepth > 1) {
+      goBack();
+    } else {
+      closeAll();
+    }
   };
 
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={(o) => {
-        if (!o) closeDialog(CONFIRM_DIALOG);
-      }}
-    >
-      <AlertDialogContent className="max-w-sm">
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex-row justify-center gap-2 sm:justify-center">
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirm}
-            className={buttonVariants({ variant: "destructive" })}
-          >
-            {actionLabel}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <div className="p-6">
+      <DialogHeader>
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+      </DialogHeader>
+      <DialogFooter className="flex-row justify-center gap-2 sm:justify-center mt-4">
+        <Button variant="outline" onClick={handleCancel}>
+          Cancel
+        </Button>
+        <Button variant="destructive" onClick={handleConfirm}>
+          {actionLabel}
+        </Button>
+      </DialogFooter>
+    </div>
   );
 };

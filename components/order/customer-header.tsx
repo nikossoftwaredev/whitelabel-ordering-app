@@ -16,10 +16,8 @@ import { UserAvatarMenu } from "@/components/user-avatar-menu";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import { useAddressStore } from "@/lib/stores/address-store";
 import { useCartStore } from "@/lib/stores/cart-store";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
-import { AddressManagerSheet } from "./address-manager-sheet";
-import { AuthDialog } from "./auth-dialog";
-import { CartSheet } from "./cart-sheet";
 import { ProfilePromptSheet } from "./profile-prompt-sheet";
 
 export const CustomerHeader = () => {
@@ -46,10 +44,9 @@ export const CustomerHeader = () => {
   };
   const subpageTitle = subpageKey ? subpageTitles[subpageKey] : null;
 
+  const openDialog = useDialogStore((s) => s.openDialog);
+
   const [mounted, setMounted] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [addressOpen, setAddressOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -117,7 +114,7 @@ export const CustomerHeader = () => {
 
               {/* Address Picker */}
               <button
-                onClick={() => setAddressOpen(true)}
+                onClick={() => openDialog("address-manager")}
                 className={`flex items-center gap-1.5 py-1.5 px-2 sm:px-3 rounded-lg ${hoverBgClass} transition-colors duration-200 cursor-pointer shrink min-w-0`}
               >
                 <MapPin className={`size-4 shrink-0 ${subtleTextClass}`} />
@@ -137,7 +134,7 @@ export const CustomerHeader = () => {
             {/* User Avatar */}
             <UserAvatarMenu
               showCustomerLinks
-              onSignInClick={() => setAuthOpen(true)}
+              onSignInClick={() => openDialog("auth")}
             />
 
             {/* Cart Button */}
@@ -145,7 +142,7 @@ export const CustomerHeader = () => {
               variant="ghost"
               size="icon"
               className={`relative size-9 rounded-lg ${hoverBgClass}`}
-              onClick={() => setCartOpen(true)}
+              onClick={() => openDialog("cart")}
             >
               <ShoppingCart className="size-5" />
               {mounted && cart.itemCount() > 0 && (
@@ -165,18 +162,6 @@ export const CustomerHeader = () => {
         </div>
       </header>
 
-      <CartSheet
-        open={cartOpen}
-        onOpenChange={setCartOpen}
-        tenantSlug={tenant.slug}
-      />
-
-      <AddressManagerSheet
-        open={addressOpen}
-        onOpenChange={setAddressOpen}
-      />
-
-      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
       <ProfilePromptSheet />
     </>
   );

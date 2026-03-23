@@ -1,17 +1,14 @@
 "use client";
 
-import { MessageSquare, Square, SquareCheck, Store, X } from "lucide-react";
+import { MessageSquare, Square, SquareCheck, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogTitle } from "@/components/ui/dialog";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { calcBogoTotal, hasActiveOffer } from "@/lib/orders/offers";
 import { useCartStore } from "@/lib/stores/cart-store";
+import { selectDialogData, useDialogStore } from "@/lib/stores/dialog-store";
 
 import { QuantityStepper } from "./quantity-stepper";
 
@@ -69,17 +66,13 @@ interface CartItemEdit {
   notes?: string;
 }
 
-interface ProductDetailSheetProps {
-  product: Product | null;
-  editingCartItem?: CartItemEdit | null;
-  onClose: () => void;
-}
+export const PRODUCT_DETAIL_DIALOG = "product-detail";
 
-export const ProductDetailSheet = ({
-  product,
-  editingCartItem,
-  onClose,
-}: ProductDetailSheetProps) => {
+export const ProductDetailContent = () => {
+  const dialogData = useDialogStore(selectDialogData) as { product: Product; editingCartItem?: CartItemEdit } | null;
+  const product = dialogData?.product ?? null;
+  const editingCartItem = dialogData?.editingCartItem ?? null;
+  const closeAll = useDialogStore((s) => s.closeAll);
   const t = useTranslations("Product");
   const cart = useCartStore();
   const formatPrice = useFormatPrice();
@@ -202,7 +195,7 @@ export const ProductDetailSheet = ({
       });
     }
 
-    onClose();
+    closeAll();
   };
 
   const switchToAddNew = () => {
@@ -221,23 +214,11 @@ export const ProductDetailSheet = ({
   };
 
   return (
-    <Dialog open={!!product} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        className="bg-background text-foreground border-border p-0 sm:max-w-md sm:max-h-[90vh] overflow-hidden"
-        showCloseButton={false}
-      >
-        {/* Hidden accessible title */}
-        <DialogTitle className="sr-only">{product.name}</DialogTitle>
+    <div className="flex flex-col overflow-y-auto flex-1">
+      {/* Hidden accessible title */}
+      <DialogTitle className="sr-only">{product.name}</DialogTitle>
 
-        {/* Close button — always visible, above scroll */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 size-9 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 transition-colors duration-200 cursor-pointer"
-        >
-          <X className="size-5 text-white" />
-        </button>
-
-        <div className="overflow-y-auto flex-1 scrollbar-hide">
+      <div className="overflow-y-auto flex-1 scrollbar-hide">
           {/* Hero image */}
           <div className="relative">
             {product.image ? (
@@ -447,7 +428,6 @@ export const ProductDetailSheet = ({
             </button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 };

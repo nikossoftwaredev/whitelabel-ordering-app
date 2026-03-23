@@ -542,8 +542,8 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
                   type="number"
                   min={1}
                   max={180}
-                  value={estimatedMinutes}
-                  onChange={(e) => setEstimatedMinutes(parseInt(e.target.value) || 15)}
+                  value={estimatedMinutes || ""}
+                  onChange={(e) => setEstimatedMinutes(e.target.value === "" ? 0 : parseInt(e.target.value))}
                   className="w-20 h-8"
                   autoFocus
                 />

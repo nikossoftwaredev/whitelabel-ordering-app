@@ -5,7 +5,7 @@ export const updateTenantSettingsSchema = z.object({
   phone: z.string().max(20).optional().nullable(),
   email: z.string().email().optional().nullable(),
   address: z.string().max(500).optional().nullable(),
-  prepTimeMinutes: z.number().int().min(1).max(120).optional(),
+  prepTimeMinutes: z.number().int().min(1).max(480).optional(),
   currency: z.string().length(3).optional(),
   timezone: z.string().max(50).optional(),
 });

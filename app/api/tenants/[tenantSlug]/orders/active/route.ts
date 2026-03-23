@@ -50,6 +50,8 @@ export async function GET(
       total: true,
       createdAt: true,
       estimatedReadyAt: true,
+      orderType: true,
+      scheduledFor: true,
     },
     orderBy: { createdAt: "desc" },
   });

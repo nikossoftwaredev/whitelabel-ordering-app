@@ -129,6 +129,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     status: updated.status,
     total: updated.total,
     customerName: updated.customerName,
+    estimatedReadyAt: updated.estimatedReadyAt?.toISOString() ?? null,
   });
 
   // Send status email (fire-and-forget)

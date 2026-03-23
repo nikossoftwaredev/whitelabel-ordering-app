@@ -7,6 +7,7 @@ export interface OrderEvent {
   status: string;
   total: number;
   customerName: string | null;
+  estimatedReadyAt?: string | null;
 }
 
 /**

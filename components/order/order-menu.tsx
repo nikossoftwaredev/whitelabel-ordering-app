@@ -34,8 +34,8 @@ import { queryKeys } from "@/lib/query/keys";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 
-import { CartSheet } from "./cart-sheet";
-import { ProductDetailSheet } from "./product-detail-sheet";
+
+import { PRODUCT_DETAIL_DIALOG } from "./product-detail-sheet";
 import { QuantityStepper } from "./quantity-stepper";
 
 /* ─────────────── Types ─────────────── */
@@ -374,9 +374,6 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [editingCartItem, setEditingCartItem] = useState<{ cartItemId: string; quantity: number; modifiers: { modifierOptionId: string; name: string; priceAdjustment: number }[]; notes?: string } | null>(null);
-  const [cartOpen, setCartOpen] = useState(false);
   const openDialog = useDialogStore((s) => s.openDialog);
 
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -421,19 +418,17 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
     const cartItems = cart.items.filter((i) => i.productId === product.id);
     if (cartItems.length > 0) {
       const last = cartItems[cartItems.length - 1];
-      setEditingCartItem({ cartItemId: last.cartItemId, quantity: last.quantity, modifiers: last.modifiers, notes: last.notes });
+      openDialog(PRODUCT_DETAIL_DIALOG, { product, editingCartItem: { cartItemId: last.cartItemId, quantity: last.quantity, modifiers: last.modifiers, notes: last.notes } });
     } else {
-      setEditingCartItem(null);
+      openDialog(PRODUCT_DETAIL_DIALOG, { product });
     }
-    setSelectedProduct(product);
-  }, [cart.items]);
+  }, [cart.items, openDialog]);
 
   const openCartItemEdit = useCallback((product: Product, cartItemId: string) => {
     const item = cart.items.find((i) => i.cartItemId === cartItemId);
     if (!item) return;
-    setEditingCartItem({ cartItemId: item.cartItemId, quantity: item.quantity, modifiers: item.modifiers, notes: item.notes });
-    setSelectedProduct(product);
-  }, [cart.items]);
+    openDialog(PRODUCT_DETAIL_DIALOG, { product, editingCartItem: { cartItemId: item.cartItemId, quantity: item.quantity, modifiers: item.modifiers, notes: item.notes } });
+  }, [cart.items, openDialog]);
 
   // Group cart items by productId for rendering variants
   const cartItemsByProduct = useMemo(() => {
@@ -846,7 +841,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           <Button
             className="w-full flex items-center gap-3 h-14 px-5 rounded-2xl shadow-xl active:scale-[0.98]"
             style={{ background: "var(--brand-primary, hsl(var(--primary)))", color: "white" }}
-            onClick={() => setCartOpen(true)}
+            onClick={() => openDialog("cart")}
           >
             <span className="flex items-center justify-center size-7 rounded-lg bg-white/20 text-sm font-bold tabular-nums">{itemCount}</span>
             <span className="flex-1 text-left font-semibold text-[15px]">{t("viewCart")}</span>
@@ -855,8 +850,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         </div>
       )}
 
-      <ProductDetailSheet product={selectedProduct} editingCartItem={editingCartItem} onClose={() => { setSelectedProduct(null); setEditingCartItem(null); }} />
-      <CartSheet open={cartOpen} onOpenChange={setCartOpen} tenantSlug={tenantSlug} />
+
 
     </div>
   );

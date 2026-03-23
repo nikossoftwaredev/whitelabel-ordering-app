@@ -12,6 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -68,6 +75,38 @@ function getDefaultOperatingHours(): OperatingHourData[] {
     closeTime: "22:00",
     isClosed: false,
   }));
+}
+
+// Generate time options in 30-minute intervals
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h = String(Math.floor(i / 2)).padStart(2, "0");
+  const m = i % 2 === 0 ? "00" : "30";
+  return `${h}:${m}`;
+});
+
+function TimeSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger className="w-25">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {TIME_OPTIONS.map((t) => (
+          <SelectItem key={t} value={t}>
+            {t}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 }
 
 function SettingsLoadingSkeleton() {
@@ -314,10 +353,10 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
               <Input
                 id="prep-time"
                 type="number"
-                min={0}
-                value={prepTimeMinutes}
+                min={1}
+                value={prepTimeMinutes || ""}
                 onChange={(e) =>
-                  setPrepTimeMinutes(parseInt(e.target.value) || 0)
+                  setPrepTimeMinutes(e.target.value === "" ? 0 : parseInt(e.target.value))
                 }
               />
             </div>
@@ -350,8 +389,8 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
                 min={0}
                 max={100}
                 step="0.01"
-                value={taxRate}
-                onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                value={taxRate || ""}
+                onChange={(e) => setTaxRate(e.target.value === "" ? 0 : parseFloat(e.target.value))}
               />
             </div>
           </CardContent>
@@ -389,24 +428,20 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
                 </div>
 
                 <div className="flex flex-1 items-center gap-2">
-                  <Input
-                    type="time"
+                  <TimeSelect
                     value={hour.openTime}
-                    onChange={(e) =>
-                      updateOperatingHour(index, "openTime", e.target.value)
+                    onChange={(val) =>
+                      updateOperatingHour(index, "openTime", val)
                     }
                     disabled={hour.isClosed}
-                    className="w-auto"
                   />
                   <span className="text-sm text-muted-foreground">to</span>
-                  <Input
-                    type="time"
+                  <TimeSelect
                     value={hour.closeTime}
-                    onChange={(e) =>
-                      updateOperatingHour(index, "closeTime", e.target.value)
+                    onChange={(val) =>
+                      updateOperatingHour(index, "closeTime", val)
                     }
                     disabled={hour.isClosed}
-                    className="w-auto"
                   />
                 </div>
               </div>
@@ -521,9 +556,9 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
                     type="number"
                     min={2}
                     max={50}
-                    value={loyaltyRequiredOrders}
+                    value={loyaltyRequiredOrders || ""}
                     onChange={(e) =>
-                      setLoyaltyRequiredOrders(parseInt(e.target.value) || 10)
+                      setLoyaltyRequiredOrders(e.target.value === "" ? 0 : parseInt(e.target.value))
                     }
                   />
                 </div>
