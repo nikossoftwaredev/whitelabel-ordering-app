@@ -30,17 +30,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { type Address, useAddressStore } from "@/lib/stores/address-store";
 import { useDialogStore } from "@/lib/stores/dialog-store";
-
-import { AuthDialog } from "./auth-dialog";
 import {
-  searchPlaces,
   getPlaceDetails,
   type PlacePrediction,
+  searchPlaces,
 } from "@/server_actions/googleSearchActions";
+
+import { AuthDialog } from "./auth-dialog";
+
+type ViewState = "list" | "search" | "form";
 
 interface AddressManagerSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialView?: ViewState;
 }
 
 const LABEL_OPTIONS = ["Home", "Work", "Other"] as const;
@@ -62,11 +65,10 @@ const LABEL_TRANSLATION_KEYS: Record<string, string> = {
   Other: "other",
 };
 
-type ViewState = "list" | "search" | "form";
-
 export function AddressManagerSheet({
   open,
   onOpenChange,
+  initialView = "list",
 }: AddressManagerSheetProps) {
   const t = useTranslations("Address");
   const openDialog = useDialogStore((s) => s.openDialog);
@@ -99,13 +101,13 @@ export function AddressManagerSheet({
   const [selectingPlace, setSelectingPlace] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset to list view when opening
+  // Reset to initial view when opening
   useEffect(() => {
     if (open) {
-      setView("list");
+      setView(initialView);
       resetForm();
     }
-  }, [open]);
+  }, [open, initialView]);
 
   function resetForm() {
     setNewLabel("Home");
@@ -300,7 +302,7 @@ export function AddressManagerSheet({
 
   const handleBack = () => {
     if (view === "form") setView("search");
-    else if (view === "search") setView("list");
+    else if (view === "search" && initialView !== "search") setView("list");
     else onOpenChange(false);
   };
 
@@ -342,20 +344,18 @@ export function AddressManagerSheet({
                       return (
                         <div
                           key={addr.id}
-                          className="flex items-center gap-1 border-b border-border/30 last:border-b-0"
+                          className={`flex items-center gap-1 rounded-xl my-1 transition-all duration-200 hover:bg-muted/50 ${
+                            isSelected
+                              ? "ring-2 ring-(--brand-primary,hsl(var(--primary)))"
+                              : ""
+                          }`}
                         >
                           <button
                             onClick={() => handleSelectAddress(addr)}
-                            className="flex-1 flex items-start gap-3 px-3 py-3.5 rounded-xl hover:bg-muted/50 transition-colors duration-200 cursor-pointer text-left"
+                            className="flex-1 flex items-start gap-3 px-3 py-3.5 rounded-xl transition-colors duration-200 cursor-pointer text-left"
                           >
                             <MapPin
-                              className="size-5 shrink-0 mt-0.5"
-                              style={{
-                                color: isSelected
-                                  ? "var(--brand-primary, hsl(var(--primary)))"
-                                  : "var(--muted-foreground)",
-                              }}
-                              fill={isSelected ? "currentColor" : "none"}
+                              className="size-5 shrink-0 mt-0.5 text-muted-foreground"
                             />
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-[15px] text-foreground leading-tight">

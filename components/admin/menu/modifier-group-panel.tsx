@@ -8,7 +8,6 @@ import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 import { useDialogStore } from "@/lib/stores/dialog-store";
 
 import { ModifierGroupFormDialog } from "./modifier-group-form-dialog";

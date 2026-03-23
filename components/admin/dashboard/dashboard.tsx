@@ -6,6 +6,7 @@ import {
   Clock,
   DollarSign,
   Heart,
+  RotateCcw,
   ShoppingBag,
   TrendingUp,
 } from "lucide-react";
@@ -24,7 +25,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { AnalyticsCharts } from "./analytics-charts";
 
 interface DashboardStats {
-  today: { revenue: number; orders: number; tips: number };
+  today: { revenue: number; orders: number; tips: number; refunds: number; refundAmount: number };
   activeOrders: number;
   weekRevenue: number;
   popularProducts: { name: string; quantity: number }[];
@@ -162,6 +163,25 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
                 <div className="text-2xl font-bold">
                   &euro;{centsToEuros(data?.today.tips ?? 0)}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Refunds Today
+                </CardTitle>
+                <RotateCcw className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {data?.today.refunds ?? 0}
+                </div>
+                {(data?.today.refundAmount ?? 0) > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    &euro;{centsToEuros(data?.today.refundAmount ?? 0)}
+                  </p>
+                )}
               </CardContent>
             </Card>
 

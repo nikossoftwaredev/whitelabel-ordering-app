@@ -19,6 +19,8 @@ interface DeliveryData {
   freeDeliveryThreshold: number;
   deliveryRangeKm: number;
   minOrderAmount: number;
+  storeLat: number | null;
+  storeLng: number | null;
 }
 
 interface DeliverySettingsProps {
@@ -33,6 +35,8 @@ export function DeliverySettings({ tenantId }: DeliverySettingsProps) {
   const [freeThreshold, setFreeThreshold] = useState("0.00");
   const [rangeKm, setRangeKm] = useState("5");
   const [minOrder, setMinOrder] = useState("0.00");
+  const [storeLat, setStoreLat] = useState("");
+  const [storeLng, setStoreLng] = useState("");
 
   const { data, isLoading } = useQuery<DeliveryData>({
     queryKey: ["delivery-settings", tenantId],
@@ -51,6 +55,8 @@ export function DeliverySettings({ tenantId }: DeliverySettingsProps) {
     setFreeThreshold(centsToDecimal(data.freeDeliveryThreshold || 0));
     setRangeKm(String(data.deliveryRangeKm || 5));
     setMinOrder(centsToDecimal(data.minOrderAmount || 0));
+    setStoreLat(data.storeLat != null ? String(data.storeLat) : "");
+    setStoreLng(data.storeLng != null ? String(data.storeLng) : "");
   }, [data]);
 
   const saveMutation = useMutation({
@@ -64,6 +70,8 @@ export function DeliverySettings({ tenantId }: DeliverySettingsProps) {
           freeDeliveryThreshold: decimalToCents(freeThreshold),
           deliveryRangeKm: parseFloat(rangeKm) || 5,
           minOrderAmount: decimalToCents(minOrder),
+          storeLat: storeLat ? parseFloat(storeLat) : null,
+          storeLng: storeLng ? parseFloat(storeLng) : null,
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -154,6 +162,50 @@ export function DeliverySettings({ tenantId }: DeliverySettingsProps) {
               Customers within this radius can order delivery.
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Store Location */}
+      <Card className={!enabled ? "opacity-50 pointer-events-none" : ""}>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center size-10 rounded-lg bg-green-500/10">
+              <MapPin className="size-5 text-green-500" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Store Location</CardTitle>
+              <CardDescription>
+                Set your store coordinates for delivery zone validation
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="store-lat">Store Latitude</Label>
+            <Input
+              id="store-lat"
+              type="number"
+              step="any"
+              placeholder="e.g. 37.9838"
+              value={storeLat}
+              onChange={(e) => setStoreLat(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="store-lng">Store Longitude</Label>
+            <Input
+              id="store-lng"
+              type="number"
+              step="any"
+              placeholder="e.g. 23.7275"
+              value={storeLng}
+              onChange={(e) => setStoreLng(e.target.value)}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Required for delivery zone validation. You can find coordinates from Google Maps.
+          </p>
         </CardContent>
       </Card>
 

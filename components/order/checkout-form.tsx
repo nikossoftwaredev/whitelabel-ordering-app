@@ -25,8 +25,8 @@ import { toast } from "sonner";
 
 import { SignInForm } from "@/components/auth/signin-form";
 import { useTenant } from "@/components/tenant-provider";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -212,6 +212,14 @@ export const CheckoutForm = () => {
           orderType === "DELIVERY" && selectedAddress
             ? `${selectedAddress.street}${selectedAddress.city ? `, ${selectedAddress.city}` : ""}${selectedAddress.postalCode ? ` ${selectedAddress.postalCode}` : ""}`
             : undefined,
+        deliveryLat:
+          orderType === "DELIVERY" && selectedAddress?.lat != null
+            ? selectedAddress.lat
+            : undefined,
+        deliveryLng:
+          orderType === "DELIVERY" && selectedAddress?.lng != null
+            ? selectedAddress.lng
+            : undefined,
         tipAmount,
         scheduledFor: scheduleMode && scheduledDate && scheduledTime
           ? buildScheduledISO()
@@ -312,7 +320,7 @@ export const CheckoutForm = () => {
   const loyaltyDiscount = loyaltyRedeem && loyaltyData?.isEligible
     ? Math.min(loyaltyData.rewardAmount, subtotal)
     : 0;
-  const discount = loyaltyDiscount || (appliedPromo?.discount || 0);
+  const discount = loyaltyRedeem ? loyaltyDiscount : (appliedPromo?.discount ?? 0);
   const orderTotal = subtotal - discount + tipAmount;
 
   const validatePromoCode = async () => {

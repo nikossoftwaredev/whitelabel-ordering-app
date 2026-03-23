@@ -2,7 +2,6 @@
 
 import { Volume2, VolumeX } from "lucide-react";
 
-import { UserAvatarMenu } from "@/components/user-avatar-menu";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -11,6 +10,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { UserAvatarMenu } from "@/components/user-avatar-menu";
 import { useSoundSettings } from "@/hooks/use-notification-sound";
 
 export const AdminHeader = () => {

@@ -16,6 +16,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useCallback,useEffect, useMemo, useRef, useState } from "react";
 
+import { STORE_INFO_DIALOG, type StoreInfoDialogData } from "@/components/order/store-info-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Carousel,
@@ -26,13 +27,12 @@ import {
 } from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useDialogStore } from "@/lib/stores/dialog-store";
-import { STORE_INFO_DIALOG, type StoreInfoDialogData } from "@/components/order/store-info-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { hasActiveOffer } from "@/lib/orders/offers";
 import { queryKeys } from "@/lib/query/keys";
 import { useCartStore } from "@/lib/stores/cart-store";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 import { CartSheet } from "./cart-sheet";
 import { ProductDetailSheet } from "./product-detail-sheet";

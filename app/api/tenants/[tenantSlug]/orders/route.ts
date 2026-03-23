@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/email/send";
 import { orderEvents } from "@/lib/events/order-events";
+import { calculateDistanceKm } from "@/lib/orders/distance";
 import { generateOrderNumber } from "@/lib/orders/order-number";
 import { isStoreOpen } from "@/lib/orders/store-hours";
 import { validateCart } from "@/lib/orders/validate-cart";
@@ -81,6 +82,8 @@ export async function POST(
     scheduledFor: scheduledForStr,
     promoCode: promoCodeStr,
     loyaltyRedeem,
+    deliveryLat,
+    deliveryLng,
   } = parsed.data;
 
   // Parse and validate scheduled time
@@ -92,6 +95,30 @@ export async function POST(
         { error: "Scheduled time must be at least 30 minutes from now" },
         { status: 400 }
       );
+    }
+  }
+
+  // Validate delivery zone
+  if (orderType === "DELIVERY") {
+    if (
+      tenant.storeLat != null &&
+      tenant.storeLng != null &&
+      tenant.deliveryRangeKm &&
+      deliveryLat != null &&
+      deliveryLng != null
+    ) {
+      const distance = calculateDistanceKm(
+        tenant.storeLat,
+        tenant.storeLng,
+        deliveryLat,
+        deliveryLng
+      );
+      if (distance > tenant.deliveryRangeKm) {
+        return NextResponse.json(
+          { error: "Address is outside the delivery zone" },
+          { status: 400 }
+        );
+      }
     }
   }
 

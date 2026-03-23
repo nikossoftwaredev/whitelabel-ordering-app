@@ -25,7 +25,18 @@
     "settings": {
       "title": "Settings",
       "description": "Manage your application preferences and configuration."
-    }
+    },
+    "refund": "Refund",
+    "refundOrder": "Refund Order",
+    "fullRefund": "Full refund",
+    "partialRefund": "Partial refund",
+    "refundAmount": "Refund amount",
+    "refundReason": "Reason for refund",
+    "confirmRefund": "Confirm Refund",
+    "refundProcessed": "Refund processed successfully",
+    "refunded": "Refunded",
+    "amountInCents": "Amount in cents",
+    "todayRefunds": "Refunds Today"
   },
   "Auth": {
     "signIn": "Sign in",
@@ -115,6 +126,7 @@
     "pay": "Pay {amount}",
     "storeClosed": "The store is currently closed. You cannot place orders at this time.",
     "selectAddress": "Please select a delivery address",
+    "deliveryZoneError": "This address is outside our delivery area",
     "noAddressSelected": "No address selected",
     "tapToSelectAddress": "Tap to select a delivery address",
     "deliveryAddress": "Delivery address",
@@ -200,7 +212,9 @@
     "saveChanges": "Save changes",
     "saving": "Saving...",
     "saved": "Saved!",
-    "language": "Language"
+    "addresses": "Addresses",
+    "manageAddresses": "Manage Addresses",
+    "noAddressesYet": "No saved addresses yet"
   },
   "ProfilePrompt": {
     "title": "Complete your profile",
@@ -329,5 +343,10 @@
     "iosTip": "Tap the Share button in Safari, then tap Add to Home Screen.",
     "androidTip": "Open this page in Chrome or Safari on your phone and tap Add to Home Screen.",
     "keepUsingWeb": "Keep using web"
+  },
+  "Delivery": {
+    "storeLocation": "Store Location",
+    "storeLatitude": "Store Latitude",
+    "storeLongitude": "Store Longitude"
   }
 }

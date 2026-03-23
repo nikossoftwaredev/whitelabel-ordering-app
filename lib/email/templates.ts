@@ -222,3 +222,46 @@ export function orderStatusEmail(
     html: baseLayout(content, storeName, color),
   };
 }
+
+export function refundEmail(data: {
+  orderNumber: string;
+  customerName: string;
+  refundAmount: number;
+  orderTotal: number;
+  storeName: string;
+  reason?: string | null;
+  primaryColor?: string;
+}): { subject: string; html: string } {
+  const color = data.primaryColor || "#000000";
+  const isPartial = data.refundAmount < data.orderTotal;
+
+  const reasonBlock = data.reason
+    ? `<p style="margin:12px 0 0;padding:12px;background:#f5f5f5;border-radius:8px;color:#666;font-size:13px;">Reason: ${data.reason}</p>`
+    : "";
+
+  const content = `
+    <div style="text-align:center;margin-bottom:16px;">
+      <span style="font-size:48px;">&#128176;</span>
+    </div>
+    <h2 style="margin:0 0 4px;font-size:22px;color:#111;text-align:center;">
+      ${isPartial ? "Partial Refund" : "Refund"} Processed
+    </h2>
+    <p style="margin:8px 0 0;color:#666;font-size:14px;text-align:center;">
+      Hi ${data.customerName}, a ${isPartial ? "partial " : ""}refund has been processed for your order <strong>#${data.orderNumber}</strong>.
+    </p>
+    <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin:20px 0;text-align:center;">
+      <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Refund Amount</p>
+      <p style="margin:4px 0 0;font-size:24px;font-weight:700;color:#166534;">${formatPrice(data.refundAmount)}</p>
+      ${isPartial ? `<p style="margin:4px 0 0;font-size:12px;color:#888;">of ${formatPrice(data.orderTotal)} order total</p>` : ""}
+    </div>
+    ${reasonBlock}
+    <p style="margin:20px 0 0;color:#888;font-size:13px;text-align:center;">
+      The refund will appear in your account within 5-10 business days.
+    </p>
+  `;
+
+  return {
+    subject: `Refund for Order #${data.orderNumber} — ${data.storeName}`,
+    html: baseLayout(content, data.storeName, color),
+  };
+}

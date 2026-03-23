@@ -165,9 +165,10 @@
   display: none;
 }
 
-/* Smooth scroll behavior */
+/* Smooth scroll behavior + prevent layout shift when modals hide scrollbar */
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 /* Google Places autocomplete dropdown — must sit above Radix dialogs */

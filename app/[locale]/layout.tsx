@@ -1,17 +1,17 @@
 import "./globals.css";
 
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
 import { Roboto } from "next/font/google";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { hasLocale } from "next-intl";
 import { getMessages,setRequestLocale } from "next-intl/server";
 
+import { AddressPreloader } from "@/components/address-preloader";
 import { Providers } from "@/components/providers";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { SwRegister } from "@/components/sw-register";
-import { AddressPreloader } from "@/components/address-preloader";
 import { TenantProvider } from "@/components/tenant-provider";
 import { authOptions } from "@/lib/auth/auth";
 import { routing } from "@/lib/i18n/routing";

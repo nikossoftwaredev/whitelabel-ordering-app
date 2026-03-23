@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
   Plus,
-  ShieldCheck,
   Trash2,
   UserPlus,
   Users,
@@ -12,13 +11,13 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -37,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UserAvatar } from "@/components/user-avatar";
 import { queryKeys } from "@/lib/query/keys";
 
 interface StaffUser {
@@ -90,25 +90,6 @@ function RoleBadge({ role }: { role: string }) {
     <Badge variant="outline" className={variant.className}>
       {variant.label}
     </Badge>
-  );
-}
-
-function UserAvatar({ user }: { user: StaffUser }) {
-  if (user.image) {
-    return (
-      <img
-        src={user.image}
-        alt={user.name || "User"}
-        className="h-10 w-10 rounded-full object-cover"
-      />
-    );
-  }
-
-  const initial = (user.name || user.email || "?").charAt(0).toUpperCase();
-  return (
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-      {initial}
-    </div>
   );
 }
 
@@ -245,16 +226,12 @@ export function StaffManagement({ tenantId }: { tenantId: string }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Staff Management</h1>
-        </div>
+      <PageHeader title="Staff Management">
         <Button onClick={() => setAddDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Staff
         </Button>
-      </div>
+      </PageHeader>
 
       <Separator />
 
@@ -269,22 +246,21 @@ export function StaffManagement({ tenantId }: { tenantId: string }) {
       )}
       {!isLoading && !error && (!staff || staff.length === 0) ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <Users className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-lg font-medium text-muted-foreground">
-              No staff members yet
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Add your first staff member to get started.
-            </p>
-            <Button
-              variant="outline"
-              className="mt-2"
-              onClick={() => setAddDialogOpen(true)}
-            >
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Staff
-            </Button>
+          <CardContent>
+            <EmptyState
+              icon={Users}
+              title="No staff members yet"
+              description="Add your first staff member to get started."
+            />
+            <div className="flex justify-center pb-4">
+              <Button
+                variant="outline"
+                onClick={() => setAddDialogOpen(true)}
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Staff
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -292,7 +268,7 @@ export function StaffManagement({ tenantId }: { tenantId: string }) {
           {staff?.map((member) => (
             <Card key={member.id}>
               <CardContent className="flex items-center gap-4 py-4">
-                <UserAvatar user={member.user} />
+                <UserAvatar src={member.user.image} name={member.user.name} email={member.user.email} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">
                     {member.user.name || "Unnamed"}
