@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Briefcase,
+  Building2,
   Check,
   Crosshair,
   Home,
@@ -24,10 +25,13 @@ import { useTenant } from "@/components/tenant-provider";
 import { DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { type Address, useAddressStore } from "@/lib/stores/address-store";
+import { AddressMap } from "@/components/order/address-map";
+import { Textarea } from "@/components/ui/textarea";
 import { selectDialogData, useDialogStore } from "@/lib/stores/dialog-store";
 import {
   getPlaceDetails,
   type PlacePrediction,
+  reverseGeocode,
   searchPlaces,
 } from "@/server_actions/googleSearchActions";
 
@@ -84,6 +88,13 @@ export function AddressManagerContent() {
   const [newLng, setNewLng] = useState<number | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationType, setLocationType] = useState<string>("house");
+  const [newFloor, setNewFloor] = useState("");
+  const [newApartmentNumber, setNewApartmentNumber] = useState("");
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [entrance, setEntrance] = useState<string>("");
+  const [accessDetails, setAccessDetails] = useState("");
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
   // Google Places search
   const [query, setQuery] = useState("");
@@ -108,6 +119,13 @@ export function AddressManagerContent() {
     setLocationError(null);
     setQuery("");
     setPredictions([]);
+    setLocationType("house");
+    setNewFloor("");
+    setNewApartmentNumber("");
+    setNewCompanyName("");
+    setEntrance("");
+    setAccessDetails("");
+    setDeliveryInstructions("");
   }
 
   // Debounced search via server action
@@ -215,6 +233,16 @@ export function AddressManagerContent() {
     );
   }, [t]);
 
+  const handlePinMove = useCallback(async (newLat: number, newLng: number) => {
+    setNewLat(newLat);
+    setNewLng(newLng);
+    const result = await reverseGeocode(newLat, newLng);
+    if (result) {
+      setNewStreet(result.street);
+      setNewCity(result.city);
+    }
+  }, []);
+
   const createMutation = useMutation({
     mutationFn: async (body: {
       label: string;
@@ -222,6 +250,13 @@ export function AddressManagerContent() {
       city: string | null;
       lat: number | null;
       lng: number | null;
+      locationType: string | null;
+      floor: string | null;
+      apartmentNumber: string | null;
+      companyName: string | null;
+      entrance: string | null;
+      accessDetails: string | null;
+      deliveryInstructions: string | null;
     }) => {
       const res = await fetch(`/api/tenants/${tenant.slug}/addresses`, {
         method: "POST",
@@ -271,6 +306,13 @@ export function AddressManagerContent() {
       city: newCity.trim() || null,
       lat: newLat,
       lng: newLng,
+      locationType: locationType || null,
+      floor: newFloor.trim() || null,
+      apartmentNumber: newApartmentNumber.trim() || null,
+      companyName: newCompanyName.trim() || null,
+      entrance: entrance || null,
+      accessDetails: accessDetails.trim() || null,
+      deliveryInstructions: deliveryInstructions.trim() || null,
     });
   };
 
@@ -507,40 +549,21 @@ export function AddressManagerContent() {
             </button>
           </div>
 
-          <div className="px-6 pt-2 pb-6">
+          <div className="px-6 pt-2 pb-6 overflow-y-auto flex-1">
             <DialogTitle className="text-2xl font-bold text-foreground mb-4">
               {t("confirmAddress")}
             </DialogTitle>
 
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                {LABEL_OPTIONS.map((label) => {
-                  const isActive = newLabel === label;
-                  return (
-                    <button
-                      key={label}
-                      onClick={() => setNewLabel(label)}
-                      className={`flex-1 h-11 rounded-xl text-[14px] font-medium flex items-center justify-center gap-2 border transition-all duration-200 cursor-pointer ${
-                        isActive
-                          ? "border-transparent text-white"
-                          : "border-border text-muted-foreground hover:border-foreground/30"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background:
-                                "var(--brand-primary, hsl(var(--primary)))",
-                            }
-                          : undefined
-                      }
-                    >
-                      {getLabelIcon(label)}
-                      {t(LABEL_TRANSLATION_KEYS[label])}
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="space-y-4">
+              {/* Map with draggable pin */}
+              {newLat != null && newLng != null && (
+                <div className="space-y-1">
+                  <AddressMap lat={newLat} lng={newLng} onPositionChange={handlePinMove} />
+                  <p className="text-xs text-muted-foreground text-center">{t("refinePin")}</p>
+                </div>
+              )}
 
+              {/* Street + City */}
               <div>
                 <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
                   {t("streetAddress")}
@@ -565,15 +588,178 @@ export function AddressManagerContent() {
                 />
               </div>
 
+              {/* Location type pills */}
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-muted-foreground block">
+                  {t("locationType")}
+                </label>
+                <div className="flex gap-2">
+                  {([
+                    { key: "house", icon: <Home className="size-4" />, label: t("house") },
+                    { key: "apartment", icon: <Building2 className="size-4" />, label: t("apartment") },
+                    { key: "office", icon: <Briefcase className="size-4" />, label: t("office") },
+                    { key: "other", icon: <MapPin className="size-4" />, label: t("otherType") },
+                  ]).map(({ key, icon, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setLocationType(key)}
+                      className={`flex-1 h-10 rounded-xl text-[13px] font-medium flex items-center justify-center gap-1.5 border transition-all duration-200 cursor-pointer ${
+                        locationType === key
+                          ? "border-transparent text-white"
+                          : "border-border text-muted-foreground hover:border-foreground/30"
+                      }`}
+                      style={
+                        locationType === key
+                          ? { background: "var(--brand-primary, hsl(var(--primary)))" }
+                          : undefined
+                      }
+                    >
+                      {icon}
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Conditional: Floor */}
+              {(locationType === "apartment" || locationType === "office") && (
+                <div>
+                  <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
+                    {t("floor")}
+                  </label>
+                  <Input
+                    value={newFloor}
+                    onChange={(e) => setNewFloor(e.target.value)}
+                    placeholder={t("floorPlaceholder")}
+                    className="h-12 rounded-xl text-[15px]"
+                  />
+                </div>
+              )}
+
+              {/* Conditional: Apartment number */}
+              {locationType === "apartment" && (
+                <div>
+                  <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
+                    {t("apartmentNumber")}
+                  </label>
+                  <Input
+                    value={newApartmentNumber}
+                    onChange={(e) => setNewApartmentNumber(e.target.value)}
+                    placeholder={t("apartmentPlaceholder")}
+                    className="h-12 rounded-xl text-[15px]"
+                  />
+                </div>
+              )}
+
+              {/* Conditional: Company name */}
+              {locationType === "office" && (
+                <div>
+                  <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
+                    {t("companyName")}
+                  </label>
+                  <Input
+                    value={newCompanyName}
+                    onChange={(e) => setNewCompanyName(e.target.value)}
+                    placeholder={t("companyPlaceholder")}
+                    className="h-12 rounded-xl text-[15px]"
+                  />
+                </div>
+              )}
+
+              {/* Entrance access pills */}
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-muted-foreground block">
+                  {t("entranceAccess")}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { key: "doorbell", label: t("doorbell") },
+                    { key: "door_code", label: t("doorCode") },
+                    { key: "door_open", label: t("doorOpen") },
+                    { key: "other", label: t("otherAccess") },
+                  ]).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setEntrance(entrance === key ? "" : key)}
+                      className={`h-9 px-3.5 rounded-lg text-[13px] font-medium border transition-all duration-200 cursor-pointer ${
+                        entrance === key
+                          ? "border-transparent text-white"
+                          : "border-border text-muted-foreground hover:border-foreground/30"
+                      }`}
+                      style={
+                        entrance === key
+                          ? { background: "var(--brand-primary, hsl(var(--primary)))" }
+                          : undefined
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Access details */}
+              {entrance && (
+                <div>
+                  <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
+                    {t("accessDetails")}
+                  </label>
+                  <Input
+                    value={accessDetails}
+                    onChange={(e) => setAccessDetails(e.target.value)}
+                    placeholder={t("accessDetailsPlaceholder")}
+                    className="h-12 rounded-xl text-[15px]"
+                  />
+                </div>
+              )}
+
+              {/* Delivery instructions */}
+              <div>
+                <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
+                  {t("deliveryInstructions")}
+                </label>
+                <Textarea
+                  value={deliveryInstructions}
+                  onChange={(e) => setDeliveryInstructions(e.target.value)}
+                  placeholder={t("deliveryInstructionsPlaceholder")}
+                  rows={2}
+                  className="rounded-xl text-[15px] resize-none"
+                />
+              </div>
+
+              {/* Label selector */}
+              <div className="flex gap-2">
+                {LABEL_OPTIONS.map((label) => {
+                  const isActive = newLabel === label;
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => setNewLabel(label)}
+                      className={`flex-1 h-11 rounded-xl text-[14px] font-medium flex items-center justify-center gap-2 border transition-all duration-200 cursor-pointer ${
+                        isActive
+                          ? "border-transparent text-white"
+                          : "border-border text-muted-foreground hover:border-foreground/30"
+                      }`}
+                      style={
+                        isActive
+                          ? { background: "var(--brand-primary, hsl(var(--primary)))" }
+                          : undefined
+                      }
+                    >
+                      {getLabelIcon(label)}
+                      {t(LABEL_TRANSLATION_KEYS[label])}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Save button */}
               <button
                 onClick={handleSave}
-                disabled={
-                  !newStreet.trim() || createMutation.isPending
-                }
+                disabled={!newStreet.trim() || createMutation.isPending}
                 className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60 mt-2"
                 style={{
-                  background:
-                    "var(--brand-primary, hsl(var(--primary)))",
+                  background: "var(--brand-primary, hsl(var(--primary)))",
                   color: "white",
                 }}
               >
@@ -582,9 +768,7 @@ export function AddressManagerContent() {
                 ) : (
                   <Check className="size-4.5" />
                 )}
-                {createMutation.isPending
-                  ? t("saving")
-                  : t("saveAddress")}
+                {createMutation.isPending ? t("saving") : t("saveAddress")}
               </button>
             </div>
           </div>

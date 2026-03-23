@@ -14,6 +14,13 @@ const createAddressSchema = z.object({
   lat: z.number().nullish(),
   lng: z.number().nullish(),
   isDefault: z.boolean().optional(),
+  locationType: z.string().nullish(),
+  floor: z.string().nullish(),
+  apartmentNumber: z.string().nullish(),
+  companyName: z.string().nullish(),
+  entrance: z.string().nullish(),
+  accessDetails: z.string().nullish(),
+  deliveryInstructions: z.string().nullish(),
 });
 
 export async function GET(
@@ -85,8 +92,23 @@ export async function POST(
     );
   }
 
-  const { label, street, city, postalCode, country, lat, lng, isDefault } =
-    parsed.data;
+  const {
+    label,
+    street,
+    city,
+    postalCode,
+    country,
+    lat,
+    lng,
+    isDefault,
+    locationType,
+    floor,
+    apartmentNumber,
+    companyName,
+    entrance,
+    accessDetails,
+    deliveryInstructions,
+  } = parsed.data;
 
   // Upsert customer record
   const customer = await prisma.customer.upsert({
@@ -122,6 +144,13 @@ export async function POST(
       lat,
       lng,
       isDefault: isDefault ?? false,
+      locationType,
+      floor,
+      apartmentNumber,
+      companyName,
+      entrance,
+      accessDetails,
+      deliveryInstructions,
     },
   });
 

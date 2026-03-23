@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChefHat,
   Clock,
+  MapPin,
   Package,
   Phone,
   RotateCcw,
@@ -69,6 +70,8 @@ interface Order {
   createdAt: string;
   estimatedReadyAt: string | null;
   rejectionReason: string | null;
+  deliveryAddress: string | null;
+  deliveryAddressDetails: Record<string, unknown> | null;
   items: OrderItem[];
   customer: OrderCustomer | null;
 }
@@ -337,6 +340,52 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
                   {order.customer.phone}
                 </span>
               )}
+            </div>
+          )}
+
+          {/* Delivery address */}
+          {order.deliveryAddress && (
+            <div className="mt-2">
+              <div className="flex items-start gap-1 text-sm text-muted-foreground">
+                <MapPin className="size-3.5 mt-0.5 shrink-0" />
+                <span>{order.deliveryAddress}</span>
+              </div>
+              {order.deliveryAddressDetails && (() => {
+                const d = order.deliveryAddressDetails as {
+                  locationType?: string;
+                  floor?: string;
+                  apartmentNumber?: string;
+                  companyName?: string;
+                  entrance?: string;
+                  accessDetails?: string;
+                  deliveryInstructions?: string;
+                };
+                const hasDetails = d.floor || d.apartmentNumber || d.companyName || d.entrance || d.deliveryInstructions;
+                if (!hasDetails) return null;
+                return (
+                  <div className="text-sm text-muted-foreground space-y-0.5 mt-1 ml-4.5">
+                    {d.floor && (
+                      <p>
+                        Floor {d.floor}
+                        {d.apartmentNumber ? `, Apt ${d.apartmentNumber}` : ""}
+                      </p>
+                    )}
+                    {d.companyName && <p>{d.companyName}</p>}
+                    {d.entrance && (
+                      <p>
+                        {(() => {
+                          const labels: Record<string, string> = { door_code: "Door code", door_open: "Door is open", doorbell: "Doorbell" };
+                          return labels[d.entrance ?? ""] ?? d.entrance;
+                        })()}
+                        {d.accessDetails ? `: ${d.accessDetails}` : ""}
+                      </p>
+                    )}
+                    {d.deliveryInstructions && (
+                      <p className="italic">{d.deliveryInstructions}</p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

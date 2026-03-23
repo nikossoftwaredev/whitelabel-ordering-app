@@ -85,6 +85,7 @@ export async function POST(
     loyaltyRedeem,
     deliveryLat,
     deliveryLng,
+    deliveryAddressDetails,
   } = parsed.data;
 
   // Parse and validate scheduled time
@@ -214,6 +215,7 @@ export async function POST(
       paymentMethod,
       scheduledFor,
       deliveryAddress: deliveryAddress || null,
+      deliveryAddressDetails: deliveryAddressDetails ?? undefined,
       subtotal: validation.subtotal,
       discount,
       promoCode: isLoyaltyDiscount

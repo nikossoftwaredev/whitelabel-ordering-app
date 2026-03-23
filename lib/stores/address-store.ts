@@ -11,6 +11,13 @@ export interface Address {
   lat: number | null;
   lng: number | null;
   isDefault: boolean;
+  locationType: string | null;
+  floor: string | null;
+  apartmentNumber: string | null;
+  companyName: string | null;
+  entrance: string | null;
+  accessDetails: string | null;
+  deliveryInstructions: string | null;
 }
 
 interface AddressStore {

@@ -114,3 +114,45 @@ export const getPlaceDetails = async (place_id: string): Promise<PlaceDetails | 
     return null;
   }
 };
+
+/**
+ * Reverse geocode coordinates to get a street address
+ */
+export async function reverseGeocode(lat: number, lng: number) {
+  try {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return null;
+
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&language=el`
+    );
+    const data = await res.json();
+
+    if (data.status !== "OK" || !data.results?.[0]) return null;
+
+    const result = data.results[0];
+    const components = result.address_components || [];
+
+    let street = "";
+    let streetNumber = "";
+    let city = "";
+    let postalCode = "";
+
+    for (const comp of components) {
+      if (comp.types.includes("route")) street = comp.long_name;
+      if (comp.types.includes("street_number")) streetNumber = comp.long_name;
+      if (comp.types.includes("locality")) city = comp.long_name;
+      if (comp.types.includes("postal_code")) postalCode = comp.long_name;
+    }
+
+    return {
+      street: streetNumber ? `${street} ${streetNumber}` : street,
+      city,
+      postalCode,
+      formattedAddress: result.formatted_address,
+    };
+  } catch (error) {
+    console.error("Reverse geocode error:", error);
+    return null;
+  }
+}

@@ -27,6 +27,19 @@ export const createOrderSchema = z.object({
   loyaltyRedeem: z.boolean().optional(),
   deliveryLat: z.number().optional(),
   deliveryLng: z.number().optional(),
+  deliveryAddressDetails: z.object({
+    street: z.string(),
+    city: z.string().nullable(),
+    lat: z.number().nullable(),
+    lng: z.number().nullable(),
+    locationType: z.string().nullable().optional(),
+    floor: z.string().nullable().optional(),
+    apartmentNumber: z.string().nullable().optional(),
+    companyName: z.string().nullable().optional(),
+    entrance: z.string().nullable().optional(),
+    accessDetails: z.string().nullable().optional(),
+    deliveryInstructions: z.string().nullable().optional(),
+  }).optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

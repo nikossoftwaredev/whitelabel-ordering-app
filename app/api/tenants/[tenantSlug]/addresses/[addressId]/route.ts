@@ -14,6 +14,13 @@ const updateAddressSchema = z.object({
   lat: z.number().optional(),
   lng: z.number().optional(),
   isDefault: z.boolean().optional(),
+  locationType: z.string().nullish(),
+  floor: z.string().nullish(),
+  apartmentNumber: z.string().nullish(),
+  companyName: z.string().nullish(),
+  entrance: z.string().nullish(),
+  accessDetails: z.string().nullish(),
+  deliveryInstructions: z.string().nullish(),
 });
 
 export async function PUT(

@@ -240,6 +240,13 @@ model Address {
   lat        Float?
   lng        Float?
   isDefault  Boolean  @default(false) @map("is_default")
+  locationType         String?  @map("location_type")
+  floor                String?
+  apartmentNumber      String?  @map("apartment_number")
+  companyName          String?  @map("company_name")
+  entrance             String?
+  accessDetails        String?  @map("access_details")
+  deliveryInstructions String?  @map("delivery_instructions")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
@@ -525,7 +532,8 @@ model Order {
   customerPhone String? @map("customer_phone")
 
   // Delivery
-  deliveryAddress String? @map("delivery_address")
+  deliveryAddress        String? @map("delivery_address")
+  deliveryAddressDetails Json?   @map("delivery_address_details")
 
   // Timestamps
   acceptedAt   DateTime? @map("accepted_at")

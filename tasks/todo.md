@@ -32,17 +32,20 @@
 ---
 
 
-### 11. Push Notifications (Browser) — PARTIAL
-**Done:**
+### 11. Push Notifications (Browser) — DONE
 - [x] Service worker with push notification handler
 - [x] PWA manifest
-
-**Remaining:**
-- [ ] VAPID keys setup
-- [ ] Client-side subscription logic (ask permission, store subscription)
-- [ ] Schema: `PushSubscription` model
-- [ ] Server-side push sending on order status changes
-- [ ] Handle notification click -> open order tracking page
+- [x] VAPID keys setup
+- [x] Client-side subscription logic (usePushSubscription hook)
+- [x] Schema: `PushSubscription` model + migration
+- [x] Subscribe/unsubscribe API routes
+- [x] Server-side push sending on order create (admin) + status change (customer)
+- [x] Handle notification click -> open order tracking page
+- [x] Admin: bell toggle in header to enable/disable push
+- [x] Customer: soft-prompt on order confirmation page
+- [x] PWA install banner fix (native Chrome mini-infobar)
+- [x] Offline fallback page
+- [x] Maskable icon for adaptive Android icons
 
 ---
 
@@ -67,11 +70,13 @@
 
 ---
 
-### 15. PWA Back Button Dialog Handling — NOT STARTED
-- [ ] Intercept browser back button / Android back gesture in PWA mode
-- [ ] If a dialog/sheet is open, close it instead of navigating back
-- [ ] Use History API (`pushState`/`popstate`) to manage dialog state
-- [ ] Apply to all dialogs, sheets, and modals globally
+### 15. PWA Back Button Dialog Handling — DONE
+- [x] Intercept browser back button / Android back gesture in PWA mode
+- [x] If a dialog/sheet is open, close it instead of navigating back
+- [x] Use History API (`pushState`/`popstate`) to manage dialog state
+- [x] Apply to all dialogs, sheets, and modals globally
+- [x] Dialog stack system with back arrow navigation
+- [x] Button loading/icon props for API call feedback
 
 ---
 
@@ -93,8 +98,8 @@
 | # | Feature | Complexity | Status |
 |---|---------|-----------|--------|
 | 5 | Address Overhaul (map + details) | Large | Partial |
-| 11 | Push Notifications | Medium | Partial |
+| 11 | Push Notifications | Medium | **Done** |
 | 13 | Live Chat Support | Large | Not started |
 | 14 | Extract Reusable Components | Small | Not started |
-| 15 | PWA Back Button Dialog Handling | Small | Not started |
+| 15 | PWA Back Button Dialog Handling | Small | **Done** |
 | 16 | Product Popularity Tracking & Display | Medium | Not started |

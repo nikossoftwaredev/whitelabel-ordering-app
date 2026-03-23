@@ -240,6 +240,22 @@ export const CheckoutForm = () => {
           orderType === "DELIVERY" && selectedAddress?.lng != null
             ? selectedAddress.lng
             : undefined,
+        deliveryAddressDetails:
+          orderType === "DELIVERY" && selectedAddress
+            ? {
+                street: selectedAddress.street,
+                city: selectedAddress.city,
+                lat: selectedAddress.lat,
+                lng: selectedAddress.lng,
+                locationType: selectedAddress.locationType,
+                floor: selectedAddress.floor,
+                apartmentNumber: selectedAddress.apartmentNumber,
+                companyName: selectedAddress.companyName,
+                entrance: selectedAddress.entrance,
+                accessDetails: selectedAddress.accessDetails,
+                deliveryInstructions: selectedAddress.deliveryInstructions,
+              }
+            : undefined,
         tipAmount,
         scheduledFor: scheduleMode && scheduledDate && scheduledTime
           ? buildScheduledISO()
