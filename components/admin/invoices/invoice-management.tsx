@@ -7,19 +7,18 @@ import {
   Eye,
   FileText,
   Receipt,
-  Search,
 } from "lucide-react";
 import { useCallback,useState } from "react";
 import { toast } from "sonner";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { SearchInput } from "@/components/search-input";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -355,15 +354,12 @@ export function InvoiceManagement({ tenantId }: InvoiceManagementProps) {
       {/* Filters */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              placeholder="Search invoices..."
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9 w-64"
-            />
-          </div>
+          <SearchInput
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Search invoices..."
+            className="w-64"
+          />
           <Select
             value={statusFilter}
             onValueChange={(val) => {

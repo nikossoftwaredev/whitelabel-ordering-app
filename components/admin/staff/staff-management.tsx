@@ -12,6 +12,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/empty-state";
+import { ErrorCard } from "@/components/error-card";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -238,11 +239,7 @@ export function StaffManagement({ tenantId }: { tenantId: string }) {
       {/* Staff list */}
       {isLoading && <StaffSkeleton />}
       {!isLoading && error && (
-        <Card>
-          <CardContent className="py-8 text-center text-destructive">
-            Failed to load staff members. Please try again.
-          </CardContent>
-        </Card>
+        <ErrorCard message="Failed to load staff members. Please try again." />
       )}
       {!isLoading && !error && (!staff || staff.length === 0) ? (
         <Card>

@@ -270,9 +270,9 @@ test.describe("Order E2E: place and accept", () => {
     expect(completedOrder.status).toBe("COMPLETED");
     expect(completedOrder.completedAt).toBeTruthy();
 
-    // ── 7. Customer: Confirmation page shows complete ──
+    // ── 7. Customer: Confirmation page shows completion state ──
     await expect(
-      page.getByText(/complete/i).first()
+      page.getByText(/complete|Enjoy your meal/i).first()
     ).toBeVisible({ timeout: 15000 });
 
     // ── 8. Verify in database ──

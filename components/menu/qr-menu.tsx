@@ -8,6 +8,7 @@ import {
   Store,
   WheatOff,
 } from "lucide-react";
+import Image from "next/image";
 import { useMemo,useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -211,9 +212,11 @@ export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
                       }
                     >
                       {product.image ? (
-                        <img
+                        <Image
                           src={product.image}
                           alt={product.name}
+                          width={64}
+                          height={64}
                           className="size-16 shrink-0 rounded-lg object-cover"
                         />
                       ) : (

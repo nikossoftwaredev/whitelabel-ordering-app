@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useCallback,useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -161,18 +162,15 @@ export function LocationPrompt({ onLocationSet }: LocationPromptProps) {
           </div>
 
           {/* Share location button */}
-          <button
+          <Button
+            variant="brand"
             onClick={handleShareLocation}
             disabled={locating}
-            className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 disabled:opacity-60"
-            style={{
-              background: "var(--brand-primary, hsl(var(--primary)))",
-              color: "white",
-            }}
+            icon={<Navigation className={`size-[18px] ${locating ? "animate-pulse" : ""}`} />}
+            className="w-full h-12 rounded-xl font-semibold text-[15px]"
           >
-            <Navigation className={`size-[18px] ${locating ? "animate-pulse" : ""}`} />
             {locating ? t("locating") : t("shareLocation")}
-          </button>
+          </Button>
 
           {/* Error message */}
           {locationError && (

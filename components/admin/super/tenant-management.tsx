@@ -8,7 +8,6 @@ import {
   Pause,
   Play,
   Plus,
-  Search,
   ShoppingCart,
   Store,
   Trash2,
@@ -19,6 +18,8 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { EmptyState } from "@/components/empty-state";
+import { SearchInput } from "@/components/search-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -648,29 +649,26 @@ export function TenantManagement() {
       </div>
 
       {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search tenants..."
-          className="pl-10"
-        />
-      </div>
+      <SearchInput
+        value={search}
+        onChange={(v) => setSearch(v)}
+        placeholder="Search tenants..."
+        className="max-w-sm"
+      />
 
       <Separator />
 
       {/* Tenant List */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Store className="mb-4 h-12 w-12 text-muted-foreground" />
-          <p className="text-lg font-medium">No tenants found</p>
-          <p className="text-sm text-muted-foreground">
-            {search
+        <EmptyState
+          icon={Store}
+          title="No tenants found"
+          description={
+            search
               ? "Try a different search term"
-              : "Create your first tenant to get started"}
-          </p>
-        </div>
+              : "Create your first tenant to get started"
+          }
+        />
       ) : (
         <div className="space-y-3">
           {filtered.map((tenant) => (

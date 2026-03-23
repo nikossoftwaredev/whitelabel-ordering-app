@@ -9,6 +9,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -290,9 +291,11 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
                     className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors duration-300"
                   >
                     {product.image ? (
-                      <img
+                      <Image
                         src={product.image}
                         alt={product.name}
+                        width={48}
+                        height={48}
                         className="size-12 shrink-0 rounded-lg object-cover"
                       />
                     ) : (

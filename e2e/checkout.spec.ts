@@ -33,7 +33,7 @@ test.describe("Checkout — Unauthenticated", () => {
 
     // Should show empty cart, redirect to order, or sign-in
     await expect(
-      page.getByText(/empty|sign in|Search|Figata/i).first()
+      page.getByText(/empty|sign in|Search|€/i).first()
     ).toBeVisible({ timeout: 10000 });
   });
 });

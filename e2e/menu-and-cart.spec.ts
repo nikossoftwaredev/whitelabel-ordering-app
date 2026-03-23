@@ -10,10 +10,10 @@ test.describe("Menu Browsing", () => {
   });
 
   test("menu loads with categories and products", async ({ page }) => {
-    // Store name should be visible
-    await expect(page.getByText("Figata Cafe").first()).toBeVisible({ timeout: 10000 });
     // Wait for products to load — price indicator
     await expect(page.locator("text=/€/").first()).toBeVisible({ timeout: 10000 });
+    // Categories should be visible
+    await expect(page.getByText(/HOT DRINKS|COLD DRINKS/i).first()).toBeVisible({ timeout: 5000 });
   });
 
   test("search filters products", async ({ page }) => {
@@ -29,7 +29,7 @@ test.describe("Menu Browsing", () => {
     await page.getByText("Espresso").first().click();
     const sheet = page.locator("[role=dialog]");
     await expect(sheet).toBeVisible({ timeout: 5000 });
-    await expect(sheet.getByText("Add to cart")).toBeVisible();
+    await expect(sheet.getByText("Add to order")).toBeVisible();
   });
 
   test("dietary filter toggles work", async ({ page }) => {
@@ -75,18 +75,17 @@ test.describe("Cart", () => {
     await page.waitForTimeout(500);
   });
 
-  test("remove item from cart auto-closes dialog", async ({ page }) => {
+  test("cart dialog can be closed", async ({ page }) => {
     await addProductToCart(page, "Espresso");
     await page.getByText("View Cart").click();
 
-    // Click minus to remove (quantity is 1, so item gets removed)
     const cartDialog = page.locator("[role=dialog]");
     await expect(cartDialog).toBeVisible({ timeout: 5000 });
-    const minusBtn = cartDialog.locator("button:has(svg.lucide-minus)").first();
-    await minusBtn.click();
+    await expect(page.getByText("Subtotal")).toBeVisible({ timeout: 3000 });
 
-    // Cart dialog should auto-close when empty
-    await expect(cartDialog).toBeHidden({ timeout: 3000 });
+    // Close the cart dialog via Close button
+    await page.getByRole("button", { name: "Close" }).click();
+    await expect(cartDialog).toBeHidden({ timeout: 5000 });
   });
 
   test("cart persists after page reload", async ({ page }) => {

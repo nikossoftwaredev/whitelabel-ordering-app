@@ -3,9 +3,20 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["*.lvh.me"],
+  poweredByHeader: false,
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { hostname: "**" },
+    ],
+  },
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "recharts",
+      "zod",
+      "@supabase/supabase-js",
+      "date-fns",
     ],
   },
   async headers() {

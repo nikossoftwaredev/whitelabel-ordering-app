@@ -6,7 +6,6 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import { Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
 
@@ -78,22 +77,13 @@ function CheckoutForm({
       )}
 
       <Button
+        variant="brand"
         type="submit"
-        disabled={!stripe || isProcessing}
-        className="w-full h-12 rounded-2xl font-semibold text-[15px] active:scale-[0.98]"
-        style={{
-          background: "var(--brand-primary, hsl(var(--primary)))",
-          color: "white",
-        }}
+        disabled={!stripe}
+        loading={isProcessing}
+        className="w-full h-12 rounded-2xl font-semibold text-[15px]"
       >
-        {isProcessing ? (
-          <>
-            <Loader2 className="size-4 animate-spin mr-2" />
-            Processing...
-          </>
-        ) : (
-          "Pay now"
-        )}
+        {isProcessing ? "Processing..." : "Pay now"}
       </Button>
     </form>
   );

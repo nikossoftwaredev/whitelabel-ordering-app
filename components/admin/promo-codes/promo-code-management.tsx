@@ -15,6 +15,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
+import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -316,13 +317,11 @@ export function PromoCodeManagement({ tenantId }: { tenantId: string }) {
             </div>
           )}
           {!isLoading && promoCodes.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Tag className="size-10 text-muted-foreground mb-3" />
-              <p className="font-medium">No promo codes yet</p>
-              <p className="text-sm text-muted-foreground">
-                Create your first promo code to get started.
-              </p>
-            </div>
+            <EmptyState
+              icon={Tag}
+              title="No promo codes yet"
+              description="Create your first promo code to get started."
+            />
           )}
           {!isLoading && promoCodes.length > 0 && (
             <Table>

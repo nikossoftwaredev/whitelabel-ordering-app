@@ -13,6 +13,7 @@ import {
   WheatOff,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useCallback,useEffect, useMemo, useRef, useState } from "react";
 
@@ -146,7 +147,7 @@ function PopularCard({
     <div className="cursor-pointer group" onClick={onClick}>
       <div className="relative overflow-hidden rounded-2xl aspect-square bg-muted">
         {product.image ? (
-          <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+          <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover transition-transform duration-300 group-hover:scale-105" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
             <Store className="size-8 text-muted-foreground/30" />
@@ -241,7 +242,7 @@ function ProductCard({
       </div>
       <div className="relative shrink-0 w-[100px] h-[100px] md:w-[130px] md:h-[130px] rounded-xl overflow-hidden bg-muted">
         {product.image ? (
-          <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+          <Image src={product.image} alt={product.name} fill sizes="130px" className="object-cover transition-transform duration-300 group-hover:scale-105" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
             <Store className="size-6 text-muted-foreground/20" />
@@ -305,7 +306,7 @@ function VariantCard({
       </div>
       <div className="relative shrink-0 w-[100px] h-[100px] md:w-[130px] md:h-[130px] rounded-xl overflow-hidden bg-muted">
         {product.image ? (
-          <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+          <Image src={product.image} alt={product.name} fill sizes="130px" className="object-cover transition-transform duration-300 group-hover:scale-105" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
             <Store className="size-6 text-muted-foreground/20" />
@@ -581,10 +582,13 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         {/* Cover image */}
         <div className="relative h-48 sm:h-56 md:h-64 lg:h-72 overflow-hidden">
           {coverImage ? (
-            <img
+            <Image
               src={coverImage}
               alt={storeName}
-              className="w-full h-full object-cover"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-(--brand-primary,#6b7280)/40 via-(--brand-primary,#6b7280)/20 to-muted/30" />
@@ -839,8 +843,8 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       {itemCount > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4 animate-in slide-in-from-bottom-4 duration-300">
           <Button
-            className="w-full flex items-center gap-3 h-14 px-5 rounded-2xl shadow-xl active:scale-[0.98]"
-            style={{ background: "var(--brand-primary, hsl(var(--primary)))", color: "white" }}
+            variant="brand"
+            className="w-full flex items-center gap-3 h-14 px-5 rounded-2xl shadow-xl"
             onClick={() => openDialog("cart")}
           >
             <span className="flex items-center justify-center size-7 rounded-lg bg-white/20 text-sm font-bold tabular-nums">{itemCount}</span>

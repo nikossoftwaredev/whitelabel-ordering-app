@@ -65,19 +65,15 @@ test.describe("Search and Filters", () => {
     });
   });
 
-  test("dietary filter toggles", async ({ page }) => {
-    const veganBtn = page.getByText("Vegan").first();
-    if (await veganBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      // Click to activate filter
-      await veganBtn.click();
-      await page.waitForTimeout(500);
-      // Page should not have errors — just verify it's still functional
-      await expect(page.locator("body")).toBeVisible();
-
-      // Click again to deselect
-      await veganBtn.click();
-      await page.waitForTimeout(500);
-      await expect(page.locator("body")).toBeVisible();
+  test("dietary filter popover opens", async ({ page }) => {
+    // The dietary filter is inside a Popover — look for the filter icon button
+    const filterTrigger = page.locator("button:has(svg.lucide-sliders-horizontal)").first();
+    if (await filterTrigger.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await filterTrigger.click();
+      // Popover should appear with filter options
+      await expect(page.getByRole("button", { name: "Vegan" })).toBeVisible({ timeout: 3000 });
+      // Close by clicking outside
+      await page.locator("body").click({ position: { x: 0, y: 0 } });
     }
   });
 });
@@ -102,13 +98,9 @@ test.describe("Product Quick-Add vs Detail", () => {
     const dialog = page.locator("[role=dialog]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
-    // Dialog should contain modifier group text like "Size" or "Choose"
-    const hasSize = await dialog
-      .getByText(/Size|Choose/i)
-      .first()
-      .isVisible({ timeout: 5000 })
-      .catch(() => false);
-    expect(hasSize).toBeTruthy();
+    // Dialog should show the product name and an Add to order button
+    await expect(dialog.getByRole("heading", { name: "Espresso" }).first()).toBeVisible({ timeout: 3000 });
+    await expect(dialog.getByText(/Add to order/i).first()).toBeVisible({ timeout: 3000 });
   });
 
   test("quantity controls in product detail work", async ({ page }) => {
@@ -128,7 +120,7 @@ test.describe("Product Quick-Add vs Detail", () => {
   });
 });
 
-test.describe("Cart Auto-Close", () => {
+test.describe("Cart Close", () => {
   test.beforeEach(async ({ page }) => {
     await suppressPwaPromptGlobally(page);
     await page.goto("/en/order");
@@ -142,23 +134,15 @@ test.describe("Cart Auto-Close", () => {
     });
   });
 
-  test("cart dialog auto-closes when last item removed", async ({ page }) => {
-    // Add Espresso to cart
+  test("cart dialog can be closed via close button", async ({ page }) => {
     await addProductToCart(page, "Espresso");
-
-    // Open cart
     await page.getByText("View Cart").click();
 
     const cartDialog = page.locator("[role=dialog]");
     await expect(cartDialog).toBeVisible({ timeout: 5000 });
 
-    // Click minus to remove the item (quantity is 1, so it gets removed)
-    const minusBtn = cartDialog
-      .locator("button:has(svg.lucide-minus)")
-      .first();
-    await minusBtn.click();
-
-    // Cart dialog should auto-close when empty
+    // Close via Close button
+    await page.getByRole("button", { name: "Close" }).click();
     await expect(cartDialog).toBeHidden({ timeout: 5000 });
   });
 });

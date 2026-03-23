@@ -5,7 +5,6 @@ import { SessionProvider } from "next-auth/react";
 import { AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 
-import { DialogProvider } from "@/components/dialog-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryProvider } from "@/lib/query/provider";
@@ -31,7 +30,6 @@ export const Providers = ({ children, messages, locale, session }: Props) => {
             <TooltipProvider>
               {children}
             </TooltipProvider>
-            <DialogProvider />
             <Toaster />
           </NextIntlClientProvider>
         </NextThemesProvider>

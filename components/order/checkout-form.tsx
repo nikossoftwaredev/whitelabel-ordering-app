@@ -18,6 +18,7 @@ import {
   Tag,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect,useState } from "react";
@@ -45,9 +46,15 @@ import { Link,useRouter } from "@/lib/i18n/navigation";
 import { useAddressStore } from "@/lib/stores/address-store";
 import { useCartStore } from "@/lib/stores/cart-store";
 
+import dynamic from "next/dynamic";
+
 import { useDialogStore } from "@/lib/stores/dialog-store";
 import { QuantityStepper } from "./quantity-stepper";
-import { StripePayment } from "./stripe-payment";
+
+const StripePayment = dynamic(() =>
+  import("./stripe-payment").then((m) => m.StripePayment),
+  { ssr: false, loading: () => <div className="h-12 animate-pulse bg-muted rounded-2xl" /> }
+);
 
 type OrderType = "PICKUP" | "DELIVERY";
 
@@ -658,9 +665,11 @@ export const CheckoutForm = () => {
                 <div className="flex gap-3 py-3">
                   {/* Product image */}
                   {item.productImage ? (
-                    <img
+                    <Image
                       src={item.productImage}
                       alt={item.productName}
+                      width={56}
+                      height={56}
                       className="size-14 rounded-xl object-cover shrink-0"
                     />
                   ) : (
@@ -1139,20 +1148,14 @@ export const CheckoutForm = () => {
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t border-border">
           <div className="max-w-2xl mx-auto px-4 py-4">
             <Button
+              variant="brand"
               type="submit"
-              disabled={isSubmitting || storeClosed || isBlocked}
-              className="w-full flex items-center h-13 px-5 rounded-2xl font-semibold text-[15px] active:scale-[0.98]"
-              style={{
-                background:
-                  "var(--brand-primary, hsl(var(--primary)))",
-                color: "white",
-              }}
+              disabled={storeClosed || isBlocked}
+              loading={isSubmitting}
+              className="w-full flex items-center h-13 px-5 rounded-2xl font-semibold text-[15px]"
             >
               {isSubmitting ? (
-                <div className="flex items-center justify-center w-full gap-2">
-                  <Loader2 className="size-4 animate-spin" />
-                  <span>{t("placingOrder")}</span>
-                </div>
+                <span>{t("placingOrder")}</span>
               ) : (
                 <>
                   <span className="flex-1 text-left">{paymentMethod === "STRIPE" ? t("payWithCard") : t("placeOrder")}</span>
@@ -1267,19 +1270,13 @@ export const CheckoutForm = () => {
               />
             </div>
             <Button
+              variant="brand"
               onClick={handleProfileSave}
-              disabled={profileSaving || !profileName.trim() || !profilePhone.trim()}
+              disabled={!profileName.trim() || !profilePhone.trim()}
+              loading={profileSaving}
               className="w-full h-11 font-semibold"
-              style={{
-                background: "var(--brand-primary, hsl(var(--primary)))",
-                color: "white",
-              }}
             >
-              {profileSaving ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                t("continueToCheckout")
-              )}
+              {t("continueToCheckout")}
             </Button>
           </div>
         </DialogContent>

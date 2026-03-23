@@ -9,6 +9,7 @@ import { hasLocale } from "next-intl";
 import { getMessages,setRequestLocale } from "next-intl/server";
 
 import { AddressPreloader } from "@/components/address-preloader";
+import { DialogProvider } from "@/components/dialog-provider";
 import { Providers } from "@/components/providers";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { SwRegister } from "@/components/sw-register";
@@ -23,8 +24,9 @@ import { BaseLayoutProps } from "@/types/page-props";
 
 const roboto = Roboto({
   variable: "--font-roboto",
-  subsets: ["latin"],
+  subsets: ["latin", "greek"],
   weight: ["400", "500", "700"],
+  display: "swap",
 });
 
 export const generateStaticParams = () => {
@@ -172,6 +174,7 @@ const LocaleLayout = async ({ children, params }: BaseLayoutProps) => {
             <TenantProvider value={tenantContextValue}>
               <AddressPreloader />
               {children}
+              <DialogProvider />
             </TenantProvider>
           ) : (
             children

@@ -22,7 +22,14 @@ import { centsToEuros, timeAgo } from "@/lib/general/formatters";
 import { ORDER_STATUS_COLORS } from "@/lib/general/status-config";
 import { queryKeys } from "@/lib/query/keys";
 
-import { AnalyticsCharts } from "./analytics-charts";
+import dynamic from "next/dynamic";
+
+import { StatCard } from "./stat-card";
+
+const AnalyticsCharts = dynamic(() =>
+  import("./analytics-charts").then((m) => m.AnalyticsCharts),
+  { ssr: false, loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" /> }
+);
 
 interface DashboardStats {
   today: { revenue: number; orders: number; tips: number; refunds: number; refundAmount: number };
@@ -100,39 +107,20 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
           </>
         ) : (
           <>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Today&apos;s Revenue
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  &euro;{centsToEuros(data?.today.revenue ?? 0)}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Today&apos;s Orders
-                </CardTitle>
-                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {data?.today.orders ?? 0}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Orders
-                </CardTitle>
+            <StatCard
+              title="Today's Revenue"
+              value={<>&euro;{centsToEuros(data?.today.revenue ?? 0)}</>}
+              icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title="Today's Orders"
+              value={data?.today.orders ?? 0}
+              icon={<ShoppingBag className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title="Active Orders"
+              value={data?.activeOrders ?? 0}
+              icon={
                 <Clock
                   className={`h-4 w-4 ${
                     (data?.activeOrders ?? 0) > 0
@@ -140,64 +128,31 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
                       : "text-muted-foreground"
                   }`}
                 />
-              </CardHeader>
-              <CardContent>
-                <div
-                  className={`text-2xl font-bold ${
-                    (data?.activeOrders ?? 0) > 0 ? "text-amber-500" : ""
-                  }`}
-                >
-                  {data?.activeOrders ?? 0}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Today&apos;s Tips
-                </CardTitle>
-                <Heart className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  &euro;{centsToEuros(data?.today.tips ?? 0)}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Refunds Today
-                </CardTitle>
-                <RotateCcw className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {data?.today.refunds ?? 0}
-                </div>
-                {(data?.today.refundAmount ?? 0) > 0 && (
+              }
+              valueClassName={(data?.activeOrders ?? 0) > 0 ? "text-amber-500" : undefined}
+            />
+            <StatCard
+              title="Today's Tips"
+              value={<>&euro;{centsToEuros(data?.today.tips ?? 0)}</>}
+              icon={<Heart className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title="Refunds Today"
+              value={data?.today.refunds ?? 0}
+              subtitle={
+                (data?.today.refundAmount ?? 0) > 0 ? (
                   <p className="text-xs text-muted-foreground">
                     &euro;{centsToEuros(data?.today.refundAmount ?? 0)}
                   </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Week Revenue
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  &euro;{centsToEuros(data?.weekRevenue ?? 0)}
-                </div>
-              </CardContent>
-            </Card>
+                ) : undefined
+              }
+              icon={<RotateCcw className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title="Week Revenue"
+              value={<>&euro;{centsToEuros(data?.weekRevenue ?? 0)}</>}
+              icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+            />
           </>
         )}
       </div>

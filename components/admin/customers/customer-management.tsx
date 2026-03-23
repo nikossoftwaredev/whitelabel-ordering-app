@@ -1,16 +1,16 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Gift, Mail, Phone, Search, ShoppingBag, Users, X } from "lucide-react";
+import { Gift, Mail, Phone, ShoppingBag, Users } from "lucide-react";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/empty-state";
+import { SearchInput } from "@/components/search-input";
+import { ErrorCard } from "@/components/error-card";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -160,29 +160,16 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
 
       {/* Search bar + sort */}
       <div className="flex flex-wrap items-center gap-3">
-      <div className="relative max-w-sm flex-1">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search by name, email, or phone..."
-          value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          className="pl-9"
-        />
-        {search && (
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => {
-              setSearch("");
-              setDebouncedSearch("");
-              setPage(1);
-            }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+      <SearchInput
+        value={search}
+        onChange={handleSearchChange}
+        onClear={() => {
+          setDebouncedSearch("");
+          setPage(1);
+        }}
+        placeholder="Search by name, email, or phone..."
+        className="max-w-sm flex-1"
+      />
       <Select
         value={sort}
         onValueChange={(v) => {
@@ -204,11 +191,7 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
       {/* Content */}
       {isLoading && <CustomerTableSkeleton />}
       {!isLoading && error && (
-        <Card>
-          <CardContent className="py-8 text-center text-destructive">
-            Failed to load customers. Please try again.
-          </CardContent>
-        </Card>
+        <ErrorCard message="Failed to load customers. Please try again." />
       )}
       {!isLoading && !error && customers.length === 0 && (
         <Card>

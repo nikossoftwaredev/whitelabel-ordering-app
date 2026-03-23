@@ -1,22 +1,38 @@
 "use client";
 
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 
-import { ConfirmContent } from "@/components/confirm-dialog";
-import { AddressManagerContent } from "@/components/order/address-manager-sheet";
-import { AuthContent } from "@/components/order/auth-dialog";
-import { CartContent } from "@/components/order/cart-sheet";
-import { ProductDetailContent } from "@/components/order/product-detail-sheet";
-import { StoreInfoContent } from "@/components/order/store-info-dialog";
+import { Loader2 } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   selectCurrentDialog,
   selectStackDepth,
   useDialogStore,
 } from "@/lib/stores/dialog-store";
+
+const ConfirmContent = lazy(() =>
+  import("@/components/confirm-dialog").then((m) => ({ default: m.ConfirmContent }))
+);
+const StoreInfoContent = lazy(() =>
+  import("@/components/order/store-info-dialog").then((m) => ({ default: m.StoreInfoContent }))
+);
+const AuthContent = lazy(() =>
+  import("@/components/order/auth-dialog").then((m) => ({ default: m.AuthContent }))
+);
+const AddressManagerContent = lazy(() =>
+  import("@/components/order/address-manager-sheet").then((m) => ({ default: m.AddressManagerContent }))
+);
+const CartContent = lazy(() =>
+  import("@/components/order/cart-sheet").then((m) => ({ default: m.CartContent }))
+);
+const ProductDetailContent = lazy(() =>
+  import("@/components/order/product-detail-sheet").then((m) => ({ default: m.ProductDetailContent }))
+);
 
 export const DIALOG_KEYS = {
   CONFIRM: "confirm",
@@ -26,6 +42,15 @@ export const DIALOG_KEYS = {
   AUTH: "auth",
   ADDRESS_MANAGER: "address-manager",
 } as const;
+
+function DialogFallback() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <DialogTitle className="sr-only">Loading</DialogTitle>
+      <Loader2 className="size-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
 
 export const DialogProvider = () => {
   const currentDialog = useDialogStore(selectCurrentDialog);
@@ -60,12 +85,14 @@ export const DialogProvider = () => {
         onBack={stackDepth > 1 ? goBack : undefined}
         onCloseAll={closeAll}
       >
-        {currentDialog === DIALOG_KEYS.CONFIRM && <ConfirmContent />}
-        {currentDialog === DIALOG_KEYS.STORE_INFO && <StoreInfoContent />}
-        {currentDialog === DIALOG_KEYS.AUTH && <AuthContent />}
-        {currentDialog === DIALOG_KEYS.ADDRESS_MANAGER && <AddressManagerContent />}
-        {currentDialog === DIALOG_KEYS.CART && <CartContent />}
-        {currentDialog === DIALOG_KEYS.PRODUCT_DETAIL && <ProductDetailContent />}
+        <Suspense fallback={<DialogFallback />}>
+          {currentDialog === DIALOG_KEYS.CONFIRM && <ConfirmContent />}
+          {currentDialog === DIALOG_KEYS.STORE_INFO && <StoreInfoContent />}
+          {currentDialog === DIALOG_KEYS.AUTH && <AuthContent />}
+          {currentDialog === DIALOG_KEYS.ADDRESS_MANAGER && <AddressManagerContent />}
+          {currentDialog === DIALOG_KEYS.CART && <CartContent />}
+          {currentDialog === DIALOG_KEYS.PRODUCT_DETAIL && <ProductDetailContent />}
+        </Suspense>
       </DialogContent>
     </Dialog>
   );

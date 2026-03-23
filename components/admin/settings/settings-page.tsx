@@ -2,7 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Loader2, QrCode, Save } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import dynamic from "next/dynamic";
+
+const QRCodeSVG = dynamic(() =>
+  import("qrcode.react").then((m) => m.QRCodeSVG),
+  { ssr: false, loading: () => <div className="size-48 animate-pulse bg-muted rounded" /> }
+);
 import { useCallback, useRef } from "react";
 import { useEffect,useState } from "react";
 import { toast } from "sonner";

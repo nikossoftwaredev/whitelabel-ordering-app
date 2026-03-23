@@ -1,9 +1,11 @@
 "use client";
 
 import { MessageSquare, Square, SquareCheck, Store } from "lucide-react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { DialogTitle } from "@/components/ui/dialog";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { calcBogoTotal, hasActiveOffer } from "@/lib/orders/offers";
@@ -222,11 +224,13 @@ export const ProductDetailContent = () => {
           {/* Hero image */}
           <div className="relative">
             {product.image ? (
-              <div className="w-full aspect-4/3 bg-muted overflow-hidden">
-                <img
+              <div className="relative w-full aspect-4/3 bg-muted overflow-hidden">
+                <Image
                   src={product.image}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 500px"
+                  className="object-cover"
                 />
               </div>
             ) : (
@@ -416,16 +420,13 @@ export const ProductDetailContent = () => {
             />
 
             {/* Submit button */}
-            <button
-              className="flex-1 h-11 rounded-xl font-semibold text-[15px] flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-[0.98]"
-              style={{
-                background: "var(--brand-primary, hsl(var(--primary)))",
-                color: "white",
-              }}
+            <Button
+              variant="brand"
+              className="flex-1 h-11 rounded-xl font-semibold text-[15px]"
               onClick={handleSubmit}
             >
               {isEditing ? t("updateOrder") : t("addToOrder")}&nbsp;&nbsp;{formatPrice(totalPrice)}
-            </button>
+            </Button>
           </div>
         </div>
     </div>

@@ -22,45 +22,16 @@ test.describe("Address Dialog", () => {
     });
   });
 
-  test("add new address dialog opens from list", async ({ page }) => {
+  test("add new address requires auth when not logged in", async ({ page }) => {
     await page.getByText("Add address").first().click();
     const dialog = page.locator("[role=dialog]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     await dialog.getByText("Add new address").click();
-    await expect(dialog.getByText("Add new address")).toBeVisible({
+    // Not logged in → auth dialog opens
+    await expect(dialog.getByText("Sign in")).toBeVisible({
       timeout: 5000,
     });
-    await expect(dialog.getByText("Detect location")).toBeVisible({
-      timeout: 5000,
-    });
-  });
-
-  test("back arrow in add dialog returns to list", async ({ page }) => {
-    await page.getByText("Add address").first().click();
-    const dialog = page.locator("[role=dialog]");
-    await expect(dialog).toBeVisible({ timeout: 5000 });
-
-    await dialog.getByText("Add new address").click();
-    await expect(dialog.getByText("Detect location")).toBeVisible({
-      timeout: 5000,
-    });
-
-    await dialog.locator("button:has(svg.lucide-arrow-left)").first().click();
-    await expect(dialog.getByText("Choose address")).toBeVisible({
-      timeout: 5000,
-    });
-  });
-
-  test("search input is present in add dialog", async ({ page }) => {
-    await page.getByText("Add address").first().click();
-    const dialog = page.locator("[role=dialog]");
-    await expect(dialog).toBeVisible({ timeout: 5000 });
-
-    await dialog.getByText("Add new address").click();
-    await expect(
-      dialog.getByPlaceholder("Street, number, area")
-    ).toBeVisible({ timeout: 5000 });
   });
 
   test("address picker shows in cart dialog", async ({ page }) => {

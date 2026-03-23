@@ -59,7 +59,7 @@ export async function addProductToCart(page: Page, productName: string) {
   // Wait for products to load (price indicator)
   await page.locator("text=/€/").first().waitFor({ state: "visible", timeout: 10000 });
   await page.getByText(productName, { exact: false }).first().click();
-  await page.getByText("Add to cart").click();
+  await page.getByText("Add to order").click();
   // Wait for cart bar to appear
   await page
     .getByText("View Cart")

@@ -43,6 +43,9 @@ export function PwaInstallPrompt() {
       (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
     if (!isMobileOrTablet) return;
 
+    // Allow tests / users to suppress via sessionStorage
+    if (sessionStorage.getItem("pwa-prompt-dismissed")) return;
+
     // Check if the PWA is installed (via getInstalledRelatedApps or display-mode media query listener)
     // On Android Chrome, navigator.getInstalledRelatedApps() can detect installed PWAs
     if ("getInstalledRelatedApps" in navigator) {
@@ -110,6 +113,7 @@ export function PwaInstallPrompt() {
 
   const dismiss = () => {
     setVisible(false);
+    sessionStorage.setItem("pwa-prompt-dismissed", "1");
   };
 
   if (!visible) return null;

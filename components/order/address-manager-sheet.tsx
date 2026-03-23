@@ -24,8 +24,16 @@ import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { useTenant } from "@/components/tenant-provider";
 import { DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import dynamic from "next/dynamic";
+
+import { PillSelector } from "@/components/pill-selector";
 import { type Address, useAddressStore } from "@/lib/stores/address-store";
-import { AddressMap } from "@/components/order/address-map";
+import { Button } from "@/components/ui/button";
+
+const AddressMap = dynamic(() =>
+  import("@/components/order/address-map").then((m) => m.AddressMap),
+  { ssr: false, loading: () => <div className="h-50 animate-pulse bg-muted rounded-lg" /> }
+);
 import { Textarea } from "@/components/ui/textarea";
 import { selectDialogData, useDialogStore } from "@/lib/stores/dialog-store";
 import {
@@ -355,39 +363,42 @@ export function AddressManagerContent() {
                 {addresses.map((addr) => {
                   const isSelected = selectedAddress?.id === addr.id;
                   return (
-                    <div
+                    <button
                       key={addr.id}
-                      className={`flex items-center gap-1 rounded-xl my-1 transition-all duration-200 hover:bg-muted/50 ${
+                      onClick={() => handleSelectAddress(addr)}
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl my-1 transition-all duration-200 cursor-pointer text-left ${
                         isSelected
-                          ? "ring-2 ring-(--brand-primary,hsl(var(--primary)))"
-                          : ""
+                          ? "bg-primary/10"
+                          : "hover:bg-muted/50"
                       }`}
                     >
+                      <div className={`size-9 rounded-full flex items-center justify-center shrink-0 ${
+                        isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
+                      }`}>
+                        {isSelected ? (
+                          <Check className="size-4" />
+                        ) : (
+                          <MapPin className="size-4 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[15px] text-foreground leading-tight">
+                          {addr.street}
+                        </p>
+                        <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
+                          {[addr.city, addr.postalCode]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                        {addr.label && (
+                          <span className="inline-block text-[11px] text-muted-foreground/80 mt-1 px-2 py-0.5 bg-muted rounded-full">
+                            {addr.label}
+                          </span>
+                        )}
+                      </div>
                       <button
-                        onClick={() => handleSelectAddress(addr)}
-                        className="flex-1 flex items-start gap-3 px-3 py-3.5 rounded-xl transition-colors duration-200 cursor-pointer text-left"
-                      >
-                        <MapPin
-                          className="size-5 shrink-0 mt-0.5 text-muted-foreground"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[15px] text-foreground leading-tight">
-                            {addr.street}
-                          </p>
-                          <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
-                            {[addr.city, addr.postalCode]
-                              .filter(Boolean)
-                              .join(", ")}
-                          </p>
-                          {addr.label && (
-                            <p className="text-[12px] text-muted-foreground/70 mt-0.5 truncate">
-                              {addr.label}
-                            </p>
-                          )}
-                        </div>
-                      </button>
-                      <button
-                        onClick={() =>
+                        onClick={(e) => {
+                          e.stopPropagation();
                           openDialog(
                             CONFIRM_DIALOG,
                             {
@@ -396,14 +407,14 @@ export function AddressManagerContent() {
                               actionLabel: "Delete",
                             },
                             () => deleteMutation.mutate(addr.id)
-                          )
-                        }
+                          );
+                        }}
                         disabled={deleteMutation.isPending}
-                        className="size-9 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors duration-200 cursor-pointer shrink-0 mr-2"
+                        className="size-8 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors duration-200 cursor-pointer shrink-0"
                       >
-                        <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
+                        <Trash2 className="size-3.5 text-muted-foreground hover:text-destructive" />
                       </button>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -423,18 +434,14 @@ export function AddressManagerContent() {
           </div>
 
           <div className="px-6 py-5 shrink-0">
-            <button
+            <Button
+              variant="brand"
               onClick={handleAddAddress}
-              className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98]"
-              style={{
-                background:
-                  "var(--brand-primary, hsl(var(--primary)))",
-                color: "white",
-              }}
+              icon={<Plus className="size-4.5" />}
+              className="w-full h-12 rounded-xl font-semibold text-[15px]"
             >
-              <Plus className="size-4.5" />
               {t("addNewAddress")}
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -518,21 +525,15 @@ export function AddressManagerContent() {
           )}
 
           <div className="px-6 pb-6 pt-3">
-            <button
+            <Button
+              variant="brand"
               onClick={handleUseCurrentLocation}
               disabled={locating}
-              className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2.5 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
-              style={{
-                background:
-                  "var(--brand-primary, hsl(var(--primary)))",
-                color: "white",
-              }}
+              icon={<Crosshair className={`size-5 ${locating ? "animate-pulse" : ""}`} />}
+              className="w-full h-12 rounded-xl font-semibold text-[15px]"
             >
-              <Crosshair
-                className={`size-5 ${locating ? "animate-pulse" : ""}`}
-              />
               {locating ? t("locating") : t("detectLocation")}
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -593,48 +594,31 @@ export function AddressManagerContent() {
                 <label className="text-[13px] font-medium text-muted-foreground block">
                   {t("locationType")}
                 </label>
-                <div className="flex gap-2">
-                  {([
+                <PillSelector
+                  options={[
                     { key: "house", icon: <Home className="size-4" />, label: t("house") },
                     { key: "apartment", icon: <Building2 className="size-4" />, label: t("apartment") },
                     { key: "office", icon: <Briefcase className="size-4" />, label: t("office") },
                     { key: "other", icon: <MapPin className="size-4" />, label: t("otherType") },
-                  ]).map(({ key, icon, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => setLocationType(key)}
-                      className={`flex-1 h-10 rounded-xl text-[13px] font-medium flex items-center justify-center gap-1.5 border transition-all duration-200 cursor-pointer ${
-                        locationType === key
-                          ? "border-transparent text-white"
-                          : "border-border text-muted-foreground hover:border-foreground/30"
-                      }`}
-                      style={
-                        locationType === key
-                          ? { background: "var(--brand-primary, hsl(var(--primary)))" }
-                          : undefined
-                      }
-                    >
-                      {icon}
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                  ]}
+                  value={locationType}
+                  onChange={setLocationType}
+                  pillClassName="flex-1"
+                />
               </div>
 
-              {/* Conditional: Floor */}
-              {(locationType === "apartment" || locationType === "office") && (
-                <div>
-                  <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
-                    {t("floor")}
-                  </label>
-                  <Input
-                    value={newFloor}
-                    onChange={(e) => setNewFloor(e.target.value)}
-                    placeholder={t("floorPlaceholder")}
-                    className="h-12 rounded-xl text-[15px]"
-                  />
-                </div>
-              )}
+              {/* Floor */}
+              <div>
+                <label className="text-[13px] font-medium text-muted-foreground mb-1.5 block">
+                  {t("floor")}
+                </label>
+                <Input
+                  value={newFloor}
+                  onChange={(e) => setNewFloor(e.target.value)}
+                  placeholder={t("floorPlaceholder")}
+                  className="h-12 rounded-xl text-[15px]"
+                />
+              </div>
 
               {/* Conditional: Apartment number */}
               {locationType === "apartment" && (
@@ -671,31 +655,18 @@ export function AddressManagerContent() {
                 <label className="text-[13px] font-medium text-muted-foreground block">
                   {t("entranceAccess")}
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {([
+                <PillSelector
+                  options={[
                     { key: "doorbell", label: t("doorbell") },
                     { key: "door_code", label: t("doorCode") },
                     { key: "door_open", label: t("doorOpen") },
                     { key: "other", label: t("otherAccess") },
-                  ]).map(({ key, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => setEntrance(entrance === key ? "" : key)}
-                      className={`h-9 px-3.5 rounded-lg text-[13px] font-medium border transition-all duration-200 cursor-pointer ${
-                        entrance === key
-                          ? "border-transparent text-white"
-                          : "border-border text-muted-foreground hover:border-foreground/30"
-                      }`}
-                      style={
-                        entrance === key
-                          ? { background: "var(--brand-primary, hsl(var(--primary)))" }
-                          : undefined
-                      }
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                  ]}
+                  value={entrance}
+                  onChange={setEntrance}
+                  deselectable
+                  pillClassName="h-9 rounded-lg"
+                />
               </div>
 
               {/* Access details */}
@@ -728,48 +699,28 @@ export function AddressManagerContent() {
               </div>
 
               {/* Label selector */}
-              <div className="flex gap-2">
-                {LABEL_OPTIONS.map((label) => {
-                  const isActive = newLabel === label;
-                  return (
-                    <button
-                      key={label}
-                      onClick={() => setNewLabel(label)}
-                      className={`flex-1 h-11 rounded-xl text-[14px] font-medium flex items-center justify-center gap-2 border transition-all duration-200 cursor-pointer ${
-                        isActive
-                          ? "border-transparent text-white"
-                          : "border-border text-muted-foreground hover:border-foreground/30"
-                      }`}
-                      style={
-                        isActive
-                          ? { background: "var(--brand-primary, hsl(var(--primary)))" }
-                          : undefined
-                      }
-                    >
-                      {getLabelIcon(label)}
-                      {t(LABEL_TRANSLATION_KEYS[label])}
-                    </button>
-                  );
-                })}
-              </div>
+              <PillSelector
+                options={LABEL_OPTIONS.map((label) => ({
+                  key: label,
+                  label: t(LABEL_TRANSLATION_KEYS[label]),
+                  icon: getLabelIcon(label),
+                }))}
+                value={newLabel}
+                onChange={setNewLabel}
+                pillClassName="flex-1 h-11 text-[14px]"
+              />
 
               {/* Save button */}
-              <button
+              <Button
+                variant="brand"
                 onClick={handleSave}
-                disabled={!newStreet.trim() || createMutation.isPending}
-                className="w-full h-12 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-60 mt-2"
-                style={{
-                  background: "var(--brand-primary, hsl(var(--primary)))",
-                  color: "white",
-                }}
+                disabled={!newStreet.trim()}
+                loading={createMutation.isPending}
+                icon={<Check className="size-4.5" />}
+                className="w-full h-12 rounded-xl font-semibold text-[15px] mt-2"
               >
-                {createMutation.isPending ? (
-                  <Loader2 className="size-4.5 animate-spin" />
-                ) : (
-                  <Check className="size-4.5" />
-                )}
                 {createMutation.isPending ? t("saving") : t("saveAddress")}
-              </button>
+              </Button>
             </div>
           </div>
         </>

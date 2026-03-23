@@ -165,33 +165,30 @@ export const CartContent = () => {
               </Button>
             )}
             {!storeClosed && session && (
-              <button
-                className="w-full h-12 rounded-xl text-[15px] font-semibold cursor-pointer transition-all duration-200 active:scale-[0.98]"
-                style={{
-                  background: "var(--brand-primary, hsl(var(--primary)))",
-                  color: "white",
-                }}
+              <Button
+                variant="brand"
+                className="w-full h-12 rounded-xl text-[15px] font-semibold"
+                asChild
               >
                 <Link
                   href="/order/checkout"
-                  onClick={() => closeAll()}
-                  className="flex items-center justify-center w-full h-full"
+                  onClick={() => {
+                    // Clear stack without history.go() since Link navigates away
+                    useDialogStore.setState({ stack: [] });
+                  }}
                 >
                   {t("proceedToCheckout")}
                 </Link>
-              </button>
+              </Button>
             )}
             {!storeClosed && !session && (
-              <button
-                className="w-full h-12 rounded-xl text-[15px] font-semibold cursor-pointer transition-all duration-200 active:scale-[0.98]"
-                style={{
-                  background: "var(--brand-primary, hsl(var(--primary)))",
-                  color: "white",
-                }}
+              <Button
+                variant="brand"
+                className="w-full h-12 rounded-xl text-[15px] font-semibold"
                 onClick={() => openDialog("auth")}
               >
                 {t("proceedToCheckout")}
-              </button>
+              </Button>
             )}
           </div>
         </>

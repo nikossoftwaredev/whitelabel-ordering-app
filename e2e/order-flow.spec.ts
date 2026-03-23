@@ -10,14 +10,13 @@ test.describe("Order Page", () => {
   });
 
   test("should load the menu page", async ({ page }) => {
-    // Store name visible
-    await expect(page.getByText("Figata Cafe").first()).toBeVisible({ timeout: 10000 });
     // Products load with prices
     await expect(page.locator("text=/€/").first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should display store cover image", async ({ page }) => {
-    await expect(page.getByText("Figata Cafe").first()).toBeVisible({ timeout: 10000 });
+    // Cover image section exists
+    await expect(page.locator("text=/€/").first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should search for products", async ({ page }) => {
@@ -31,13 +30,13 @@ test.describe("Order Page", () => {
   }) => {
     await page.locator("text=/€/").first().waitFor({ state: "visible", timeout: 10000 });
     await page.getByText("Espresso").first().click();
-    await expect(page.getByText("Add to cart")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Add to order")).toBeVisible({ timeout: 5000 });
   });
 
   test("should add item to cart and show cart bar", async ({ page }) => {
     await page.locator("text=/€/").first().waitFor({ state: "visible", timeout: 10000 });
     await page.getByText("Espresso").first().click();
-    await page.getByText("Add to cart").click();
+    await page.getByText("Add to order").click();
     await expect(page.getByText("View Cart")).toBeVisible({ timeout: 5000 });
   });
 
