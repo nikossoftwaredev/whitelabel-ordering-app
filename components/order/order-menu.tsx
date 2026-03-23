@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   Bike,
+  Flame,
   Info,
   Leaf,
   Package,
@@ -170,7 +171,10 @@ function ProductCard({
           <p className="text-[14px] font-semibold mt-1.5" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.price)}</p>
         )}
         {rankBadge && (
-          <p className="text-[12px] font-semibold text-orange-600 dark:text-orange-400 mt-1">🔥 {rankBadge}</p>
+          <span className="inline-flex items-center gap-1 mt-1.5 bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[12px] font-semibold px-2 py-0.5 rounded-full w-fit">
+            <Flame className="size-3 fill-current" />
+            {rankBadge}
+          </span>
         )}
       </div>
       <div className="relative shrink-0 w-[100px] h-[100px] md:w-[130px] md:h-[130px] rounded-xl overflow-hidden bg-muted">
