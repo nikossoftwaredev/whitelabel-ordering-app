@@ -2,32 +2,22 @@
 
 ## Remaining Tasks
 
-### 5. Full Address System (Map Pin + Details) — PARTIAL
-**Done:**
+### 5. Full Address System (Map Pin + Details) — DONE
 - [x] Google Places autocomplete integration
 - [x] Address model with lat/lng, street, city, postalCode
 - [x] Address manager sheet with add/delete/search
 - [x] Browser geolocation support
-
-**Remaining — Map with draggable pin:**
-- [ ] Integrate Google Maps embed in address flow
-- [ ] When user searches an address, show pin on map
-- [ ] Allow user to drag/refine pin position ("Refine the pin to your door")
-- [ ] Reverse-geocode pin position to update address text
-
-**Remaining — Address details form:**
-- [ ] Location type selector: House, Apartment, Office, Other
-- [ ] Conditional fields (floor, entrance, apartment number, company name)
-- [ ] Access method: Doorbell, Door code, Door is open, Other
-- [ ] Delivery instructions / notes text field
-- [ ] Schema: Add fields (locationType, entrance, floor, apartmentNumber, accessMethod, accessDetails, deliveryInstructions)
-
-**Remaining — Integration:**
-- [ ] Update address manager with 2-step flow (map -> details)
-- [ ] Show address details in checkout summary
-- [ ] Pass address details to order (driver sees floor, buzzer code, etc.)
-- [ ] Admin: Show full address details in order view
-- [ ] i18n: Translate all new labels (EN + EL)
+- [x] Google Maps embed with draggable pin (via @vis.gl/react-google-maps)
+- [x] Reverse-geocode pin position to update address text
+- [x] Location type selector: House, Apartment, Office, Other
+- [x] Conditional fields (floor, entrance, apartment number, company name)
+- [x] Access method: Doorbell, Door code, Door is open, Other
+- [x] Delivery instructions / notes text field
+- [x] Schema: Address detail fields + Order deliveryAddressDetails JSON
+- [x] 2-step flow: search → map + details form
+- [x] Pass delivery address details JSON to order creation
+- [x] Admin: Show structured delivery details in order view
+- [x] i18n: All new labels (EN + EL)
 
 ---
 
@@ -97,7 +87,7 @@
 ## Priority Summary
 | # | Feature | Complexity | Status |
 |---|---------|-----------|--------|
-| 5 | Address Overhaul (map + details) | Large | Partial |
+| 5 | Address Overhaul (map + details) | Large | **Done** |
 | 11 | Push Notifications | Medium | **Done** |
 | 13 | Live Chat Support | Large | Not started |
 | 14 | Extract Reusable Components | Small | Not started |
