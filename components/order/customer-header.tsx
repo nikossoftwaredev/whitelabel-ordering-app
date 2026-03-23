@@ -26,21 +26,23 @@ export const CustomerHeader = () => {
   const t = useTranslations("Address");
   const tProfile = useTranslations("Profile");
   const tOrders = useTranslations("OrderHistory");
+  const tCheckout = useTranslations("Checkout");
   const tenant = useTenant();
   const cart = useCartStore();
   const selectedAddress = useAddressStore((s) => s.selectedAddress);
   const pathname = usePathname();
 
   // Subpages have no hero image, so force solid header styling
-  const isSubpage = /\/(profile|orders|confirmation)/.test(pathname);
+  const isSubpage = /\/(profile|orders|confirmation|checkout)/.test(pathname);
 
   // Determine subpage title
-  const subpageMatch = pathname.match(/\/(profile|orders|confirmation)/);
+  const subpageMatch = pathname.match(/\/(profile|orders|confirmation|checkout)/);
   const subpageKey = subpageMatch?.[1] as string | undefined;
   const subpageTitles: Record<string, string> = {
     profile: tProfile("title"),
     orders: tOrders("title"),
     confirmation: tOrders("title"),
+    checkout: tCheckout("title"),
   };
   const subpageTitle = subpageKey ? subpageTitles[subpageKey] : null;
 
