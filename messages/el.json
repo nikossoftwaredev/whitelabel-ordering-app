@@ -340,6 +340,8 @@
     "noProducts": "Δεν βρέθηκαν προϊόντα",
     "popular": "Δημοφιλέστερα",
     "rankInOrders": "{rank}ο σε παραγγελίες",
+    "loyaltyEarnedCoupon": "Κέρδισε κουπόνι {amount}",
+    "loyaltyProgressLabel": "{current}/{total}",
     "viewCart": "Δείτε το καλάθι",
     "vegan": "Vegan",
     "vegetarian": "Χορτοφαγικό",

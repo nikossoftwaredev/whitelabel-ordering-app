@@ -340,6 +340,8 @@
     "noProducts": "No products found",
     "popular": "Most Popular",
     "rankInOrders": "#{rank} in orders",
+    "loyaltyEarnedCoupon": "Earned coupon {amount}",
+    "loyaltyProgressLabel": "{current}/{total}",
     "viewCart": "View Cart",
     "vegan": "Vegan",
     "vegetarian": "Vegetarian",

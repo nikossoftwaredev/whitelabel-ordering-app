@@ -57,8 +57,8 @@ export async function POST(
     },
   });
 
-  // Notify admins via SSE
-  orderEvents.emitStatusChange({
+  // Notify admins via realtime broadcast
+  await orderEvents.emitStatusChange({
     tenantId: tenant.id,
     orderId: updatedOrder.id,
     orderNumber: updatedOrder.orderNumber,

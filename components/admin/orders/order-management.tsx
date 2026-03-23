@@ -7,6 +7,8 @@ import {
   CheckCircle2,
   ChefHat,
   Clock,
+  Columns3,
+  List,
   MapPin,
   Package,
   Phone,
@@ -35,51 +37,9 @@ import { timeAgo } from "@/lib/general/formatters";
 import { ACTIVE_ORDER_STATUSES,OrderStatus, orderStatusConfig } from "@/lib/general/status-config";
 import { queryKeys } from "@/lib/query/keys";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-interface OrderItemModifier {
-  name: string;
-  priceAdjustment: number;
-}
-
-interface OrderItem {
-  id: string;
-  productName: string;
-  quantity: number;
-  unitPrice: number;
-  modifiers: OrderItemModifier[];
-}
-
-interface OrderCustomer {
-  name: string | null;
-  phone: string | null;
-}
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  status: OrderStatus;
-  orderType: "PICKUP" | "DELIVERY" | "DINE_IN";
-  paymentStatus: "PENDING" | "PAID" | "REFUNDED" | "FAILED" | "DISPUTED";
-  paymentMethod: "STRIPE" | "CASH";
-  tipAmount: number;
-  discount: number;
-  promoCode: string | null;
-  total: number;
-  scheduledFor: string | null;
-  createdAt: string;
-  estimatedReadyAt: string | null;
-  rejectionReason: string | null;
-  deliveryAddress: string | null;
-  deliveryAddressDetails: Record<string, unknown> | null;
-  items: OrderItem[];
-  customer: OrderCustomer | null;
-}
-
-interface OrdersResponse {
-  orders: Order[];
-  total: number;
-}
+import { OrderBoard } from "./order-board";
+import { OrderDetailSheet } from "./order-detail-sheet";
+import type { Order, OrdersResponse } from "./types";
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -99,6 +59,13 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
   const [refundAmount, setRefundAmount] = useState("");
   const [refundReason, setRefundReason] = useState("");
   const [isFullRefund, setIsFullRefund] = useState(true);
+  const [view, setView] = useState<"board" | "list">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("orders-view") as "board" | "list") || "board";
+    }
+    return "board";
+  });
+  const [detailOrder, setDetailOrder] = useState<Order | null>(null);
 
   // ── Query ──────────────────────────────────────────────────────────────────
 
@@ -234,9 +201,6 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
   );
   const completedOrders = orders.filter((o) => o.status === "COMPLETED");
   const rejectedOrders = orders.filter((o) => o.status === "REJECTED" || o.status === "CANCELLED");
-
-  const countByStatus = (status: OrderStatus) =>
-    orders.filter((o) => o.status === status).length;
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -807,54 +771,137 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
       <PageHeader
         title="Orders"
         description="Manage incoming orders and track their status."
+      >
+        <div className="flex items-center gap-1 border rounded-lg p-0.5">
+          <Button
+            variant={view === "board" ? "secondary" : "ghost"}
+            size="icon"
+            className="size-8 cursor-pointer"
+            onClick={() => {
+              setView("board");
+              localStorage.setItem("orders-view", "board");
+            }}
+          >
+            <Columns3 className="size-4" />
+          </Button>
+          <Button
+            variant={view === "list" ? "secondary" : "ghost"}
+            size="icon"
+            className="size-8 cursor-pointer"
+            onClick={() => {
+              setView("list");
+              localStorage.setItem("orders-view", "list");
+            }}
+          >
+            <List className="size-4" />
+          </Button>
+        </div>
+      </PageHeader>
+
+      {view === "board" ? (
+        (() => {
+          if (isLoading) return renderSkeletons();
+          return (
+            <OrderBoard
+              orders={orders}
+              onStatusChange={(orderId, status, extras) => {
+                updateStatus.mutate({ orderId, status, ...extras });
+              }}
+              onOrderClick={(order) => setDetailOrder(order)}
+              formatPrice={formatPrice}
+              isPending={updateStatus.isPending}
+            />
+          );
+        })()
+      ) : (
+        <Tabs defaultValue="active">
+          <TabsList>
+            <TabsTrigger value="active" className="cursor-pointer">
+              Active
+              {activeOrders.length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="ml-1.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                >
+                  {activeOrders.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="cursor-pointer">
+              Completed
+              {completedOrders.length > 0 && (
+                <Badge variant="secondary" className="ml-1.5">
+                  {completedOrders.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="rejected" className="cursor-pointer">
+              Rejected / Cancelled
+              {rejectedOrders.length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="ml-1.5 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                >
+                  {rejectedOrders.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="active" className="mt-6">
+            {isLoading ? renderSkeletons() : renderActiveOrders()}
+          </TabsContent>
+
+          <TabsContent value="completed" className="mt-6">
+            {isLoading ? renderSkeletons() : renderOrderList(completedOrders)}
+          </TabsContent>
+
+          <TabsContent value="rejected" className="mt-6">
+            {isLoading ? renderSkeletons() : renderOrderList(rejectedOrders)}
+          </TabsContent>
+        </Tabs>
+      )}
+
+      <OrderDetailSheet
+        order={detailOrder}
+        open={!!detailOrder}
+        onOpenChange={(open) => {
+          if (!open) setDetailOrder(null);
+        }}
+        onAccept={() => {
+          // The sheet handles the time input internally
+        }}
+        onConfirmAccept={(orderId, minutes) => {
+          updateStatus.mutate({ orderId, status: "ACCEPTED", estimatedMinutes: minutes });
+          setDetailOrder(null);
+        }}
+        onReject={(orderId, reason) => {
+          updateStatus.mutate({ orderId, status: "REJECTED", rejectionReason: reason });
+          setDetailOrder(null);
+        }}
+        onStartPreparing={(orderId) => {
+          updateStatus.mutate({ orderId, status: "PREPARING" });
+          setDetailOrder(null);
+        }}
+        onMarkReady={(orderId) => {
+          updateStatus.mutate({ orderId, status: "READY" });
+          setDetailOrder(null);
+        }}
+        onOutForDelivery={(orderId) => {
+          updateStatus.mutate({ orderId, status: "DELIVERING" });
+          setDetailOrder(null);
+        }}
+        onComplete={(orderId) => {
+          updateStatus.mutate({ orderId, status: "COMPLETED" });
+          setDetailOrder(null);
+        }}
+        onRefund={(orderId, amount, reason) => {
+          refundOrder.mutate({ orderId, amount, reason });
+          setDetailOrder(null);
+        }}
+        formatPrice={formatPrice}
+        isPending={updateStatus.isPending}
       />
-
-      <Tabs defaultValue="active">
-        <TabsList>
-          <TabsTrigger value="active" className="cursor-pointer">
-            Active
-            {activeOrders.length > 0 && (
-              <Badge
-                variant="secondary"
-                className="ml-1.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-              >
-                {activeOrders.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="completed" className="cursor-pointer">
-            Completed
-            {completedOrders.length > 0 && (
-              <Badge variant="secondary" className="ml-1.5">
-                {completedOrders.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="rejected" className="cursor-pointer">
-            Rejected / Cancelled
-            {rejectedOrders.length > 0 && (
-              <Badge
-                variant="secondary"
-                className="ml-1.5 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-              >
-                {rejectedOrders.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="active" className="mt-6">
-          {isLoading ? renderSkeletons() : renderActiveOrders()}
-        </TabsContent>
-
-        <TabsContent value="completed" className="mt-6">
-          {isLoading ? renderSkeletons() : renderOrderList(completedOrders)}
-        </TabsContent>
-
-        <TabsContent value="rejected" className="mt-6">
-          {isLoading ? renderSkeletons() : renderOrderList(rejectedOrders)}
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }

@@ -74,6 +74,17 @@ export const ACTIVE_ORDER_STATUSES: OrderStatus[] = [
   "DELIVERING",
 ];
 
+export const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  NEW: ["ACCEPTED", "REJECTED"],
+  ACCEPTED: ["PREPARING"],
+  PREPARING: ["READY"],
+  READY: ["DELIVERING", "COMPLETED"],
+  DELIVERING: ["COMPLETED"],
+  COMPLETED: [],
+  REJECTED: [],
+  CANCELLED: [],
+};
+
 // ── Invoice Status ───────────────────────────────────────────────────────────
 
 export type InvoiceStatus = "pending" | "submitted" | "cancelled";

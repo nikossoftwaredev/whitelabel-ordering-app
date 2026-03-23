@@ -820,7 +820,7 @@ export const CheckoutForm = () => {
                 name="paymentMethod"
                 value="CASH"
                 checked={paymentMethod === "CASH"}
-                onChange={() => setPaymentMethod("CASH")}
+                onChange={() => { setPaymentMethod("CASH"); setTipOption("none"); setCustomTipValue(""); }}
                 className="sr-only"
               />
               <div className="size-10 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
@@ -862,6 +862,7 @@ export const CheckoutForm = () => {
           </div>
         </div>
 
+        {paymentMethod === "STRIPE" && <>
         <div className="my-4 mx-4">
           <Separator />
         </div>
@@ -918,7 +919,7 @@ export const CheckoutForm = () => {
               </div>
             </div>
           )}
-        </div>
+        </div></>}
 
         <div className="my-4 mx-4">
           <Separator />

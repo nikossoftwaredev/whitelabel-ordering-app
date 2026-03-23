@@ -103,7 +103,7 @@ function TimeSelect({
       <SelectTrigger className="w-25">
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="max-h-60 overflow-y-auto">
         {TIME_OPTIONS.map((t) => (
           <SelectItem key={t} value={t}>
             {t}

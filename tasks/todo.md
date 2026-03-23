@@ -70,17 +70,30 @@
 
 ---
 
-### 16. Product Popularity Tracking & Display — NOT STARTED
-**Stats tracking:**
-- [ ] Track purchase count per product (increment on order completion)
-- [ ] Schema: Add `purchaseCount` field to MenuItem or separate analytics table
-- [ ] API: Endpoint to query most popular products
+### 16. Product Popularity Tracking & Display — DONE
+- [x] Query top 5 products by order volume (last 7 days) via `orderItem.groupBy` in menu API
+- [x] Return `popularProductIds` from menu endpoint
+- [x] Show "Most Popular" section on order menu with real data (replaced carousel)
+- [x] Rank badges (Flame icon + "Xo in orders") on top 3 products
+- [x] i18n: Translate labels (EN + EL)
 
-**Customer-facing display:**
-- [ ] Show "Top 3 Most Popular" section on order menu (not carousel — static cards/list)
-- [ ] Admin toggle: Enable/disable popular products section
-- [ ] Dynamic: Updates automatically based on purchase data
-- [ ] i18n: Translate labels (EN + EL)
+---
+
+### 17. Phone Input Component — DONE
+- [x] Reusable PhoneInput with 58 countries, searchable popover, flag + dial code
+- [x] Integrated in checkout form, profile page, profile prompt sheet
+- [x] Stores full international number (e.g., +306912345678)
+
+---
+
+### 18. Kanban Board for Admin Orders — DONE
+- [x] Install @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
+- [x] VALID_TRANSITIONS map in status-config.ts
+- [x] Shared order types extracted to components/admin/orders/types.ts
+- [x] OrderBoard component with 8 columns, drag-and-drop
+- [x] OrderDetailSheet for full order view on card click
+- [x] View toggle (board/list) persisted to localStorage
+- [x] Polish: drop indicators, empty states, column header colors
 
 ---
 
@@ -92,4 +105,6 @@
 | 13 | Live Chat Support | Large | Not started |
 | 14 | Extract Reusable Components | Small | Not started |
 | 15 | PWA Back Button Dialog Handling | Small | **Done** |
-| 16 | Product Popularity Tracking & Display | Medium | Not started |
+| 16 | Product Popularity Tracking & Display | Medium | **Done** |
+| 17 | Phone Input Component | Small | **Done** |
+| 18 | Kanban Board for Admin Orders | Large | **Done** |

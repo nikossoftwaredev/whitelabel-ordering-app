@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Bike,
   Flame,
+  Gift,
   Info,
   Leaf,
   Package,
@@ -15,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useCallback,useEffect, useMemo, useRef, useState } from "react";
 
@@ -308,6 +310,7 @@ function MenuSkeleton() {
 /* ═══════════════════ MAIN COMPONENT ═══════════════════ */
 export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const t = useTranslations("Menu");
+  const { data: session } = useSession();
   const formatPrice = useFormatPrice();
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
@@ -387,6 +390,22 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       if (!res.ok) throw new Error("Failed to fetch menu");
       return res.json();
     },
+  });
+
+  const { data: loyalty } = useQuery<{
+    enabled: boolean;
+    requiredOrders: number;
+    rewardAmount: number;
+    currentProgress: number;
+    isEligible: boolean;
+  }>({
+    queryKey: ["loyalty", tenantSlug],
+    queryFn: async () => {
+      const res = await fetch(`/api/tenants/${tenantSlug}/loyalty`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!session?.user,
   });
 
   const filteredCategories = useMemo(() => {
@@ -585,7 +604,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         </div>
       </div>
 
-      {/* ═══ INFO BAR — Delivery, Pickup, Schedule ═══ */}
+      {/* ═══ INFO BAR — Delivery, Pickup, Schedule, Loyalty ═══ */}
       {/* Mobile: simple row under store name */}
       <div className="flex items-center gap-2 px-4 pb-2 overflow-x-auto scrollbar-hide text-[13px] sm:hidden">
         {prepTime && (
@@ -598,6 +617,13 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1 shrink-0">
             <Package className="size-3.5 text-muted-foreground" />
             <span className="font-medium">{t("pickup", { min: Math.max(5, prepTime - 10), max: prepTime })}</span>
+          </div>
+        )}
+        {loyalty?.enabled && (
+          <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1 shrink-0">
+            <Gift className="size-3.5 text-amber-500" />
+            <span className="font-medium">{t("loyaltyEarnedCoupon", { amount: formatPrice(loyalty.rewardAmount) })}</span>
+            <span className="font-semibold text-amber-500">{t("loyaltyProgressLabel", { current: loyalty.currentProgress, total: loyalty.requiredOrders })}</span>
           </div>
         )}
       </div>
@@ -615,6 +641,13 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
             <div className="flex items-center gap-1.5 bg-background rounded-full px-3 py-1.5 shrink-0 border border-border">
               <Package className="size-3.5 text-muted-foreground" />
               <span className="font-medium">{t("pickup", { min: Math.max(5, prepTime - 10), max: prepTime })}</span>
+            </div>
+          )}
+          {loyalty?.enabled && (
+            <div className="flex items-center gap-1.5 bg-background rounded-full px-3 py-1.5 shrink-0 border border-border">
+              <Gift className="size-3.5 text-amber-500" />
+              <span className="font-medium">{t("loyaltyEarnedCoupon", { amount: formatPrice(loyalty.rewardAmount) })}</span>
+              <span className="font-semibold text-amber-500">{t("loyaltyProgressLabel", { current: loyalty.currentProgress, total: loyalty.requiredOrders })}</span>
             </div>
           )}
           <button
