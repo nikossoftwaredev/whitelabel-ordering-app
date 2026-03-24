@@ -424,12 +424,6 @@ export const OrderConfirmation = () => {
       {/* ── Action buttons ─────────────────────────────────── */}
       <div className="flex gap-3 w-full max-w-xs">
         <Button asChild variant="outline" className="flex-1 rounded-full" size="lg">
-          <Link href="/order">
-            <ArrowLeft className="size-4 mr-2" />
-            {t("backToMenu")}
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="flex-1 rounded-full" size="lg">
           <Link href="/order/orders">
             <ClipboardList className="size-4 mr-2" />
             {t("orderHistory")}

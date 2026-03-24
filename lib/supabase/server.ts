@@ -18,7 +18,7 @@ export async function broadcastEvent(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        messages: [{ topic, event, payload }],
+        messages: [{ topic: `realtime:${topic}`, event, payload }],
       }),
     });
 

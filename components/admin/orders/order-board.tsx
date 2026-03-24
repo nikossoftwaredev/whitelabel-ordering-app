@@ -38,7 +38,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -137,7 +136,7 @@ function DraggableOrderCard({
   });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
   };
 
@@ -294,14 +293,9 @@ export function OrderBoard({
   isPending,
 }: OrderBoardProps) {
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [pendingAccept, setPendingAccept] = useState<{
-    orderId: string;
-    targetStatus: OrderStatus;
-  } | null>(null);
   const [pendingReject, setPendingReject] = useState<{
     orderId: string;
   } | null>(null);
-  const [estimatedMinutes, setEstimatedMinutes] = useState("15");
   const [rejectionReason, setRejectionReason] = useState("");
 
   const sensors = useSensors(
@@ -373,10 +367,9 @@ export function OrderBoard({
       return;
     }
 
-    // Special cases
+    // Special cases — ACCEPTED uses default prep time (no dialog)
     if (targetStatus === "ACCEPTED") {
-      setPendingAccept({ orderId, targetStatus });
-      setEstimatedMinutes("15");
+      onStatusChange(orderId, targetStatus);
       return;
     }
     if (targetStatus === "REJECTED") {
@@ -386,19 +379,6 @@ export function OrderBoard({
     }
 
     onStatusChange(orderId, targetStatus);
-  }
-
-  function handleConfirmAccept() {
-    if (!pendingAccept) return;
-    const mins = parseInt(estimatedMinutes, 10);
-    if (isNaN(mins) || mins <= 0) {
-      toast.error("Please enter a valid number of minutes");
-      return;
-    }
-    onStatusChange(pendingAccept.orderId, pendingAccept.targetStatus, {
-      estimatedMinutes: mins,
-    });
-    setPendingAccept(null);
   }
 
   function handleConfirmReject() {
@@ -447,46 +427,6 @@ export function OrderBoard({
           ) : null}
         </DragOverlay>
       </DndContext>
-
-      {/* Accept dialog — ask for estimated prep time */}
-      <Dialog
-        open={!!pendingAccept}
-        onOpenChange={(open) => {
-          if (!open) setPendingAccept(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Accept Order</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="estimated-minutes">
-                Estimated preparation time (minutes)
-              </Label>
-              <Input
-                id="estimated-minutes"
-                type="number"
-                min={1}
-                value={estimatedMinutes}
-                onChange={(e) => setEstimatedMinutes(e.target.value)}
-                placeholder="15"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setPendingAccept(null)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleConfirmAccept} disabled={isPending}>
-                Confirm
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Reject dialog — ask for rejection reason */}
       <Dialog
