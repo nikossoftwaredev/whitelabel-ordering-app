@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isAuthResult,requireRole } from "@/lib/auth/require-role";
+import { invalidateMenuCache } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
 
 type Params = { params: Promise<{ tenantId: string; productId: string }> };
@@ -81,6 +82,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
     },
   });
 
+  await invalidateMenuCache(tenantId);
+
   return NextResponse.json(product);
 }
 
@@ -92,6 +95,8 @@ export async function DELETE(_request: Request, { params }: Params) {
   await prisma.product.delete({
     where: { id: productId, tenantId },
   });
+
+  await invalidateMenuCache(tenantId);
 
   return NextResponse.json({ success: true });
 }
