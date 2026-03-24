@@ -109,11 +109,16 @@ export async function POST(
   // Auto-generate invoice number using InvoiceSequence
   const series = "A";
 
-  const sequence = await prisma.invoiceSequence.upsert({
-    where: { tenantId_series: { tenantId, series } },
-    create: { tenantId, series, lastNumber: 1 },
-    update: { lastNumber: { increment: 1 } },
-  });
+  const sequence = await prisma.$transaction(
+    async (tx) => {
+      return tx.invoiceSequence.upsert({
+        where: { tenantId_series: { tenantId, series } },
+        create: { tenantId, series, lastNumber: 1 },
+        update: { lastNumber: { increment: 1 } },
+      });
+    },
+    { isolationLevel: "Serializable" }
+  );
 
   const sequenceNumber = sequence.lastNumber;
 
