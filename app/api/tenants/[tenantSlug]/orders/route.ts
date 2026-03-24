@@ -11,6 +11,7 @@ import { isStoreOpen } from "@/lib/orders/store-hours";
 import { validateCart } from "@/lib/orders/validate-cart";
 import { validatePromoCode } from "@/lib/promo/validate";
 import { sendPushToAdmins } from "@/lib/push/send";
+import { orderLimiter } from "@/lib/security/rate-limit";
 import { createOrderSchema } from "@/lib/validations/order";
 
 export async function POST(
@@ -22,6 +23,14 @@ export async function POST(
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { success } = await orderLimiter.limit(session.user.id);
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many orders. Please wait a moment." },
+      { status: 429 }
+    );
   }
 
   const tenant = await prisma.tenant.findUnique({

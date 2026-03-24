@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
+import { checkoutLimiter } from "@/lib/security/rate-limit";
 import { stripe } from "@/lib/stripe/server";
 
 const PLATFORM_FEE_PERCENT = 2;
@@ -18,6 +19,14 @@ export async function POST(
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { success } = await checkoutLimiter.limit(session.user.id);
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many payment attempts. Please wait." },
+      { status: 429 }
+    );
   }
 
   const { orderId } = await request.json();

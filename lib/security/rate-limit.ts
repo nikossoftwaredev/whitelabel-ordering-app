@@ -1,42 +1,31 @@
-const rateLimit = (options: {
-  interval: number;
-  uniqueTokenPerInterval: number;
-}) => {
-  const tokenCache = new Map<
-    string,
-    { count: number; lastReset: number }
-  >();
+import { Ratelimit } from "@upstash/ratelimit";
 
-  return {
-    check: (
-      limit: number,
-      token: string
-    ): { success: boolean; remaining: number } => {
-      const now = Date.now();
-      const tokenData = tokenCache.get(token);
+import { redis } from "@/lib/redis";
 
-      if (!tokenData || now - tokenData.lastReset > options.interval) {
-        tokenCache.set(token, { count: 1, lastReset: now });
-        return { success: true, remaining: limit - 1 };
-      }
-
-      if (tokenData.count >= limit) {
-        return { success: false, remaining: 0 };
-      }
-
-      tokenData.count++;
-      return { success: true, remaining: limit - tokenData.count };
-    },
-  };
-};
-
-// Pre-configured limiters
-export const apiLimiter = rateLimit({
-  interval: 60 * 1000, // 1 minute
-  uniqueTokenPerInterval: 500,
+// API rate limiter: 60 requests per 1 minute per token
+export const apiLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(60, "1 m"),
+  prefix: "rl:api",
 });
 
-export const authLimiter = rateLimit({
-  interval: 15 * 60 * 1000, // 15 minutes
-  uniqueTokenPerInterval: 100,
+// Auth rate limiter: 10 requests per 15 minutes per token
+export const authLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, "15 m"),
+  prefix: "rl:auth",
+});
+
+// Order creation limiter: 10 orders per minute per user
+export const orderLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, "1 m"),
+  prefix: "rl:order",
+});
+
+// Checkout limiter: 5 attempts per minute per user
+export const checkoutLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, "1 m"),
+  prefix: "rl:checkout",
 });
