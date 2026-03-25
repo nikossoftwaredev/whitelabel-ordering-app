@@ -43,19 +43,25 @@ export async function validateCart(
     return { valid: false, items: [], subtotal: 0, errors: ["Cart is empty"] };
   }
 
-  for (const item of cartItems) {
-    const product = await prisma.product.findFirst({
-      where: { id: item.productId, tenantId, isActive: true },
-      include: {
-        modifierGroups: {
-          include: {
-            modifierGroup: {
-              include: { options: { where: { isActive: true } } },
-            },
+  // Batch-fetch all products in a single query (fixes N+1)
+  const productIds = cartItems.map((item) => item.productId);
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds }, tenantId, isActive: true },
+    include: {
+      modifierGroups: {
+        include: {
+          modifierGroup: {
+            include: { options: { where: { isActive: true } } },
           },
         },
       },
-    });
+    },
+  });
+
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
+  for (const item of cartItems) {
+    const product = productMap.get(item.productId);
 
     if (!product) {
       errors.push(`Product ${item.productId} not found or inactive`);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isAuthResult,requireRole } from "@/lib/auth/require-role";
+import { isAuthResult, requireRole } from "@/lib/auth/require-role";
 import { prisma } from "@/lib/db";
 import { ACTIVE_ORDER_STATUSES } from "@/lib/general/status-config";
 
@@ -17,62 +17,82 @@ export async function GET(
   const weekStart = new Date(todayStart);
   weekStart.setDate(weekStart.getDate() - 7);
 
-  // Today's stats
-  const todayOrders = await prisma.order.findMany({
-    where: { tenantId, createdAt: { gte: todayStart } },
-    select: { total: true, tipAmount: true, status: true, paymentStatus: true, refundAmount: true },
-  });
+  const [
+    todayStats,
+    todayRefunds,
+    activeOrders,
+    weekStats,
+    popularProducts,
+    recentOrders,
+  ] = await Promise.all([
+    // Today's stats (revenue, tips, order count) — excludes REJECTED
+    prisma.order.aggregate({
+      where: {
+        tenantId,
+        createdAt: { gte: todayStart },
+        status: { not: "REJECTED" },
+      },
+      _sum: { total: true, tipAmount: true },
+      _count: true,
+    }),
 
-  const completedToday = todayOrders.filter((o) => o.status !== "REJECTED");
-  const todayRevenue = completedToday.reduce((sum, o) => sum + o.total, 0);
-  const todayTips = completedToday.reduce((sum, o) => sum + o.tipAmount, 0);
+    // Today's refunds
+    prisma.order.aggregate({
+      where: {
+        tenantId,
+        createdAt: { gte: todayStart },
+        paymentStatus: "REFUNDED",
+      },
+      _sum: { refundAmount: true },
+      _count: true,
+    }),
 
-  const todayCount = completedToday.length;
+    // Active orders count
+    prisma.order.count({
+      where: {
+        tenantId,
+        status: { in: ACTIVE_ORDER_STATUSES as any },
+      },
+    }),
 
-  const refundedToday = todayOrders.filter((o) => o.paymentStatus === "REFUNDED");
-  const todayRefundCount = refundedToday.length;
-  const todayRefundAmount = refundedToday.reduce((sum, o) => sum + (o.refundAmount || 0), 0);
+    // Week revenue — excludes REJECTED
+    prisma.order.aggregate({
+      where: {
+        tenantId,
+        createdAt: { gte: weekStart },
+        status: { not: "REJECTED" },
+      },
+      _sum: { total: true },
+    }),
 
-  // Active orders (not completed/rejected)
-  const activeOrders = await prisma.order.count({
-    where: {
-      tenantId,
-      status: { in: ACTIVE_ORDER_STATUSES as any },
-    },
-  });
+    // Popular products (last 7 days)
+    prisma.orderItem.groupBy({
+      by: ["productName"],
+      where: { order: { tenantId, createdAt: { gte: weekStart } } },
+      _sum: { quantity: true },
+      orderBy: { _sum: { quantity: "desc" } },
+      take: 5,
+    }),
 
-  // Week revenue
-  const weekOrders = await prisma.order.findMany({
-    where: {
-      tenantId,
-      createdAt: { gte: weekStart },
-      status: { not: "REJECTED" },
-    },
-    select: { total: true },
-  });
-  const weekRevenue = weekOrders.reduce((sum, o) => sum + o.total, 0);
-
-  // Popular products (last 7 days)
-  const popularProducts = await prisma.orderItem.groupBy({
-    by: ["productName"],
-    where: { order: { tenantId, createdAt: { gte: weekStart } } },
-    _sum: { quantity: true },
-    orderBy: { _sum: { quantity: "desc" } },
-    take: 5,
-  });
-
-  // Recent orders
-  const recentOrders = await prisma.order.findMany({
-    where: { tenantId },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-    include: { items: { select: { productName: true, quantity: true } } },
-  });
+    // Recent orders
+    prisma.order.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { items: { select: { productName: true, quantity: true } } },
+    }),
+  ]);
 
   return NextResponse.json({
-    today: { revenue: todayRevenue, orders: todayCount, tips: todayTips, refunds: todayRefundCount, refundAmount: todayRefundAmount },
+    today: {
+      revenue: todayStats._sum.total || 0,
+      orders: todayStats._count,
+      tips: todayStats._sum.tipAmount || 0,
+      refunds: todayRefunds._count,
+      refundAmount: todayRefunds._sum.refundAmount || 0,
+    },
     activeOrders,
-    weekRevenue,
+    weekRevenue: weekStats._sum.total || 0,
     popularProducts: popularProducts.map((p) => ({
       name: p.productName,
       quantity: p._sum.quantity || 0,

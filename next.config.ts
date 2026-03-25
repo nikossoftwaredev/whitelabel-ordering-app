@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
+    useCache: true,
     optimizePackageImports: [
       "lucide-react",
       "recharts",

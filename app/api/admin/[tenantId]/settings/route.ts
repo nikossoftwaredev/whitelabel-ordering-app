@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isAuthResult,requireRole } from "@/lib/auth/require-role";
+import { invalidateMenuCache, invalidateTenantCache } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
 
 export async function GET(
@@ -131,6 +132,9 @@ export async function PUT(
       operatingHours: { orderBy: { dayOfWeek: "asc" } },
     },
   });
+
+  await invalidateMenuCache(tenantId);
+  await invalidateTenantCache(tenantId);
 
   return NextResponse.json(result);
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getCachedMenu, getCachedPopularProducts } from "@/lib/cache/menu";
 import { prisma } from "@/lib/db";
 
 export async function GET(
@@ -34,91 +35,10 @@ export async function GET(
     return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
   }
 
-  const categories = await prisma.category.findMany({
-    where: { tenantId: tenant.id, isActive: true },
-    orderBy: { sortOrder: "asc" },
-    select: {
-      id: true,
-      name: true,
-      nameEl: true,
-      description: true,
-      image: true,
-      products: {
-        where: { isActive: true },
-        orderBy: { sortOrder: "asc" },
-        select: {
-          id: true,
-          name: true,
-          nameEl: true,
-          description: true,
-          descriptionEl: true,
-          image: true,
-          price: true,
-          isVegan: true,
-          isVegetarian: true,
-          isGlutenFree: true,
-          isDairyFree: true,
-          containsNuts: true,
-          isSpicy: true,
-          allergens: true,
-          offerType: true,
-          offerPrice: true,
-          offerStart: true,
-          offerEnd: true,
-          modifierGroups: {
-            orderBy: { sortOrder: "asc" },
-            select: {
-              modifierGroup: {
-                select: {
-                  id: true,
-                  name: true,
-                  nameEl: true,
-                  required: true,
-                  minSelect: true,
-                  maxSelect: true,
-                  options: {
-                    where: { isActive: true },
-                    orderBy: { sortOrder: "asc" },
-                    select: {
-                      id: true,
-                      name: true,
-                      nameEl: true,
-                      priceAdjustment: true,
-                      isDefault: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  // Flatten modifier groups structure
-  const formattedCategories = categories.map((cat) => ({
-    ...cat,
-    products: cat.products.map((product) => ({
-      ...product,
-      modifierGroups: product.modifierGroups.map((pmg) => pmg.modifierGroup),
-    })),
-  }));
-
-  // Popular products — top 5 by order volume (last 7 days)
-  const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - 7);
-  const popularRaw = await prisma.orderItem.groupBy({
-    by: ["productId"],
-    where: {
-      order: { tenantId: tenant.id, createdAt: { gte: weekStart } },
-      product: { isActive: true },
-    },
-    _sum: { quantity: true },
-    orderBy: { _sum: { quantity: "desc" } },
-    take: 5,
-  });
-  const popularProductIds = popularRaw.map((p) => p.productId);
+  const [formattedCategories, popularProductIds] = await Promise.all([
+    getCachedMenu(tenant.id, tenant.slug),
+    getCachedPopularProducts(tenant.id, tenant.slug),
+  ]);
 
   return NextResponse.json({
     tenant: {

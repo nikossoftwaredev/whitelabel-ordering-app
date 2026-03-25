@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isAuthResult,requireRole } from "@/lib/auth/require-role";
+import { invalidateMenuCache } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
 
 export async function GET(
@@ -51,6 +52,8 @@ export async function POST(
       sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
     },
   });
+
+  await invalidateMenuCache(tenantId);
 
   return NextResponse.json(category, { status: 201 });
 }
