@@ -79,6 +79,49 @@
 - [ ] **Tenant hostname vs route param validation**
   - Add middleware that cross-checks hostname tenant with route param tenant
 
+## Database Migration Best Practices
+
+### Rules (enforced from now on)
+
+1. **Never use `prisma db push` in production** — it skips migration history and can drop data
+2. **Always use `prisma migrate dev --name <description>`** to generate migrations in development
+3. **Deploy with `prisma migrate deploy`** — applies pending migrations without shadow DB, safe for CI/CD
+4. **One migration per logical change** — don't bundle unrelated schema changes
+5. **Review generated SQL before applying** — check `lib/db/migrations/<timestamp>/migration.sql`
+6. **Never edit a migration that's been deployed** — create a new migration to fix issues
+7. **Test migrations against a staging DB** before running on production
+
+### Migration Commands
+
+```bash
+# Development: generate + apply migration (interactive)
+npx prisma migrate dev --name <description> --schema lib/db/schema.prisma
+
+# Production/CI: apply pending migrations (non-interactive, safe)
+npx prisma migrate deploy --schema lib/db/schema.prisma
+
+# Check status: see which migrations are pending/applied
+npx prisma migrate status --schema lib/db/schema.prisma
+
+# Generate migration SQL without applying (for review)
+npx prisma migrate dev --name <description> --schema lib/db/schema.prisma --create-only
+```
+
+### Deployment Flow
+
+1. Developer runs `prisma migrate dev` locally → generates migration file
+2. Migration file committed to git with the schema change
+3. CI/CD runs `prisma migrate deploy` against staging DB
+4. After staging verification, CI/CD runs `prisma migrate deploy` against production DB
+5. Rollback: create a new "undo" migration (Prisma doesn't support down migrations)
+
+### Current State
+
+- All old migrations deleted and replaced with single clean `init` migration
+- Schema is the single source of truth in `lib/db/schema.prisma`
+- `DATABASE_URL` (port 6543, pgbouncer) for app queries
+- `DIRECT_URL` (port 5432, direct) for migrations (required by Prisma)
+
 ## What's Already Production-Ready
 
 - Multi-tenant schema with proper `tenantId` on all models
