@@ -27,10 +27,19 @@ import { queryKeys } from "@/lib/query/keys";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 
+interface OrderItemModifier {
+  modifierOptionId: string;
+  name: string;
+  priceAdjustment: number;
+}
+
 interface OrderItem {
+  productId: string;
   productName: string;
   quantity: number;
   unitPrice: number;
+  modifiers: OrderItemModifier[];
+  product: { image: string | null } | null;
 }
 
 interface Order {
@@ -101,12 +110,16 @@ export const OrderHistory = () => {
   const handleReorder = (order: Order) => {
     for (const item of order.items) {
       addItem({
-        productId: "",
+        productId: item.productId,
         productName: item.productName,
-        productImage: null,
+        productImage: item.product?.image ?? null,
         basePrice: item.unitPrice,
         quantity: item.quantity,
-        modifiers: [],
+        modifiers: item.modifiers.map((m) => ({
+          modifierOptionId: m.modifierOptionId,
+          name: m.name,
+          priceAdjustment: m.priceAdjustment,
+        })),
         notes: "",
       });
     }

@@ -40,20 +40,39 @@ export async function GET(
   const limit = Math.min(parseInt(searchParams.get("limit") || "10", 10), 50);
   const offset = parseInt(searchParams.get("offset") || "0", 10);
 
+  const forReorder = searchParams.get("forReorder") === "true";
+
+  const where: Record<string, unknown> = {
+    customerId: customer.id,
+    tenantId: tenant.id,
+  };
+
+  if (forReorder) {
+    where.status = { in: ["COMPLETED", "DELIVERING", "READY"] };
+  }
+
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
-      where: {
-        customerId: customer.id,
-        tenantId: tenant.id,
-      },
+      where,
       include: {
         items: {
           select: {
             id: true,
+            productId: true,
             productName: true,
             quantity: true,
             unitPrice: true,
             totalPrice: true,
+            modifiers: {
+              select: {
+                modifierOptionId: true,
+                name: true,
+                priceAdjustment: true,
+              },
+            },
+            product: {
+              select: { image: true },
+            },
           },
         },
       },
@@ -61,12 +80,7 @@ export async function GET(
       take: limit,
       skip: offset,
     }),
-    prisma.order.count({
-      where: {
-        customerId: customer.id,
-        tenantId: tenant.id,
-      },
-    }),
+    prisma.order.count({ where }),
   ]);
 
   return NextResponse.json({ orders, total });

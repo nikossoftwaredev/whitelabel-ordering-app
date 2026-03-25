@@ -34,6 +34,7 @@ import { useDialogStore } from "@/lib/stores/dialog-store";
 
 import { PRODUCT_DETAIL_DIALOG } from "./product-detail-sheet";
 import { QuantityStepper } from "./quantity-stepper";
+import { ReorderCarousel } from "./reorder-carousel";
 
 /* ─────────────── Types ─────────────── */
 interface ModifierOption {
@@ -436,6 +437,11 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       .filter((p): p is Product => !!p);
   }, [data?.categories, data?.popularProductIds]);
 
+  const availableProductIds = useMemo(() => {
+    if (!data?.categories) return new Set<string>();
+    return new Set(data.categories.flatMap((c) => c.products.map((p) => p.id)));
+  }, [data?.categories]);
+
   useEffect(() => {
     if (filteredCategories.length > 0 && !activeCategoryId) {
       setActiveCategoryId(filteredCategories[0].id);
@@ -755,6 +761,14 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           </div>
         ) : (
           <>
+            {/* Reorder section */}
+            {!search && activeFilters.size === 0 && session?.user && (
+              <ReorderCarousel
+                tenantSlug={tenantSlug}
+                availableProductIds={availableProductIds}
+              />
+            )}
+
             {/* Popular section */}
             {!search && activeFilters.size === 0 && popularProducts.length > 0 && (
               <section className="px-4 pt-6">
