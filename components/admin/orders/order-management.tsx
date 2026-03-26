@@ -17,7 +17,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/empty-state";
@@ -36,6 +36,7 @@ import { useFormatPrice } from "@/hooks/use-format-price";
 import { timeAgo } from "@/lib/general/formatters";
 import { ACTIVE_ORDER_STATUSES,OrderStatus, orderStatusConfig } from "@/lib/general/status-config";
 import { queryKeys } from "@/lib/query/keys";
+import { useOrderNotificationStore } from "@/lib/stores/order-notification-store";
 
 import { OrderBoard } from "./order-board";
 import { OrderDetailSheet } from "./order-detail-sheet";
@@ -79,7 +80,34 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
       return res.json();
     },
     enabled: !!tenantId,
+    refetchInterval: 15_000,
   });
+
+  // ── Open order drawer from notification toast ────────────────────────────
+
+  const pendingOrderId = useOrderNotificationStore((s) => s.pendingOrderId);
+  const clearPendingOrderId = useOrderNotificationStore(
+    (s) => s.clearPendingOrderId,
+  );
+
+  useEffect(() => {
+    if (!pendingOrderId || !data?.orders) return;
+
+    const order = data.orders.find((o) => o.id === pendingOrderId);
+    if (order) {
+      setDetailOrder(order);
+      clearPendingOrderId();
+    } else {
+      // Order might not be in the cached list yet — fetch it directly
+      fetch(`/api/admin/${tenantId}/orders/${pendingOrderId}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((order) => {
+          if (order) setDetailOrder(order);
+        })
+        .catch(() => {})
+        .finally(() => clearPendingOrderId());
+    }
+  }, [pendingOrderId, data?.orders, tenantId, clearPendingOrderId]);
 
   // ── Mutation ───────────────────────────────────────────────────────────────
 

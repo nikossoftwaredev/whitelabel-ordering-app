@@ -42,9 +42,15 @@ interface ConfigData {
   secondaryColor: string;
   accentColor: string;
   currency: string;
-  loyaltyEnabled: boolean;
-  loyaltyRequiredOrders: number;
-  loyaltyRewardAmount: number;
+  couponEnabled: boolean;
+  couponMilestoneOrders: number;
+  couponType: "FIXED" | "PERCENTAGE";
+  couponValue: number;
+  couponValidDays: number;
+  couponMinOrder: number | null;
+  couponMaxDiscount: number | null;
+  couponMaxSavingsPerOrder: number | null;
+  couponDescription: string | null;
 }
 
 interface TenantSettings {
@@ -187,9 +193,15 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
   const [secondaryColor, setSecondaryColor] = useState("#000000");
   const [accentColor, setAccentColor] = useState("#000000");
   const [currency, setCurrency] = useState("EUR");
-  const [loyaltyEnabled, setLoyaltyEnabled] = useState(false);
-  const [loyaltyRequiredOrders, setLoyaltyRequiredOrders] = useState(10);
-  const [loyaltyRewardAmount, setLoyaltyRewardAmount] = useState("5.00");
+  const [couponEnabled, setCouponEnabled] = useState(false);
+  const [couponMilestoneOrders, setCouponMilestoneOrders] = useState(10);
+  const [couponType, setCouponType] = useState<"FIXED" | "PERCENTAGE">("FIXED");
+  const [couponValue, setCouponValue] = useState("5.00");
+  const [couponValidDays, setCouponValidDays] = useState(30);
+  const [couponMinOrder, setCouponMinOrder] = useState("");
+  const [couponMaxDiscount, setCouponMaxDiscount] = useState("");
+  const [couponMaxSavingsPerOrder, setCouponMaxSavingsPerOrder] = useState("");
+  const [couponDescription, setCouponDescription] = useState("");
 
   const { data: settings, isLoading } = useQuery<TenantSettings>({
     queryKey: queryKeys.settings.all(resolvedTenantId),
@@ -219,11 +231,15 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
       setSecondaryColor(settings.config.secondaryColor || "#000000");
       setAccentColor(settings.config.accentColor || "#000000");
       setCurrency(settings.config.currency || "EUR");
-      setLoyaltyEnabled(settings.config.loyaltyEnabled || false);
-      setLoyaltyRequiredOrders(settings.config.loyaltyRequiredOrders || 10);
-      setLoyaltyRewardAmount(
-        centsToEuros(settings.config.loyaltyRewardAmount || 500)
-      );
+      setCouponEnabled(settings.config.couponEnabled || false);
+      setCouponMilestoneOrders(settings.config.couponMilestoneOrders || 10);
+      setCouponType(settings.config.couponType || "FIXED");
+      setCouponValue(centsToEuros(settings.config.couponValue || 500));
+      setCouponValidDays(settings.config.couponValidDays || 30);
+      setCouponMinOrder(settings.config.couponMinOrder ? centsToEuros(settings.config.couponMinOrder) : "");
+      setCouponMaxDiscount(settings.config.couponMaxDiscount ? centsToEuros(settings.config.couponMaxDiscount) : "");
+      setCouponMaxSavingsPerOrder(settings.config.couponMaxSavingsPerOrder ? centsToEuros(settings.config.couponMaxSavingsPerOrder) : "");
+      setCouponDescription(settings.config.couponDescription || "");
     }
 
     if (settings.operatingHours && settings.operatingHours.length > 0) {
@@ -269,9 +285,15 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
             secondaryColor,
             accentColor,
             currency,
-            loyaltyEnabled,
-            loyaltyRequiredOrders,
-            loyaltyRewardAmount: eurosToCents(loyaltyRewardAmount),
+            couponEnabled,
+            couponMilestoneOrders,
+            couponType,
+            couponValue: eurosToCents(couponValue),
+            couponValidDays,
+            couponMinOrder: couponMinOrder ? eurosToCents(couponMinOrder) : null,
+            couponMaxDiscount: couponMaxDiscount ? eurosToCents(couponMaxDiscount) : null,
+            couponMaxSavingsPerOrder: couponMaxSavingsPerOrder ? eurosToCents(couponMaxSavingsPerOrder) : null,
+            couponDescription: couponDescription || null,
           },
           operatingHours,
         }),
@@ -532,60 +554,6 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
           </CardContent>
         </Card>
       </div>
-
-      {/* Loyalty Program */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Loyalty Program</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Enable loyalty program</Label>
-              <p className="text-sm text-muted-foreground">
-                Reward customers after a number of orders
-              </p>
-            </div>
-            <Switch
-              checked={loyaltyEnabled}
-              onCheckedChange={setLoyaltyEnabled}
-            />
-          </div>
-          {loyaltyEnabled && (
-            <>
-              <Separator />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Orders required for reward</Label>
-                  <Input
-                    type="number"
-                    min={2}
-                    max={50}
-                    value={loyaltyRequiredOrders || ""}
-                    onChange={(e) =>
-                      setLoyaltyRequiredOrders(e.target.value === "" ? 0 : parseInt(e.target.value))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Reward amount (EUR)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.50"
-                    value={loyaltyRewardAmount}
-                    onChange={(e) => setLoyaltyRewardAmount(e.target.value)}
-                  />
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Customers earn &euro;{loyaltyRewardAmount} off after every{" "}
-                {loyaltyRequiredOrders} completed orders.
-              </p>
-            </>
-          )}
-        </CardContent>
-      </Card>
 
       {/* QR Code */}
       <Card>

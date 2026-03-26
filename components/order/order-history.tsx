@@ -21,7 +21,11 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { formatDate } from "@/lib/general/formatters";
-import { ACTIVE_ORDER_STATUSES, OrderStatus, orderStatusConfig } from "@/lib/general/status-config";
+import {
+  ACTIVE_ORDER_STATUSES,
+  OrderStatus,
+  orderStatusConfig,
+} from "@/lib/general/status-config";
 import { Link } from "@/lib/i18n/navigation";
 import { queryKeys } from "@/lib/query/keys";
 import { useCartStore } from "@/lib/stores/cart-store";
@@ -69,7 +73,7 @@ export const OrderHistory = () => {
     queryKey: queryKeys.orders.history(tenant.slug),
     queryFn: async () => {
       const res = await fetch(
-        `/api/tenants/${tenant.slug}/orders/history?limit=20&offset=0`
+        `/api/tenants/${tenant.slug}/orders/history?limit=20&offset=0`,
       );
       if (!res.ok) throw new Error("Failed to fetch order history");
       return res.json();
@@ -80,7 +84,7 @@ export const OrderHistory = () => {
     mutationFn: async (orderId: string) => {
       const res = await fetch(
         `/api/tenants/${tenant.slug}/orders/${orderId}/cancel`,
-        { method: "POST" }
+        { method: "POST" },
       );
       if (!res.ok) throw new Error("Failed to cancel order");
     },
@@ -103,7 +107,7 @@ export const OrderHistory = () => {
         description: t("cancelConfirm"),
         actionLabel: t("cancelOrder"),
       },
-      () => cancelMutation.mutate(orderId)
+      () => cancelMutation.mutate(orderId),
     );
   };
 
@@ -157,9 +161,7 @@ export const OrderHistory = () => {
             <Package className="size-16 text-muted-foreground/30" />
             <div>
               <h2 className="text-xl font-semibold">{t("noOrders")}</h2>
-              <p className="text-muted-foreground mt-1">
-                {t("noOrdersDesc")}
-              </p>
+              <p className="text-muted-foreground mt-1">{t("noOrdersDesc")}</p>
             </div>
             <Link href="/order">
               <Button className="cursor-pointer">

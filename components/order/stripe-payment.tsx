@@ -17,6 +17,7 @@ interface StripePaymentProps {
   orderId: string;
   returnUrl?: string;
   onSuccess?: () => void;
+  locale?: string;
 }
 
 function CheckoutForm({
@@ -68,7 +69,12 @@ function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement />
+      <PaymentElement
+        options={{
+          layout: "tabs",
+          wallets: { applePay: "auto", googlePay: "auto" },
+        }}
+      />
 
       {error && (
         <div className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
@@ -94,13 +100,14 @@ export function StripePayment({
   orderId,
   returnUrl,
   onSuccess,
+  locale,
 }: StripePaymentProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
   return (
     <Elements
-      stripe={getStripePromise()}
+      stripe={getStripePromise(locale)}
       options={{
         clientSecret,
         appearance: {

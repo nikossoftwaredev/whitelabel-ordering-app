@@ -34,9 +34,6 @@ export async function getCachedTenantBySlug(slug: string) {
           coverImage: true,
           description: true,
           primaryColor: true,
-          loyaltyEnabled: true,
-          loyaltyRequiredOrders: true,
-          loyaltyRewardAmount: true,
         },
       },
       operatingHours: {

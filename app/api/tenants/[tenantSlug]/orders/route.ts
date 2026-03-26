@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth/auth";
+import { validateCoupon } from "@/lib/coupons/validate";
 import { prisma } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/email/send";
 import { orderEvents } from "@/lib/events/order-events";
@@ -40,9 +41,8 @@ export async function POST(
       config: {
         select: {
           primaryColor: true,
-          loyaltyEnabled: true,
-          loyaltyRequiredOrders: true,
-          loyaltyRewardAmount: true,
+          couponEnabled: true,
+          couponMaxSavingsPerOrder: true,
         },
       },
     },
@@ -91,7 +91,7 @@ export async function POST(
     tipAmount,
     scheduledFor: scheduledForStr,
     promoCode: promoCodeStr,
-    loyaltyRedeem,
+    couponIds,
     deliveryLat,
     deliveryLng,
     deliveryAddressDetails,
@@ -142,25 +142,16 @@ export async function POST(
     );
   }
 
-  // Mutual exclusivity: promo code and loyalty reward
-  if (promoCodeStr && loyaltyRedeem) {
-    return NextResponse.json(
-      { error: "Cannot use both promo code and loyalty reward" },
-      { status: 400 }
-    );
-  }
-
   // Validate promo code if provided
-  let discount = 0;
+  let promoDiscount = 0;
   let promoCodeId: string | null = null;
   let maxUsesPerUser = 1;
-  let isLoyaltyDiscount = false;
   if (promoCodeStr) {
     const result = await validatePromoCode(tenant.id, promoCodeStr, validation.subtotal);
     if (!result.valid) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
-    discount = result.discount;
+    promoDiscount = result.discount;
     promoCodeId = result.promo.id;
     maxUsesPerUser = result.promo.maxUsesPerUser;
   }
@@ -180,23 +171,27 @@ export async function POST(
     },
   });
 
-  // Validate loyalty redemption if requested
-  if (loyaltyRedeem && tenant.config?.loyaltyEnabled) {
-    const { loyaltyRequiredOrders, loyaltyRewardAmount } = tenant.config;
-    const redemptionCount = await prisma.loyaltyRedemption.count({
-      where: { customerId: customer.id, tenantId: tenant.id },
+  // Validate coupon if provided
+  let couponDiscount = 0;
+  let couponToUse: { id: string } | null = null;
+  if (couponIds?.length && tenant.config?.couponEnabled) {
+    const coupon = await prisma.coupon.findFirst({
+      where: {
+        id: couponIds[0],
+        tenantId: tenant.id,
+        customerId: customer.id,
+      },
     });
-    const effectiveOrders =
-      customer.orderCount - redemptionCount * loyaltyRequiredOrders;
-    if (effectiveOrders >= loyaltyRequiredOrders) {
-      discount = Math.min(loyaltyRewardAmount, validation.subtotal);
-      isLoyaltyDiscount = true;
-    } else {
-      return NextResponse.json(
-        { error: "Not enough orders for loyalty reward" },
-        { status: 400 }
-      );
+    if (!coupon) {
+      return NextResponse.json({ error: "Coupon not found" }, { status: 404 });
     }
+    const remainingSubtotal = validation.subtotal - promoDiscount;
+    const couponResult = validateCoupon(coupon, customer.id, remainingSubtotal);
+    if (!couponResult.valid) {
+      return NextResponse.json({ error: couponResult.error }, { status: 400 });
+    }
+    couponDiscount = couponResult.discount;
+    couponToUse = { id: coupon.id };
   }
 
   // Check per-user promo usage
@@ -209,88 +204,116 @@ export async function POST(
     }
   }
 
+  // Calculate totals with combined discount cap
+  let totalDiscount = promoDiscount + couponDiscount;
+  const maxSavings = tenant.config?.couponMaxSavingsPerOrder;
+  if (maxSavings && totalDiscount > maxSavings) {
+    totalDiscount = maxSavings;
+    // Proportionally reduce if needed — promo first, coupon on remainder
+    if (promoDiscount >= maxSavings) {
+      promoDiscount = maxSavings;
+      couponDiscount = 0;
+    } else {
+      couponDiscount = maxSavings - promoDiscount;
+    }
+  }
+  totalDiscount = Math.min(totalDiscount, validation.subtotal);
+  const total = Math.max(0, validation.subtotal - totalDiscount) + tipAmount;
+
   // Generate order number
   const orderNumber = await generateOrderNumber(tenant.id);
 
-  const total = validation.subtotal - discount + tipAmount;
-
-  // Create order in transaction
-  const order = await prisma.order.create({
-    data: {
-      tenantId: tenant.id,
-      customerId: customer.id,
-      orderNumber,
-      orderType,
-      paymentMethod,
-      scheduledFor,
-      deliveryAddress: deliveryAddress || null,
-      deliveryAddressDetails: deliveryAddressDetails ?? undefined,
-      subtotal: validation.subtotal,
-      discount,
-      promoCode: isLoyaltyDiscount
-        ? "LOYALTY"
-        : (promoCodeStr?.toUpperCase() ?? null),
-      tipAmount,
-      total,
-      customerNote,
-      customerName: customerName || session.user.name,
-      customerPhone: customerPhone || null,
-      customerEmail: customerEmail || session.user.email,
-      items: {
-        create: validation.items.map((item) => ({
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: item.totalPrice,
-          modifiers: {
-            create: item.modifiers.map((mod) => ({
-              modifierOptionId: mod.modifierOptionId,
-              name: mod.name,
-              priceAdjustment: mod.priceAdjustment,
-            })),
-          },
-        })),
-      },
-    },
-    include: {
-      items: { include: { modifiers: true } },
-    },
-  });
-
-  // Track promo code usage
-  if (promoCodeId && discount > 0) {
-    await prisma.$transaction([
-      prisma.promoCodeUsage.create({
-        data: {
-          promoCodeId,
-          customerId: customer.id,
-          orderId: order.id,
-          discount,
-        },
-      }),
-      prisma.promoCode.update({
-        where: { id: promoCodeId },
-        data: { usesCount: { increment: 1 } },
-      }),
-    ]);
-  }
-
-  // Track loyalty redemption
-  if (isLoyaltyDiscount && discount > 0) {
-    await prisma.loyaltyRedemption.create({
+  // Create order + track discounts in a single transaction
+  const order = await prisma.$transaction(async (tx) => {
+    // 1. Create order
+    const newOrder = await tx.order.create({
       data: {
         tenantId: tenant.id,
         customerId: customer.id,
-        orderId: order.id,
-        discount,
-        orderCountAtRedemption: customer.orderCount,
+        orderNumber,
+        orderType,
+        paymentMethod,
+        scheduledFor,
+        deliveryAddress: deliveryAddress || null,
+        deliveryAddressDetails: deliveryAddressDetails ?? undefined,
+        subtotal: validation.subtotal,
+        discount: totalDiscount,
+        promoDiscount,
+        couponDiscount,
+        promoCode: promoCodeStr?.toUpperCase() ?? null,
+        tipAmount,
+        total,
+        customerNote,
+        customerName: customerName || session.user.name,
+        customerPhone: customerPhone || null,
+        customerEmail: customerEmail || session.user.email,
+        items: {
+          create: validation.items.map((item) => ({
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            modifiers: {
+              create: item.modifiers.map((mod) => ({
+                modifierOptionId: mod.modifierOptionId,
+                name: mod.name,
+                priceAdjustment: mod.priceAdjustment,
+              })),
+            },
+          })),
+        },
+      },
+      include: {
+        items: { include: { modifiers: true } },
       },
     });
-  }
 
-  // Notify admins via SSE
-  orderEvents.emitNewOrder({
+    // 2. Track promo code usage
+    if (promoCodeId && promoDiscount > 0) {
+      await tx.promoCodeUsage.create({
+        data: {
+          promoCodeId,
+          customerId: customer.id,
+          orderId: newOrder.id,
+          discount: promoDiscount,
+        },
+      });
+      await tx.promoCode.update({
+        where: { id: promoCodeId },
+        data: { usesCount: { increment: 1 } },
+      });
+    }
+
+    // 3. Mark coupon as used (optimistic lock: WHERE isUsed = false)
+    if (couponToUse && couponDiscount > 0) {
+      const updated = await tx.coupon.updateMany({
+        where: { id: couponToUse.id, isUsed: false },
+        data: {
+          isUsed: true,
+          usedAt: new Date(),
+          orderId: newOrder.id,
+        },
+      });
+      if (updated.count === 0) {
+        throw new Error("Coupon has already been used");
+      }
+    }
+
+    // 4. Update customer stats
+    await tx.customer.update({
+      where: { id: customer.id },
+      data: {
+        orderCount: { increment: 1 },
+        totalSpent: { increment: newOrder.total },
+      },
+    });
+
+    return newOrder;
+  });
+
+  // Broadcast new order to admin dashboard (must await to ensure delivery)
+  await orderEvents.emitNewOrder({
     tenantId: tenant.id,
     orderId: order.id,
     orderNumber: order.orderNumber,
@@ -299,24 +322,13 @@ export async function POST(
     customerName: order.customerName,
   });
 
-  // Send confirmation email (fire-and-forget)
   sendOrderConfirmation(order, tenant).catch(() => {});
 
-  // Push notification to admins (fire-and-forget)
   sendPushToAdmins(tenant.id, {
     title: `New Order #${orderNumber}`,
-    body: `${order.customerName} placed an order for ${tenant.currency} ${total.toFixed(2)}`,
+    body: `${order.customerName} placed an order for ${tenant.currency} ${(total / 100).toFixed(2)}`,
     icon: "/api/pwa-icon?size=192",
     url: "/admin/orders",
-  });
-
-  // Update customer stats
-  await prisma.customer.update({
-    where: { id: customer.id },
-    data: {
-      orderCount: { increment: 1 },
-      totalSpent: { increment: order.total },
-    },
   });
 
   return NextResponse.json(

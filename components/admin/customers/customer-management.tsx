@@ -1,14 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Gift, Mail, Phone, ShoppingBag, Users } from "lucide-react";
+import { Mail, Phone, ShoppingBag, Users } from "lucide-react";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/empty-state";
-import { SearchInput } from "@/components/search-input";
 import { ErrorCard } from "@/components/error-card";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
+import { SearchInput } from "@/components/search-input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -61,8 +61,6 @@ interface Customer {
   createdAt: string;
   updatedAt: string;
   lastOrderDate: string | null;
-  loyaltyProgress?: number;
-  loyaltyRedemptions: number;
   recentOrders: RecentOrder[];
 }
 
@@ -72,7 +70,6 @@ interface CustomersResponse {
   page: number;
   limit: number;
   totalPages: number;
-  loyalty: { required: number; rewardAmount: number } | null;
 }
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -224,11 +221,6 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
                   <TableHead className="text-right hidden md:table-cell">
                     Total Spent
                   </TableHead>
-                  {data?.loyalty && (
-                    <TableHead className="text-center hidden md:table-cell">
-                      Loyalty
-                    </TableHead>
-                  )}
                   <TableHead className="hidden lg:table-cell">
                     Last Order
                   </TableHead>
@@ -263,27 +255,6 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
                     <TableCell className="text-right hidden md:table-cell font-medium">
                       {formatPrice(customer.totalSpent)}
                     </TableCell>
-                    {data?.loyalty && (
-                      <TableCell className="text-center hidden md:table-cell">
-                        {customer.loyaltyProgress !== undefined ? (
-                          <div className="flex items-center justify-center gap-1.5">
-                            <div className="w-16 bg-muted rounded-full h-1.5 overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-primary"
-                                style={{
-                                  width: `${Math.min(100, (customer.loyaltyProgress / data.loyalty.required) * 100)}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs text-muted-foreground tabular-nums">
-                              {customer.loyaltyProgress}/{data.loyalty.required}
-                            </span>
-                          </div>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                    )}
                     <TableCell className="hidden lg:table-cell text-muted-foreground">
                       {customer.lastOrderDate
                         ? formatDate(customer.lastOrderDate)
@@ -381,46 +352,6 @@ export function CustomerManagement({ tenantId }: CustomerManagementProps) {
                     </Card>
                   </div>
                 </div>
-
-                {data?.loyalty && selectedCustomer.loyaltyProgress !== undefined && (
-                  <>
-                    <Separator />
-
-                    {/* Loyalty */}
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-muted-foreground">
-                        Loyalty Program
-                      </h3>
-                      <div className="rounded-lg border p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Gift className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium">Progress</span>
-                          </div>
-                          <span className="text-sm font-semibold tabular-nums">
-                            {selectedCustomer.loyaltyProgress}/{data.loyalty.required}
-                          </span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-primary transition-all"
-                            style={{
-                              width: `${Math.min(100, (selectedCustomer.loyaltyProgress / data.loyalty.required) * 100)}%`,
-                            }}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>
-                            {selectedCustomer.loyaltyProgress >= data.loyalty.required
-                              ? "Eligible for reward!"
-                              : `${data.loyalty.required - selectedCustomer.loyaltyProgress} more orders needed`}
-                          </span>
-                          <span>{selectedCustomer.loyaltyRedemptions} redeemed</span>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
 
                 <Separator />
 

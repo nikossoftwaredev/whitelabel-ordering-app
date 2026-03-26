@@ -8,6 +8,7 @@ import {
   Shield,
   ShoppingBag,
   Tag,
+  Ticket,
   Truck,
   Users,
   UserSearch,
@@ -37,6 +38,7 @@ export const adminNavItems: Record<string, AdminNavItem[]> = {
   ],
   Marketing: [
     { label: "Promo Codes", href: "promo-codes", icon: Tag },
+    { label: "Coupons", href: "coupons", icon: Ticket },
   ],
   Finance: [
     { label: "Invoices", href: "invoices", icon: FileText },

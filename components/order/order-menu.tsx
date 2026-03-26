@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   Bike,
+  Check,
   Flame,
   Gift,
   Info,
@@ -18,19 +19,26 @@ import {
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { useCallback,useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { STORE_INFO_DIALOG, type StoreInfoDialogData } from "@/components/order/store-info-dialog";
+import {
+  STORE_INFO_DIALOG,
+  type StoreInfoDialogData,
+} from "@/components/order/store-info-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { useRouter } from "@/lib/i18n/navigation";
 import { hasActiveOffer } from "@/lib/orders/offers";
 import { queryKeys } from "@/lib/query/keys";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useDialogStore } from "@/lib/stores/dialog-store";
-
 
 import { PRODUCT_DETAIL_DIALOG } from "./product-detail-sheet";
 import { QuantityStepper } from "./quantity-stepper";
@@ -114,13 +122,11 @@ interface OrderMenuProps {
   logo: string | null;
 }
 
-
 const dietaryFilters = [
   { key: "isVegan", labelKey: "vegan", icon: Leaf },
   { key: "isVegetarian", labelKey: "vegetarian", icon: Leaf },
   { key: "isGlutenFree", labelKey: "glutenFree", icon: WheatOff },
 ] as const;
-
 
 /* ─────────────── Wolt-style Horizontal Product Card ─────────────── */
 function ProductCard({
@@ -152,26 +158,61 @@ function ProductCard({
       onClick={onDetail}
     >
       <div className="flex-1 min-w-0 flex flex-col justify-center">
-        <h3 className="font-semibold text-[15px] leading-tight line-clamp-2">{product.name}</h3>
+        <h3 className="font-semibold text-[15px] leading-tight line-clamp-2">
+          {product.name}
+        </h3>
         {product.description && (
-          <p className="text-[13px] text-muted-foreground line-clamp-2 mt-1 leading-snug">{product.description}</p>
+          <p className="text-[13px] text-muted-foreground line-clamp-2 mt-1 leading-snug">
+            {product.description}
+          </p>
         )}
         {modifierSummary && (
-          <p className="text-[12px] mt-0.5 line-clamp-1 leading-snug" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{modifierSummary}</p>
+          <p
+            className="text-[12px] mt-0.5 line-clamp-1 leading-snug"
+            style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+          >
+            {modifierSummary}
+          </p>
         )}
         <div className="flex items-center gap-1.5 mt-1.5">
-          {product.isVegan && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">{t("vegan")}</span>}
-          {product.isVegetarian && <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">{t("vegetarian")}</span>}
-          {product.isGlutenFree && <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">{t("glutenFree")}</span>}
+          {product.isVegan && (
+            <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">
+              {t("vegan")}
+            </span>
+          )}
+          {product.isVegetarian && (
+            <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">
+              {t("vegetarian")}
+            </span>
+          )}
+          {product.isGlutenFree && (
+            <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+              {t("glutenFree")}
+            </span>
+          )}
         </div>
         {hasActiveOffer(product) ? (
           <div className="flex items-center gap-1.5 mt-1.5">
-            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">1+1</span>
-            <span className="text-[14px] font-semibold" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.offerPrice!)}</span>
-            <span className="text-[12px] text-muted-foreground line-through">{formatPrice(product.price * 2)}</span>
+            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              1+1
+            </span>
+            <span
+              className="text-[14px] font-semibold"
+              style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+            >
+              {formatPrice(product.offerPrice!)}
+            </span>
+            <span className="text-[12px] text-muted-foreground line-through">
+              {formatPrice(product.price * 2)}
+            </span>
           </div>
         ) : (
-          <p className="text-[14px] font-semibold mt-1.5" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.price)}</p>
+          <p
+            className="text-[14px] font-semibold mt-1.5"
+            style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+          >
+            {formatPrice(product.price)}
+          </p>
         )}
         {rankBadge && (
           <span className="inline-flex items-center gap-1 mt-1.5 bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[12px] font-semibold px-2 py-0.5 rounded-full w-fit">
@@ -180,11 +221,17 @@ function ProductCard({
           </span>
         )}
       </div>
-      <div className="relative shrink-0 w-[100px] h-[100px] md:w-[130px] md:h-[130px] rounded-xl overflow-hidden bg-muted">
+      <div className="relative shrink-0 w-25 h-25 md:w-32.5 md:h-32.5 rounded-xl overflow-hidden bg-muted">
         {product.image ? (
-          <Image src={product.image} alt={product.name} fill sizes="130px" className="object-cover transition-transform duration-300 group-hover:scale-105" />
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="130px"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+          />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
+          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-muted to-muted/60">
             <Store className="size-6 text-muted-foreground/20" />
           </div>
         )}
@@ -199,7 +246,10 @@ function ProductCard({
         ) : (
           <button
             className="absolute top-0 right-0 m-1 size-8.5 flex items-center justify-center rounded-full bg-black/80 backdrop-blur-sm shadow-md text-white cursor-pointer hover:bg-white/20 transition-colors duration-200"
-            onClick={(e) => { e.stopPropagation(); (hasRequiredModifiers ? onDetail : onQuickAdd)(e); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              (hasRequiredModifiers ? onDetail : onQuickAdd)(e);
+            }}
           >
             <Plus className="size-4" />
           </button>
@@ -233,22 +283,44 @@ function VariantCard({
       onClick={onEdit}
     >
       <div className="flex-1 min-w-0 flex flex-col justify-center">
-        <h3 className="font-semibold text-[15px] leading-tight line-clamp-2">{product.name}</h3>
-        <p className="text-[13px] text-muted-foreground line-clamp-1 mt-0.5 leading-snug">{modifierSummary}</p>
+        <h3 className="font-semibold text-[15px] leading-tight line-clamp-2">
+          {product.name}
+        </h3>
+        <p className="text-[13px] text-muted-foreground line-clamp-1 mt-0.5 leading-snug">
+          {modifierSummary}
+        </p>
         {hasActiveOffer(product) ? (
           <div className="flex items-center gap-1.5 mt-1">
-            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">1+1</span>
-            <span className="text-[14px] font-semibold" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.offerPrice!)}</span>
+            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              1+1
+            </span>
+            <span
+              className="text-[14px] font-semibold"
+              style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+            >
+              {formatPrice(product.offerPrice!)}
+            </span>
           </div>
         ) : (
-          <p className="text-[14px] font-semibold mt-1" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.price)}</p>
+          <p
+            className="text-[14px] font-semibold mt-1"
+            style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+          >
+            {formatPrice(product.price)}
+          </p>
         )}
       </div>
-      <div className="relative shrink-0 w-[100px] h-[100px] md:w-[130px] md:h-[130px] rounded-xl overflow-hidden bg-muted">
+      <div className="relative shrink-0 w-25 h-25 md:w-32.5 md:h-32.5 rounded-xl overflow-hidden bg-muted">
         {product.image ? (
-          <Image src={product.image} alt={product.name} fill sizes="130px" className="object-cover transition-transform duration-300 group-hover:scale-105" />
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="130px"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+          />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
+          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-muted to-muted/60">
             <Store className="size-6 text-muted-foreground/20" />
           </div>
         )}
@@ -308,10 +380,17 @@ function MenuSkeleton() {
   );
 }
 
+function getMilestoneBarColor(percent: number) {
+  if (percent >= 67) return "bg-green-400";
+  if (percent >= 34) return "bg-amber-500";
+  return "bg-amber-400";
+}
+
 /* ═══════════════════ MAIN COMPONENT ═══════════════════ */
 export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const t = useTranslations("Menu");
   const { data: session } = useSession();
+  const router = useRouter();
   const formatPrice = useFormatPrice();
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
@@ -342,7 +421,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       const last = cartItems[cartItems.length - 1];
       cart.updateQuantity(last.cartItemId, last.quantity - 1);
     },
-    [cart]
+    [cart],
   );
 
   const handleIncrement = useCallback(
@@ -353,24 +432,46 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       const last = cartItems[cartItems.length - 1];
       cart.updateQuantity(last.cartItemId, last.quantity + 1);
     },
-    [cart]
+    [cart],
   );
 
-  const openProduct = useCallback((product: Product) => {
-    const cartItems = cart.items.filter((i) => i.productId === product.id);
-    if (cartItems.length > 0) {
-      const last = cartItems[cartItems.length - 1];
-      openDialog(PRODUCT_DETAIL_DIALOG, { product, editingCartItem: { cartItemId: last.cartItemId, quantity: last.quantity, modifiers: last.modifiers, notes: last.notes } });
-    } else {
-      openDialog(PRODUCT_DETAIL_DIALOG, { product });
-    }
-  }, [cart.items, openDialog]);
+  const openProduct = useCallback(
+    (product: Product) => {
+      const cartItems = cart.items.filter((i) => i.productId === product.id);
+      if (cartItems.length > 0) {
+        const last = cartItems[cartItems.length - 1];
+        openDialog(PRODUCT_DETAIL_DIALOG, {
+          product,
+          editingCartItem: {
+            cartItemId: last.cartItemId,
+            quantity: last.quantity,
+            modifiers: last.modifiers,
+            notes: last.notes,
+          },
+        });
+      } else {
+        openDialog(PRODUCT_DETAIL_DIALOG, { product });
+      }
+    },
+    [cart.items, openDialog],
+  );
 
-  const openCartItemEdit = useCallback((product: Product, cartItemId: string) => {
-    const item = cart.items.find((i) => i.cartItemId === cartItemId);
-    if (!item) return;
-    openDialog(PRODUCT_DETAIL_DIALOG, { product, editingCartItem: { cartItemId: item.cartItemId, quantity: item.quantity, modifiers: item.modifiers, notes: item.notes } });
-  }, [cart.items, openDialog]);
+  const openCartItemEdit = useCallback(
+    (product: Product, cartItemId: string) => {
+      const item = cart.items.find((i) => i.cartItemId === cartItemId);
+      if (!item) return;
+      openDialog(PRODUCT_DETAIL_DIALOG, {
+        product,
+        editingCartItem: {
+          cartItemId: item.cartItemId,
+          quantity: item.quantity,
+          modifiers: item.modifiers,
+          notes: item.notes,
+        },
+      });
+    },
+    [cart.items, openDialog],
+  );
 
   // Group cart items by productId for rendering variants
   const cartItemsByProduct = useMemo(() => {
@@ -382,7 +483,9 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
     return map;
   }, [cart.items]);
 
-  useEffect(() => { cart.setTenantSlug(tenantSlug); }, [tenantSlug]);
+  useEffect(() => {
+    cart.setTenantSlug(tenantSlug);
+  }, [cart, tenantSlug]);
 
   const { data, isLoading } = useQuery<MenuData>({
     queryKey: queryKeys.menu.all(tenantSlug),
@@ -393,21 +496,31 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
     },
   });
 
-  const { data: loyalty } = useQuery<{
+  const { data: couponData } = useQuery<{
     enabled: boolean;
-    requiredOrders: number;
-    rewardAmount: number;
-    currentProgress: number;
-    isEligible: boolean;
+    milestoneProgress: {
+      type: string;
+      current: number;
+      required: number;
+      hasAvailableCoupon: boolean;
+      nextReward: { type: string; value: number };
+    } | null;
   }>({
-    queryKey: ["loyalty", tenantSlug],
+    queryKey: ["coupons", tenantSlug],
     queryFn: async () => {
-      const res = await fetch(`/api/tenants/${tenantSlug}/loyalty`);
+      const res = await fetch(`/api/tenants/${tenantSlug}/coupons`);
       if (!res.ok) return null;
       return res.json();
     },
     enabled: !!session?.user,
   });
+
+  const milestone = couponData?.enabled ? couponData.milestoneProgress : null;
+  const milestonePercent = milestone
+    ? Math.min(100, Math.round((milestone.current / milestone.required) * 100))
+    : 0;
+  const milestoneEarned =
+    milestonePercent >= 100 || (milestone?.hasAvailableCoupon ?? false);
 
   const filteredCategories = useMemo(() => {
     if (!data?.categories) return [];
@@ -417,10 +530,16 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         products: cat.products.filter((p) => {
           if (search) {
             const q = search.toLowerCase();
-            if (!p.name.toLowerCase().includes(q) && !p.nameEl?.toLowerCase().includes(q) && !p.description?.toLowerCase().includes(q)) return false;
+            if (
+              !p.name.toLowerCase().includes(q) &&
+              !p.nameEl?.toLowerCase().includes(q) &&
+              !p.description?.toLowerCase().includes(q)
+            )
+              return false;
           }
           for (const filter of activeFilters) {
-            if (!(p as unknown as Record<string, unknown>)[filter]) return false;
+            if (!(p as unknown as Record<string, unknown>)[filter])
+              return false;
           }
           return true;
         }),
@@ -459,7 +578,10 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         let topEntry: IntersectionObserverEntry | null = null;
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            if (!topEntry || entry.boundingClientRect.top < topEntry.boundingClientRect.top) {
+            if (
+              !topEntry ||
+              entry.boundingClientRect.top < topEntry.boundingClientRect.top
+            ) {
               topEntry = entry;
             }
           }
@@ -476,21 +598,29 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           if (tab && container) {
             const tabRect = tab.getBoundingClientRect();
             const containerRect = container.getBoundingClientRect();
-            const target = container.scrollLeft + tabRect.left - containerRect.left - 16;
-            container.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+            const target =
+              container.scrollLeft + tabRect.left - containerRect.left - 16;
+            container.scrollTo({
+              left: Math.max(0, target),
+              behavior: "smooth",
+            });
           }
         }, 100);
       },
-      { rootMargin: "-20% 0px -70% 0px", threshold: 0 }
+      { rootMargin: "-20% 0px -70% 0px", threshold: 0 },
     );
     sections.forEach((el) => observer.observe(el));
-    return () => { observer.disconnect(); if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current); };
+    return () => {
+      observer.disconnect();
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
   }, [filteredCategories]);
 
   const toggleFilter = (key: string) => {
     setActiveFilters((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
@@ -508,16 +638,30 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
     (product: Product) => (e: React.MouseEvent) => {
       e.stopPropagation();
       const defaultModifiers = product.modifierGroups.flatMap((group) =>
-        group.options.filter((o) => o.isDefault).map((o) => ({ modifierOptionId: o.id, name: o.name, priceAdjustment: o.priceAdjustment }))
+        group.options
+          .filter((o) => o.isDefault)
+          .map((o) => ({
+            modifierOptionId: o.id,
+            name: o.name,
+            priceAdjustment: o.priceAdjustment,
+          })),
       );
       const isBogo = hasActiveOffer(product);
       cart.addItem({
-        productId: product.id, productName: product.name, productImage: product.image,
-        basePrice: product.price, quantity: isBogo ? 2 : 1, modifiers: defaultModifiers, notes: "",
-        ...(isBogo && { offerType: product.offerType, offerPrice: product.offerPrice }),
+        productId: product.id,
+        productName: product.name,
+        productImage: product.image,
+        basePrice: product.price,
+        quantity: isBogo ? 2 : 1,
+        modifiers: defaultModifiers,
+        notes: "",
+        ...(isBogo && {
+          offerType: product.offerType,
+          offerPrice: product.offerPrice,
+        }),
       });
     },
-    [cart]
+    [cart],
   );
 
   if (data?.tenant?.isPaused) {
@@ -531,7 +675,11 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   }
 
   if (isLoading) {
-    return <div className="min-h-screen bg-background pb-24"><MenuSkeleton /></div>;
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <MenuSkeleton />
+      </div>
+    );
   }
 
   const storeName = data?.tenant?.name || tenantName;
@@ -542,7 +690,6 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
 
   return (
     <div className="min-h-screen bg-background pb-28">
-
       {/* ═══ HERO — Cover image + store info ═══ */}
       <div>
         {/* Cover image */}
@@ -557,7 +704,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
               className="object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-(--brand-primary,#6b7280)/40 via-(--brand-primary,#6b7280)/20 to-muted/30" />
+            <div className="w-full h-full bg-linear-to-br from-(--brand-primary,#6b7280)/40 via-(--brand-primary,#6b7280)/20 to-muted/30" />
           )}
           {/* Dark gradient overlay — stronger on desktop for overlaid text */}
           <div className="absolute inset-0 bg-linear-to-t from-black/50 via-black/20 to-black/30 sm:from-black/80 sm:via-black/40 sm:to-black/20" />
@@ -565,12 +712,28 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           {/* Desktop: Logo + name overlaid at bottom-left */}
           <div className="absolute bottom-4 left-4 md:left-8 hidden sm:flex items-center gap-4 z-10">
             {storeLogo ? (
-              <div className="size-20 rounded-2xl shadow-xl overflow-hidden flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--brand-primary, hsl(var(--primary)))" }}>
-                <img src={storeLogo} alt={storeName} className="w-full h-full object-contain p-1.5" />
+              <div
+                className="size-20 rounded-2xl shadow-xl overflow-hidden flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: "var(--brand-primary, hsl(var(--primary)))",
+                }}
+              >
+                <img
+                  src={storeLogo}
+                  alt={storeName}
+                  className="w-full h-full object-contain p-1.5"
+                />
               </div>
             ) : (
-              <div className="size-20 rounded-2xl shadow-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--brand-primary, hsl(var(--primary)))" }}>
-                <span className="text-white text-3xl font-bold">{storeName.charAt(0)}</span>
+              <div
+                className="size-20 rounded-2xl shadow-xl flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: "var(--brand-primary, hsl(var(--primary)))",
+                }}
+              >
+                <span className="text-white text-3xl font-bold">
+                  {storeName.charAt(0)}
+                </span>
               </div>
             )}
             <div>
@@ -589,12 +752,28 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         {/* Mobile: Logo + name below image */}
         <div className="flex items-center gap-3 px-4 pt-3 pb-2 sm:hidden">
           {storeLogo ? (
-            <div className="size-14 rounded-xl shadow-lg overflow-hidden flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--brand-primary, hsl(var(--primary)))" }}>
-              <img src={storeLogo} alt={storeName} className="w-full h-full object-contain p-1" />
+            <div
+              className="size-14 rounded-xl shadow-lg overflow-hidden flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: "var(--brand-primary, hsl(var(--primary)))",
+              }}
+            >
+              <img
+                src={storeLogo}
+                alt={storeName}
+                className="w-full h-full object-contain p-1"
+              />
             </div>
           ) : (
-            <div className="size-14 rounded-xl shadow-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--brand-primary, hsl(var(--primary)))" }}>
-              <span className="text-white text-xl font-bold">{storeName.charAt(0)}</span>
+            <div
+              className="size-14 rounded-xl shadow-lg flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: "var(--brand-primary, hsl(var(--primary)))",
+              }}
+            >
+              <span className="text-white text-xl font-bold">
+                {storeName.charAt(0)}
+              </span>
             </div>
           )}
           <div className="min-w-0">
@@ -610,26 +789,52 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         </div>
       </div>
 
-      {/* ═══ INFO BAR — Delivery, Pickup, Schedule, Loyalty ═══ */}
+      {/* ═══ INFO BAR — Delivery, Pickup, Schedule, Milestone ═══ */}
       {/* Mobile: simple row under store name */}
       <div className="flex items-center gap-2 px-4 pb-2 overflow-x-auto scrollbar-hide text-[13px] sm:hidden">
         {prepTime && (
           <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1 shrink-0">
             <Bike className="size-3.5 text-muted-foreground" />
-            <span className="font-medium">{t("delivery", { min: prepTime, max: prepTime + 10 })}</span>
+            <span className="font-medium">
+              {t("delivery", { min: prepTime, max: prepTime + 10 })}
+            </span>
           </div>
         )}
         {prepTime && (
           <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1 shrink-0">
             <Package className="size-3.5 text-muted-foreground" />
-            <span className="font-medium">{t("pickup", { min: Math.max(5, prepTime - 10), max: prepTime })}</span>
+            <span className="font-medium">
+              {t("pickup", { min: Math.max(5, prepTime - 10), max: prepTime })}
+            </span>
           </div>
         )}
-        {loyalty?.enabled && (
-          <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1 shrink-0">
-            <Gift className="size-3.5 text-amber-500" />
-            <span className="font-medium">{t("loyaltyEarnedCoupon", { amount: formatPrice(loyalty.rewardAmount) })}</span>
-            <span className="font-semibold text-amber-500">{t("loyaltyProgressLabel", { current: loyalty.currentProgress, total: loyalty.requiredOrders })}</span>
+        {milestone && (
+          <div className="relative shrink-0 overflow-hidden rounded-full bg-muted px-2.5 py-1">
+            <div className="relative z-10 flex items-center gap-1">
+              <Gift
+                className={`size-3.5 ${milestoneEarned ? "text-green-500" : "text-amber-500"}`}
+              />
+              <span className="font-medium">
+                {t(milestoneEarned ? "milestoneEarned" : "milestoneProgress", {
+                  amount: formatPrice(milestone.nextReward.value),
+                })}
+              </span>
+              {milestoneEarned ? (
+                <Check className="size-3.5 text-green-500" />
+              ) : (
+                <span className="font-semibold text-amber-500">
+                  {milestonePercent}%
+                </span>
+              )}
+            </div>
+            {!milestoneEarned && (
+              <div className="absolute inset-x-0 bottom-0 h-0.75 bg-muted-foreground/10">
+                <div
+                  className={`h-full transition-all duration-500 ${getMilestoneBarColor(milestonePercent)}`}
+                  style={{ width: `${milestonePercent}%` }}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -640,31 +845,63 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           {prepTime && (
             <div className="flex items-center gap-1.5 bg-background rounded-full px-3 py-1.5 shrink-0 border border-border">
               <Bike className="size-3.5 text-muted-foreground" />
-              <span className="font-medium">{t("delivery", { min: prepTime, max: prepTime + 10 })}</span>
+              <span className="font-medium">
+                {t("delivery", { min: prepTime, max: prepTime + 10 })}
+              </span>
             </div>
           )}
           {prepTime && (
             <div className="flex items-center gap-1.5 bg-background rounded-full px-3 py-1.5 shrink-0 border border-border">
               <Package className="size-3.5 text-muted-foreground" />
-              <span className="font-medium">{t("pickup", { min: Math.max(5, prepTime - 10), max: prepTime })}</span>
+              <span className="font-medium">
+                {t("pickup", {
+                  min: Math.max(5, prepTime - 10),
+                  max: prepTime,
+                })}
+              </span>
             </div>
           )}
-          {loyalty?.enabled && (
-            <div className="flex items-center gap-1.5 bg-background rounded-full px-3 py-1.5 shrink-0 border border-border">
-              <Gift className="size-3.5 text-amber-500" />
-              <span className="font-medium">{t("loyaltyEarnedCoupon", { amount: formatPrice(loyalty.rewardAmount) })}</span>
-              <span className="font-semibold text-amber-500">{t("loyaltyProgressLabel", { current: loyalty.currentProgress, total: loyalty.requiredOrders })}</span>
+          {milestone && (
+            <div className="relative shrink-0 overflow-hidden rounded-full bg-background border border-border px-3 py-1.5">
+              <div className="relative z-10 flex items-center gap-1.5">
+                <Gift
+                  className={`size-3.5 ${milestoneEarned ? "text-green-500" : "text-amber-500"}`}
+                />
+                <span className="font-medium">
+                  {t(
+                    milestoneEarned ? "milestoneEarned" : "milestoneProgress",
+                    { amount: formatPrice(milestone.nextReward.value) },
+                  )}
+                </span>
+                {milestoneEarned ? (
+                  <Check className="size-3.5 text-green-500" />
+                ) : (
+                  <span className="font-semibold text-amber-500">
+                    {milestonePercent}%
+                  </span>
+                )}
+              </div>
+              {!milestoneEarned && (
+                <div className="absolute inset-x-0 bottom-0 h-0.75 bg-muted-foreground/10">
+                  <div
+                    className={`h-full transition-all duration-500 ${getMilestoneBarColor(milestonePercent)}`}
+                    style={{ width: `${milestonePercent}%` }}
+                  />
+                </div>
+              )}
             </div>
           )}
           <button
-            onClick={() => openDialog(STORE_INFO_DIALOG, {
-              storeName,
-              description: data?.tenant.description,
-              phone: data?.tenant.phone,
-              email: data?.tenant.email,
-              address: data?.tenant.address,
-              operatingHours: data?.tenant.operatingHours,
-            } satisfies StoreInfoDialogData)}
+            onClick={() =>
+              openDialog(STORE_INFO_DIALOG, {
+                storeName,
+                description: data?.tenant.description,
+                phone: data?.tenant.phone,
+                email: data?.tenant.email,
+                address: data?.tenant.address,
+                operatingHours: data?.tenant.operatingHours,
+              } satisfies StoreInfoDialogData)
+            }
             className="flex items-center gap-1.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
           >
             <Info className="size-3.5" />
@@ -700,7 +937,10 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         {/* Category tabs + filter icon */}
         {filteredCategories.length > 0 && (
           <div className="relative flex items-center max-w-2xl mx-auto">
-            <div ref={tabsContainerRef} className="flex-1 flex gap-2 pl-4 pr-14 py-2 overflow-x-auto scrollbar-hide">
+            <div
+              ref={tabsContainerRef}
+              className="flex-1 flex gap-2 pl-4 pr-14 py-2 overflow-x-auto scrollbar-hide"
+            >
               {filteredCategories.map((cat) => {
                 const isActive = activeCategoryId === cat.id;
                 return (
@@ -724,21 +964,50 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
             <div className="absolute right-0 top-0 bottom-0 flex items-center pr-3 pl-8 bg-linear-to-l from-background/95 from-60% to-transparent pointer-events-none">
               <Popover>
                 <PopoverTrigger asChild>
-                  <button className={`relative size-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer pointer-events-auto ${activeFilters.size > 0 ? "text-white" : "bg-muted/60 text-muted-foreground hover:bg-muted/80"}`} style={activeFilters.size > 0 ? { background: "var(--brand-primary, hsl(var(--primary)))" } : undefined}>
+                  <button
+                    className={`relative size-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer pointer-events-auto ${activeFilters.size > 0 ? "text-white" : "bg-muted/60 text-muted-foreground hover:bg-muted/80"}`}
+                    style={
+                      activeFilters.size > 0
+                        ? {
+                            background:
+                              "var(--brand-primary, hsl(var(--primary)))",
+                          }
+                        : undefined
+                    }
+                  >
                     <SlidersHorizontal className="size-4" />
                     {activeFilters.size > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-white text-[10px] font-bold flex items-center justify-center" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{activeFilters.size}</span>
+                      <span
+                        className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-white text-[10px] font-bold flex items-center justify-center"
+                        style={{
+                          color: "var(--brand-primary, hsl(var(--primary)))",
+                        }}
+                      >
+                        {activeFilters.size}
+                      </span>
                     )}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-48 p-2 pointer-events-auto">
+                <PopoverContent
+                  align="end"
+                  className="w-48 p-2 pointer-events-auto"
+                >
                   {dietaryFilters.map((f) => (
                     <button
                       key={f.key}
                       className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors duration-200 cursor-pointer ${
-                        activeFilters.has(f.key) ? "text-white" : "text-foreground hover:bg-muted"
+                        activeFilters.has(f.key)
+                          ? "text-white"
+                          : "text-foreground hover:bg-muted"
                       }`}
-                      style={activeFilters.has(f.key) ? { background: "var(--brand-primary, hsl(var(--primary)))" } : undefined}
+                      style={
+                        activeFilters.has(f.key)
+                          ? {
+                              background:
+                                "var(--brand-primary, hsl(var(--primary)))",
+                            }
+                          : undefined
+                      }
                       onClick={() => toggleFilter(f.key)}
                     >
                       <f.icon className="size-4" />
@@ -770,17 +1039,111 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
             )}
 
             {/* Popular section */}
-            {!search && activeFilters.size === 0 && popularProducts.length > 0 && (
-              <section className="px-4 pt-6">
+            {!search &&
+              activeFilters.size === 0 &&
+              popularProducts.length > 0 && (
+                <section className="px-4 pt-6">
+                  <div className="flex items-center justify-between mb-1">
+                    <h2 className="text-xl font-bold tracking-tight">
+                      {t("popular")}
+                    </h2>
+                  </div>
+                  <div className="h-px bg-border mb-1" />
+                  <div className="divide-y divide-border/50">
+                    {popularProducts.map((product, index) => {
+                      const variants = cartItemsByProduct[product.id] || [];
+                      return (
+                        <div
+                          key={product.id}
+                          className="divide-y divide-border/50"
+                        >
+                          <ProductCard
+                            product={product}
+                            onDetail={() => openProduct(product)}
+                            onQuickAdd={handleQuickAdd(product)}
+                            onQuickRemove={handleQuickRemove(product)}
+                            onIncrement={handleIncrement(product)}
+                            formatPrice={formatPrice}
+                            quantity={
+                              variants.length > 1
+                                ? variants[variants.length - 1].quantity
+                                : quantityByProduct[product.id] || 0
+                            }
+                            modifierSummary={
+                              variants.length > 1
+                                ? variants[variants.length - 1].modifiers
+                                    .map((m) => m.name)
+                                    .join(", ") || "Default"
+                                : undefined
+                            }
+                            rankBadge={
+                              index < 3
+                                ? t("rankInOrders", { rank: index + 1 })
+                                : undefined
+                            }
+                          />
+                          {variants.length > 1 &&
+                            variants.slice(0, -1).map((ci) => (
+                              <VariantCard
+                                key={ci.cartItemId}
+                                product={product}
+                                modifierSummary={
+                                  ci.modifiers.map((m) => m.name).join(", ") ||
+                                  "Default"
+                                }
+                                quantity={ci.quantity}
+                                onEdit={() =>
+                                  openCartItemEdit(product, ci.cartItemId)
+                                }
+                                onIncrement={(e) => {
+                                  e.stopPropagation();
+                                  cart.updateQuantity(
+                                    ci.cartItemId,
+                                    ci.quantity + 1,
+                                  );
+                                }}
+                                onDecrement={(e) => {
+                                  e.stopPropagation();
+                                  cart.updateQuantity(
+                                    ci.cartItemId,
+                                    ci.quantity - 1,
+                                  );
+                                }}
+                                formatPrice={formatPrice}
+                              />
+                            ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+            {/* Category sections */}
+            {filteredCategories.map((cat) => (
+              <section
+                key={cat.id}
+                data-category-id={cat.id}
+                ref={(el) => {
+                  if (el) sectionRefs.current.set(cat.id, el);
+                  else sectionRefs.current.delete(cat.id);
+                }}
+                className="px-4 pt-6"
+              >
                 <div className="flex items-center justify-between mb-1">
-                  <h2 className="text-xl font-bold tracking-tight">{t("popular")}</h2>
+                  <h2 className="text-xl font-bold tracking-tight">
+                    {cat.name}
+                  </h2>
                 </div>
                 <div className="h-px bg-border mb-1" />
                 <div className="divide-y divide-border/50">
-                  {popularProducts.map((product, index) => {
+                  {cat.products.map((product) => {
                     const variants = cartItemsByProduct[product.id] || [];
                     return (
-                      <div key={product.id} className="divide-y divide-border/50">
+                      <div
+                        key={product.id}
+                        className="divide-y divide-border/50"
+                      >
                         <ProductCard
                           product={product}
                           onDetail={() => openProduct(product)}
@@ -788,59 +1151,49 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                           onQuickRemove={handleQuickRemove(product)}
                           onIncrement={handleIncrement(product)}
                           formatPrice={formatPrice}
-                          quantity={variants.length > 1 ? variants[variants.length - 1].quantity : (quantityByProduct[product.id] || 0)}
-                          modifierSummary={variants.length > 1 ? (variants[variants.length - 1].modifiers.map((m) => m.name).join(", ") || "Default") : undefined}
-                          rankBadge={index < 3 ? t("rankInOrders", { rank: index + 1 }) : undefined}
+                          quantity={
+                            variants.length > 1
+                              ? variants[variants.length - 1].quantity
+                              : quantityByProduct[product.id] || 0
+                          }
+                          modifierSummary={
+                            variants.length > 1
+                              ? variants[variants.length - 1].modifiers
+                                  .map((m) => m.name)
+                                  .join(", ") || "Default"
+                              : undefined
+                          }
                         />
-                        {variants.length > 1 && variants.slice(0, -1).map((ci) => (
-                          <VariantCard
-                            key={ci.cartItemId}
-                            product={product}
-                            modifierSummary={ci.modifiers.map((m) => m.name).join(", ") || "Default"}
-                            quantity={ci.quantity}
-                            onEdit={() => openCartItemEdit(product, ci.cartItemId)}
-                            onIncrement={(e) => { e.stopPropagation(); cart.updateQuantity(ci.cartItemId, ci.quantity + 1); }}
-                            onDecrement={(e) => { e.stopPropagation(); cart.updateQuantity(ci.cartItemId, ci.quantity - 1); }}
-                            formatPrice={formatPrice}
-                          />
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* Category sections */}
-            {filteredCategories.map((cat) => (
-              <section
-                key={cat.id}
-                data-category-id={cat.id}
-                ref={(el) => { if (el) sectionRefs.current.set(cat.id, el); else sectionRefs.current.delete(cat.id); }}
-                className="px-4 pt-6"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <h2 className="text-xl font-bold tracking-tight">{cat.name}</h2>
-                </div>
-                <div className="h-px bg-border mb-1" />
-                <div className="divide-y divide-border/50">
-                  {cat.products.map((product) => {
-                    const variants = cartItemsByProduct[product.id] || [];
-                    return (
-                      <div key={product.id} className="divide-y divide-border/50">
-                        <ProductCard product={product} onDetail={() => openProduct(product)} onQuickAdd={handleQuickAdd(product)} onQuickRemove={handleQuickRemove(product)} onIncrement={handleIncrement(product)} formatPrice={formatPrice} quantity={variants.length > 1 ? variants[variants.length - 1].quantity : (quantityByProduct[product.id] || 0)} modifierSummary={variants.length > 1 ? (variants[variants.length - 1].modifiers.map((m) => m.name).join(", ") || "Default") : undefined} />
-                        {variants.length > 1 && variants.slice(0, -1).map((ci) => (
-                          <VariantCard
-                            key={ci.cartItemId}
-                            product={product}
-                            modifierSummary={ci.modifiers.map((m) => m.name).join(", ") || "Default"}
-                            quantity={ci.quantity}
-                            onEdit={() => openCartItemEdit(product, ci.cartItemId)}
-                            onIncrement={(e) => { e.stopPropagation(); cart.updateQuantity(ci.cartItemId, ci.quantity + 1); }}
-                            onDecrement={(e) => { e.stopPropagation(); cart.updateQuantity(ci.cartItemId, ci.quantity - 1); }}
-                            formatPrice={formatPrice}
-                          />
-                        ))}
+                        {variants.length > 1 &&
+                          variants.slice(0, -1).map((ci) => (
+                            <VariantCard
+                              key={ci.cartItemId}
+                              product={product}
+                              modifierSummary={
+                                ci.modifiers.map((m) => m.name).join(", ") ||
+                                "Default"
+                              }
+                              quantity={ci.quantity}
+                              onEdit={() =>
+                                openCartItemEdit(product, ci.cartItemId)
+                              }
+                              onIncrement={(e) => {
+                                e.stopPropagation();
+                                cart.updateQuantity(
+                                  ci.cartItemId,
+                                  ci.quantity + 1,
+                                );
+                              }}
+                              onDecrement={(e) => {
+                                e.stopPropagation();
+                                cart.updateQuantity(
+                                  ci.cartItemId,
+                                  ci.quantity - 1,
+                                );
+                              }}
+                              formatPrice={formatPrice}
+                            />
+                          ))}
                       </div>
                     );
                   })}
@@ -857,17 +1210,26 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           <Button
             variant="brand"
             className="w-full flex items-center gap-3 h-14 px-5 rounded-2xl shadow-xl"
-            onClick={() => openDialog("cart")}
+            onClick={() => {
+              if (!session) {
+                openDialog("auth");
+              } else {
+                router.push("/order/checkout");
+              }
+            }}
           >
-            <span className="flex items-center justify-center size-7 rounded-lg bg-white/20 text-sm font-bold tabular-nums">{itemCount}</span>
-            <span className="flex-1 text-left font-semibold text-[15px]">{t("viewCart")}</span>
-            <span className="font-bold text-[15px] tabular-nums">{formatPrice(subtotal)}</span>
+            <span className="flex items-center justify-center size-7 rounded-lg bg-white/20 text-sm font-bold tabular-nums">
+              {itemCount}
+            </span>
+            <span className="flex-1 text-left font-semibold text-[15px]">
+              {t("proceedToCheckout")}
+            </span>
+            <span className="font-bold text-[15px] tabular-nums">
+              {formatPrice(subtotal)}
+            </span>
           </Button>
         </div>
       )}
-
-
-
     </div>
   );
 };

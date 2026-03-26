@@ -13,9 +13,9 @@ import { toast } from "sonner";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
-import { SearchInput } from "@/components/search-input";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
+import { SearchInput } from "@/components/search-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

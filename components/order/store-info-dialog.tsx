@@ -41,9 +41,7 @@ export const StoreInfoContent = () => {
     <div className="flex flex-col overflow-y-auto flex-1">
       <DialogHeader className="p-6 pb-4">
         <DialogTitle className="text-lg">{storeName}</DialogTitle>
-        {description && (
-          <DialogDescription>{description}</DialogDescription>
-        )}
+        {description && <DialogDescription>{description}</DialogDescription>}
       </DialogHeader>
 
       <div className="flex flex-col gap-4 px-6 pb-6">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isAuthResult,requireRole } from "@/lib/auth/require-role";
+import { isAuthResult, requireRole } from "@/lib/auth/require-role";
+import { generateCouponCode } from "@/lib/coupons/validate";
 import { prisma } from "@/lib/db";
 import { sendOrderStatusUpdate } from "@/lib/email/send";
 import { orderEvents } from "@/lib/events/order-events";
@@ -119,12 +120,116 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     data: updateData,
     include: {
       items: { include: { modifiers: true } },
-      customer: { select: { userId: true } },
+      customer: { select: { id: true, userId: true, completedOrderCount: true } },
     },
   });
 
-  // Notify via SSE (customer tracking + admin dashboard refresh)
-  orderEvents.emitStatusChange({
+  // Auto-generate milestone coupon on COMPLETED
+  if (status === "COMPLETED" && updated.customer) {
+    const config = await prisma.tenantConfig.findUnique({
+      where: { tenantId },
+      select: {
+        couponEnabled: true,
+        couponMilestoneType: true,
+        couponMilestoneOrders: true,
+        couponMilestoneSpent: true,
+        couponType: true,
+        couponValue: true,
+        couponValidDays: true,
+        couponMinOrder: true,
+        couponMaxDiscount: true,
+        couponDescription: true,
+      },
+    });
+
+    if (config?.couponEnabled) {
+      const milestoneType = config.couponMilestoneType || "ORDERS";
+
+      // Increment completedOrderCount + completedSpent
+      const updatedCustomer = await prisma.customer.update({
+        where: { id: updated.customer.id },
+        data: {
+          completedOrderCount: { increment: 1 },
+          completedSpent: { increment: updated.total },
+        },
+      });
+
+      let shouldCreateCoupon = false;
+      let milestoneLevel = 0;
+      let milestoneDescription = "";
+
+      if (milestoneType === "ORDERS" && config.couponMilestoneOrders > 0) {
+        const newCount = updatedCustomer.completedOrderCount;
+        if (newCount % config.couponMilestoneOrders === 0) {
+          shouldCreateCoupon = true;
+          milestoneLevel = newCount;
+          milestoneDescription =
+            config.couponDescription ||
+            `Reward for ${newCount} completed orders!`;
+        }
+      } else if (milestoneType === "SPENDING" && config.couponMilestoneSpent > 0) {
+        const previousLevel = Math.floor(
+          (updatedCustomer.completedSpent - updated.total) /
+            config.couponMilestoneSpent,
+        );
+        const currentLevel = Math.floor(
+          updatedCustomer.completedSpent / config.couponMilestoneSpent,
+        );
+        if (currentLevel > previousLevel) {
+          shouldCreateCoupon = true;
+          milestoneLevel = currentLevel;
+          const thresholdEur = (
+            config.couponMilestoneSpent / 100
+          ).toFixed(2);
+          milestoneDescription =
+            config.couponDescription ||
+            `Reward for spending \u20AC${(currentLevel * config.couponMilestoneSpent / 100).toFixed(2)} (every \u20AC${thresholdEur})!`;
+        }
+      }
+
+      if (shouldCreateCoupon) {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + config.couponValidDays);
+
+        // Generate unique code with retry
+        let code: string;
+        let attempts = 0;
+        do {
+          code = generateCouponCode("LOYAL");
+          const existing = await prisma.coupon.findUnique({
+            where: { tenantId_code: { tenantId, code } },
+          });
+          if (!existing) break;
+          attempts++;
+        } while (attempts < 5);
+
+        // Create coupon (unique constraint prevents duplicates)
+        try {
+          await prisma.coupon.create({
+            data: {
+              tenantId,
+              customerId: updated.customer.id,
+              code,
+              type: config.couponType,
+              value: config.couponValue,
+              description: milestoneDescription,
+              minOrder: config.couponMinOrder,
+              maxDiscount: config.couponMaxDiscount,
+              expiresAt,
+              source: "MILESTONE",
+              milestoneOrderCount: milestoneLevel,
+              sourceOrderId: orderId,
+            },
+          });
+        } catch {
+          // Unique constraint violation = duplicate milestone coupon, safe to ignore
+        }
+      }
+    }
+  }
+
+  // Notify via Supabase Broadcast (customer tracking + admin dashboard refresh)
+  await orderEvents.emitStatusChange({
     tenantId,
     orderId,
     orderNumber: updated.orderNumber,

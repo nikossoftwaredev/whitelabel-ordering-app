@@ -54,7 +54,7 @@ model Tenant {
   invoices       Invoice[]
   invoiceSequences InvoiceSequence[]
   promoCodes     PromoCode[]
-  loyaltyRedemptions LoyaltyRedemption[]
+  coupons        Coupon[]
   pushSubscriptions  PushSubscription[]
 
   @@index([slug])
@@ -87,10 +87,19 @@ model TenantConfig {
   facebook        String?
   googlePlaceId   String? @map("google_place_id")
 
-  // Loyalty program
-  loyaltyEnabled       Boolean @default(false) @map("loyalty_enabled")
-  loyaltyRequiredOrders Int     @default(10) @map("loyalty_required_orders")
-  loyaltyRewardAmount  Int     @default(500) @map("loyalty_reward_amount")
+
+  // Coupon system (replaces loyalty)
+  couponEnabled            Boolean   @default(false) @map("coupon_enabled")
+  couponMilestoneType      String    @default("ORDERS") @map("coupon_milestone_type") // "ORDERS" | "SPENDING"
+  couponMilestoneOrders    Int       @default(10) @map("coupon_milestone_orders")
+  couponMilestoneSpent     Int       @default(3000) @map("coupon_milestone_spent") // spending threshold in cents
+  couponType               PromoType @default(FIXED) @map("coupon_type")
+  couponValue              Int       @default(500) @map("coupon_value")
+  couponValidDays          Int       @default(30) @map("coupon_valid_days")
+  couponMinOrder           Int?      @map("coupon_min_order")
+  couponMaxDiscount        Int?      @map("coupon_max_discount")
+  couponMaxSavingsPerOrder Int?      @map("coupon_max_savings_per_order")
+  couponDescription        String?   @map("coupon_description")
 
   tenant          Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -212,9 +221,11 @@ model Customer {
   id         String   @id @default(cuid())
   tenantId   String   @map("tenant_id")
   userId     String   @map("user_id")
-  totalSpent Int      @default(0) @map("total_spent")
-  orderCount Int      @default(0) @map("order_count")
-  createdAt  DateTime @default(now()) @map("created_at")
+  totalSpent          Int      @default(0) @map("total_spent")
+  orderCount          Int      @default(0) @map("order_count")
+  completedOrderCount Int      @default(0) @map("completed_order_count")
+  completedSpent      Int      @default(0) @map("completed_spent")
+  createdAt           DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -223,7 +234,7 @@ model Customer {
   favorites      Favorite[]
   addresses      Address[]
   promoUsages    PromoCodeUsage[]
-  loyaltyRedemptions LoyaltyRedemption[]
+  coupons        Coupon[]
 
   @@unique([tenantId, userId])
   @@map("customers")
@@ -375,11 +386,16 @@ model ModifierOption {
   @@map("modifier_options")
 }
 
-// ─── PROMO CODES ────────────────────────────────────────────
+// ─── PROMO CODES & COUPONS ──────────────────────────────────
 
 enum PromoType {
   PERCENTAGE
   FIXED
+}
+
+enum CouponSource {
+  MILESTONE
+  MANUAL
 }
 
 model PromoCode {
@@ -424,22 +440,35 @@ model PromoCodeUsage {
   @@map("promo_code_usages")
 }
 
-model LoyaltyRedemption {
-  id                     String   @id @default(cuid())
-  tenantId               String   @map("tenant_id")
-  customerId             String   @map("customer_id")
-  orderId                String   @unique @map("order_id")
-  discount               Int      // cents
-  orderCountAtRedemption Int      @map("order_count_at_redemption")
-  createdAt              DateTime @default(now()) @map("created_at")
+model Coupon {
+  id                  String       @id @default(cuid())
+  tenantId            String       @map("tenant_id")
+  customerId          String       @map("customer_id")
+  code                String       @map("code")
+  type                PromoType    @default(FIXED)
+  value               Int
+  description         String?
+  minOrder            Int?         @map("min_order")
+  maxDiscount         Int?         @map("max_discount")
+  expiresAt           DateTime     @map("expires_at")
+  isUsed              Boolean      @default(false) @map("is_used")
+  isActive            Boolean      @default(true) @map("is_active")
+  usedAt              DateTime?    @map("used_at")
+  orderId             String?      @unique @map("order_id")
+  source              CouponSource @default(MILESTONE)
+  milestoneOrderCount Int?         @map("milestone_order_count")
+  sourceOrderId       String?      @map("source_order_id")
+  createdAt           DateTime     @default(now()) @map("created_at")
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order    Order?   @relation(fields: [orderId], references: [id])
 
-  @@index([tenantId])
-  @@index([customerId])
-  @@map("loyalty_redemptions")
+  @@unique([tenantId, code])
+  @@unique([customerId, tenantId, source, milestoneOrderCount])
+  @@index([customerId, isUsed, expiresAt])
+  @@index([tenantId, createdAt])
+  @@map("coupons")
 }
 
 // ─── PUSH NOTIFICATIONS ─────────────────────────────────────
@@ -515,10 +544,12 @@ model Order {
   stripeRefundId String?   @map("stripe_refund_id")
 
   // Pricing (cents)
-  subtotal  Int
-  discount  Int @default(0)
-  tipAmount Int @default(0) @map("tip_amount")
-  total     Int
+  subtotal       Int
+  discount       Int @default(0)
+  promoDiscount  Int @default(0) @map("promo_discount")
+  couponDiscount Int @default(0) @map("coupon_discount")
+  tipAmount      Int @default(0) @map("tip_amount")
+  total          Int
 
   // Scheduling & Pickup
   scheduledFor     DateTime? @map("scheduled_for")
@@ -548,7 +579,7 @@ model Order {
   items      OrderItem[]
   invoice    Invoice?
   promoUsage PromoCodeUsage?
-  loyaltyRedemption LoyaltyRedemption?
+  coupon     Coupon?
 
   @@index([tenantId, status])
   @@index([tenantId, createdAt])

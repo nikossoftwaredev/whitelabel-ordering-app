@@ -21,7 +21,10 @@ import { cn } from "@/lib/general/utils";
 import { Link } from "@/lib/i18n/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type ActiveOrderStatus = Extract<OrderStatus, "NEW" | "ACCEPTED" | "PREPARING" | "READY">;
+type ActiveOrderStatus = Extract<
+  OrderStatus,
+  "NEW" | "ACCEPTED" | "PREPARING" | "READY"
+>;
 
 interface ActiveOrder {
   id: string;
@@ -88,7 +91,7 @@ export function ActiveOrderBanner() {
           supabase.removeChannel(channel);
         } else {
           setOrder((prev) =>
-            prev ? { ...prev, status: newStatus as ActiveOrderStatus } : prev
+            prev ? { ...prev, status: newStatus as ActiveOrderStatus } : prev,
           );
         }
       })
@@ -101,6 +104,43 @@ export function ActiveOrderBanner() {
       channelRef.current = null;
     };
   }, [order?.id]);
+
+  // Polling fallback in case Supabase Realtime misses an event
+  const orderStatusRef = useRef(order?.status);
+  useEffect(() => {
+    orderStatusRef.current = order?.status;
+  }, [order?.status]);
+
+  useEffect(() => {
+    if (!order || !tenant.slug) return;
+
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/tenants/${tenant.slug}/orders/active`);
+        const data = await res.json();
+        if (data.order && data.order.status !== orderStatusRef.current) {
+          const newStatus = data.order.status as string;
+          if (newStatus === "COMPLETED" || newStatus === "REJECTED") {
+            setVisible(false);
+            setTimeout(() => setOrder(null), 300);
+          } else {
+            setOrder((prev) =>
+              prev
+                ? { ...prev, status: newStatus as ActiveOrderStatus }
+                : prev,
+            );
+          }
+        } else if (!data.order) {
+          setVisible(false);
+          setTimeout(() => setOrder(null), 300);
+        }
+      } catch {
+        // Silently ignore polling errors
+      }
+    }, 10_000);
+
+    return () => clearInterval(poll);
+  }, [order, tenant.slug]);
 
   if (!order) return null;
 
@@ -130,7 +170,7 @@ export function ActiveOrderBanner() {
         "flex items-center gap-3 transition-all duration-300 group hover:shadow-xl",
         visible
           ? "translate-y-0 opacity-100"
-          : "translate-y-4 opacity-0 pointer-events-none"
+          : "translate-y-4 opacity-0 pointer-events-none",
       )}
     >
       {/* Animated icon */}
@@ -139,7 +179,7 @@ export function ActiveOrderBanner() {
           "flex items-center justify-center size-10 rounded-full shrink-0",
           order.status === "READY"
             ? "bg-green-100 dark:bg-green-900/30"
-            : "bg-muted"
+            : "bg-muted",
         )}
       >
         {order.status === "READY" ? (

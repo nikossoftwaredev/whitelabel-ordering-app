@@ -30,10 +30,9 @@ export function ProfilePage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(
-        `/api/tenants/${tenant.slug}/addresses/${id}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`/api/tenants/${tenant.slug}/addresses/${id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error("Failed to delete");
       return id;
     },
@@ -64,7 +63,10 @@ export function ProfilePage() {
       await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim() || undefined, phone: phone.trim() || undefined }),
+        body: JSON.stringify({
+          name: name.trim() || undefined,
+          phone: phone.trim() || undefined,
+        }),
       });
       await update();
       setSaved(true);
@@ -86,7 +88,11 @@ export function ProfilePage() {
             <div className="flex items-center gap-3 pb-2">
               <div className="size-12 rounded-full bg-muted flex items-center justify-center">
                 {session?.user?.image ? (
-                  <img src={session.user.image} alt="" className="size-12 rounded-full object-cover" />
+                  <img
+                    src={session.user.image}
+                    alt=""
+                    className="size-12 rounded-full object-cover"
+                  />
                 ) : (
                   <User className="size-5 text-muted-foreground" />
                 )}
@@ -107,7 +113,12 @@ export function ProfilePage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="edit-email">{t("email")}</Label>
-              <Input id="edit-email" value={email} disabled className="opacity-60" />
+              <Input
+                id="edit-email"
+                value={email}
+                disabled
+                className="opacity-60"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="edit-phone">{t("phone")}</Label>
@@ -140,13 +151,20 @@ export function ProfilePage() {
                       >
                         <MapPin className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{addr.street}</p>
+                          <p className="text-sm font-medium truncate">
+                            {addr.street}
+                          </p>
                           {addr.city && (
-                            <p className="text-xs text-muted-foreground">{addr.city}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {addr.city}
+                            </p>
                           )}
                         </div>
                         {addr.label && (
-                          <Badge variant="secondary" className="text-xs shrink-0">
+                          <Badge
+                            variant="secondary"
+                            className="text-xs shrink-0"
+                          >
                             {addr.label}
                           </Badge>
                         )}
@@ -158,10 +176,11 @@ export function ProfilePage() {
                             CONFIRM_DIALOG,
                             {
                               title: "Delete address?",
-                              description: "This will permanently delete this saved address.",
+                              description:
+                                "This will permanently delete this saved address.",
                               actionLabel: "Delete",
                             },
-                            () => deleteMutation.mutate(addr.id)
+                            () => deleteMutation.mutate(addr.id),
                           )
                         }
                         disabled={deleteMutation.isPending}
@@ -173,12 +192,16 @@ export function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">{t("noAddressesYet")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("noAddressesYet")}
+                </p>
               )}
               <Button
                 variant="outline"
                 className="w-full mt-2"
-                onClick={() => openDialog("address-manager", { initialView: "search" })}
+                onClick={() =>
+                  openDialog("address-manager", { initialView: "search" })
+                }
               >
                 <Plus className="size-4" />
                 {tAddr("addNewAddress")}
@@ -191,7 +214,6 @@ export function ProfilePage() {
           </CardContent>
         </Card>
       </main>
-
     </div>
   );
 }

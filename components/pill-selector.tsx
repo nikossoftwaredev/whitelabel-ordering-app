@@ -34,15 +34,13 @@ export function PillSelector<T extends string>({
           <button
             key={key}
             type="button"
-            onClick={() =>
-              onChange(deselectable && isActive ? ("" as T) : key)
-            }
+            onClick={() => onChange(deselectable && isActive ? ("" as T) : key)}
             className={cn(
               "h-10 px-3.5 rounded-xl text-[13px] font-medium flex items-center justify-center gap-1.5 border transition-all duration-200 cursor-pointer",
               isActive
-                ? "border-transparent text-white bg-[var(--brand-primary,hsl(var(--primary)))]"
+                ? "border-transparent text-white bg-(--brand-primary,hsl(var(--primary)))"
                 : "border-border text-muted-foreground hover:border-foreground/30",
-              pillClassName
+              pillClassName,
             )}
           >
             {icon}

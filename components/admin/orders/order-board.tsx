@@ -1,15 +1,15 @@
 "use client";
 
 import {
-  DndContext,
-  DragOverlay,
   closestCorners,
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
   PointerSensor,
+  useDroppable,
   useSensor,
   useSensors,
-  useDroppable,
-  type DragEndEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -18,15 +18,15 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  Banknote,
   Clock,
   CreditCard,
-  Banknote,
   MapPin,
   Store,
   Truck,
   User,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useMemo,useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -40,13 +40,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/general/formatters";
 import {
   OrderStatus,
   orderStatusConfig,
   VALID_TRANSITIONS,
 } from "@/lib/general/status-config";
+import { cn } from "@/lib/utils";
 
 import type { Order } from "./types";
 

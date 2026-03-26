@@ -1,14 +1,15 @@
 "use client"
 
-import { useState } from "react"
 import { ChevronDown, Search } from "lucide-react"
+import { useState } from "react"
+
+import { inputVariants } from "@/components/ui/input"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { inputVariants } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 const COUNTRIES = [

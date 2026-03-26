@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   TrendingUp,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 
 import { useTenant } from "@/components/tenant-provider";
@@ -21,8 +22,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { centsToEuros, timeAgo } from "@/lib/general/formatters";
 import { ORDER_STATUS_COLORS } from "@/lib/general/status-config";
 import { queryKeys } from "@/lib/query/keys";
-
-import dynamic from "next/dynamic";
 
 import { StatCard } from "./stat-card";
 

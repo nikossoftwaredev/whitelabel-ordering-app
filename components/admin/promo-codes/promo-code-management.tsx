@@ -89,7 +89,15 @@ const EMPTY_FORM: PromoCodeFormData = {
   endDate: "",
 };
 
-function PromoStatusBadge({ promo, isExpired, isMaxedOut }: { promo: PromoCode; isExpired: boolean; isMaxedOut: boolean }) {
+function PromoStatusBadge({
+  promo,
+  isExpired,
+  isMaxedOut,
+}: {
+  promo: PromoCode;
+  isExpired: boolean;
+  isMaxedOut: boolean;
+}) {
   if (isExpired) return <Badge variant="secondary">Expired</Badge>;
   if (isMaxedOut) return <Badge variant="secondary">Maxed</Badge>;
   if (promo.isActive) {
@@ -127,9 +135,7 @@ export function PromoCodeManagement({ tenantId }: { tenantId: string }) {
             ? decimalToCents(data.value || "0")
             : parseInt(data.value || "0"),
         minOrder: decimalToCents(data.minOrder || "0"),
-        maxDiscount: data.maxDiscount
-          ? decimalToCents(data.maxDiscount)
-          : null,
+        maxDiscount: data.maxDiscount ? decimalToCents(data.maxDiscount) : null,
         maxUses: data.maxUses ? parseInt(data.maxUses) : null,
         maxUsesPerUser: parseInt(data.maxUsesPerUser || "1"),
         startDate: data.startDate || null,
@@ -163,13 +169,7 @@ export function PromoCodeManagement({ tenantId }: { tenantId: string }) {
   });
 
   const toggleMutation = useMutation({
-    mutationFn: async ({
-      id,
-      isActive,
-    }: {
-      id: string;
-      isActive: boolean;
-    }) => {
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
       const res = await fetch(`/api/admin/${tenantId}/promo-codes/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -335,7 +335,7 @@ export function PromoCodeManagement({ tenantId }: { tenantId: string }) {
                   <TableHead className="hidden md:table-cell">Uses</TableHead>
                   <TableHead className="hidden md:table-cell">Dates</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead className="w-25">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -374,9 +374,7 @@ export function PromoCodeManagement({ tenantId }: { tenantId: string }) {
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {promo.minOrder > 0
-                        ? formatPrice(promo.minOrder)
-                        : "-"}
+                      {promo.minOrder > 0 ? formatPrice(promo.minOrder) : "-"}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       <div className="flex items-center gap-1">
@@ -400,7 +398,11 @@ export function PromoCodeManagement({ tenantId }: { tenantId: string }) {
                       )}
                     </TableCell>
                     <TableCell>
-                      <PromoStatusBadge promo={promo} isExpired={isExpired(promo)} isMaxedOut={isMaxedOut(promo)} />
+                      <PromoStatusBadge
+                        promo={promo}
+                        isExpired={isExpired(promo)}
+                        isMaxedOut={isMaxedOut(promo)}
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -424,10 +426,11 @@ export function PromoCodeManagement({ tenantId }: { tenantId: string }) {
                               CONFIRM_DIALOG,
                               {
                                 title: "Delete promo code?",
-                                description: "This will permanently delete this promo code and cannot be undone.",
+                                description:
+                                  "This will permanently delete this promo code and cannot be undone.",
                                 actionLabel: "Delete",
                               },
-                              () => deleteMutation.mutate(promo.id)
+                              () => deleteMutation.mutate(promo.id),
                             );
                           }}
                         >

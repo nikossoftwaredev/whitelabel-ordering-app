@@ -1,19 +1,19 @@
 "use client";
 
 import {
+  Banknote,
   Bell,
   Check,
   CheckCircle2,
   ChefHat,
   Clock,
+  CreditCard,
   MapPin,
   Phone,
   RotateCcw,
   Truck,
   User,
   X,
-  CreditCard,
-  Banknote,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 

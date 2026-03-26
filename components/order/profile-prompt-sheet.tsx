@@ -84,9 +84,7 @@ export function ProfilePromptSheet() {
       >
         <SheetHeader className="text-left">
           <SheetTitle>{t("title")}</SheetTitle>
-          <SheetDescription>
-            {t("description")}
-          </SheetDescription>
+          <SheetDescription>{t("description")}</SheetDescription>
         </SheetHeader>
         <div className="mt-4 space-y-4">
           <div className="space-y-1.5">

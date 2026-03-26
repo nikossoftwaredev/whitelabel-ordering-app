@@ -112,7 +112,6 @@ test.describe("Order E2E: place and accept", () => {
       select: { id: true },
     });
     for (const o of staleOrders) {
-      await prisma.loyaltyRedemption.deleteMany({ where: { orderId: o.id } }).catch(() => {});
       await prisma.promoCodeUsage.deleteMany({ where: { orderId: o.id } }).catch(() => {});
       await prisma.orderItemModifier.deleteMany({ where: { orderItem: { orderId: o.id } } });
       await prisma.orderItem.deleteMany({ where: { orderId: o.id } });

@@ -1,8 +1,7 @@
 "use client";
 
-import { lazy, Suspense, useEffect } from "react";
-
 import { Loader2 } from "lucide-react";
+import { lazy, Suspense, useEffect } from "react";
 
 import {
   Dialog,
@@ -33,6 +32,12 @@ const CartContent = lazy(() =>
 const ProductDetailContent = lazy(() =>
   import("@/components/order/product-detail-sheet").then((m) => ({ default: m.ProductDetailContent }))
 );
+const CouponModalContent = lazy(() =>
+  import("@/components/order/checkout/coupon-modal").then((m) => ({ default: m.CouponModalContent }))
+);
+const PaymentModalContent = lazy(() =>
+  import("@/components/order/checkout/payment-modal").then((m) => ({ default: m.PaymentModalContent }))
+);
 
 export const DIALOG_KEYS = {
   CONFIRM: "confirm",
@@ -41,6 +46,8 @@ export const DIALOG_KEYS = {
   PRODUCT_DETAIL: "product-detail",
   AUTH: "auth",
   ADDRESS_MANAGER: "address-manager",
+  COUPON_MODAL: "coupon-modal",
+  PAYMENT_MODAL: "payment-modal",
 } as const;
 
 function DialogFallback() {
@@ -92,6 +99,8 @@ export const DialogProvider = () => {
           {currentDialog === DIALOG_KEYS.ADDRESS_MANAGER && <AddressManagerContent />}
           {currentDialog === DIALOG_KEYS.CART && <CartContent />}
           {currentDialog === DIALOG_KEYS.PRODUCT_DETAIL && <ProductDetailContent />}
+          {currentDialog === DIALOG_KEYS.COUPON_MODAL && <CouponModalContent />}
+          {currentDialog === DIALOG_KEYS.PAYMENT_MODAL && <PaymentModalContent />}
         </Suspense>
       </DialogContent>
     </Dialog>

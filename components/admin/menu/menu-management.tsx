@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useFormatPrice } from "@/hooks/use-format-price";
-import { queryKeys } from "@/lib/query/keys";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 
 import { CategoryFormDialog } from "./category-form-dialog";
@@ -61,14 +60,18 @@ interface MenuManagementProps {
   tenantId: string;
 }
 
-export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) => {
+export const MenuManagement = ({
+  tenantId: propTenantId,
+}: MenuManagementProps) => {
   const tenant = useTenant();
   const tenantId = propTenantId || tenant.id;
   const formatPrice = useFormatPrice();
   const openDialog = useDialogStore((s) => s.openDialog);
   const queryClient = useQueryClient();
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null,
+  );
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
@@ -115,7 +118,7 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
     mutationFn: async (categoryId: string) => {
       const res = await fetch(
         `/api/admin/${tenantId}/categories/${categoryId}`,
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
       if (!res.ok) throw new Error("Failed to delete");
     },
@@ -131,10 +134,9 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
   // Delete product
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
-      const res = await fetch(
-        `/api/admin/${tenantId}/products/${productId}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`/api/admin/${tenantId}/products/${productId}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error("Failed to delete");
     },
     onSuccess: () => {
@@ -161,7 +163,9 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
         {/* Categories Panel */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base font-semibold">Categories</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Categories
+            </CardTitle>
             <Button
               size="sm"
               variant="outline"
@@ -210,7 +214,8 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
                         )}
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {cat._count.products} product{cat._count.products !== 1 ? "s" : ""}
+                        {cat._count.products} product
+                        {cat._count.products !== 1 ? "s" : ""}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -236,10 +241,11 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
                             CONFIRM_DIALOG,
                             {
                               title: `Delete "${cat.name}"?`,
-                              description: "This will permanently delete this category and cannot be undone.",
+                              description:
+                                "This will permanently delete this category and cannot be undone.",
                               actionLabel: "Delete",
                             },
-                            () => deleteCategoryMutation.mutate(cat.id)
+                            () => deleteCategoryMutation.mutate(cat.id),
                           );
                         }}
                       >
@@ -314,17 +320,26 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
                           </Badge>
                         )}
                         {product.isVegan && (
-                          <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                          <Badge
+                            variant="outline"
+                            className="text-xs text-green-600 border-green-300"
+                          >
                             V
                           </Badge>
                         )}
                         {product.isVegetarian && (
-                          <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                          <Badge
+                            variant="outline"
+                            className="text-xs text-green-600 border-green-300"
+                          >
                             VG
                           </Badge>
                         )}
                         {product.isGlutenFree && (
-                          <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                          <Badge
+                            variant="outline"
+                            className="text-xs text-amber-600 border-amber-300"
+                          >
                             GF
                           </Badge>
                         )}
@@ -359,10 +374,11 @@ export const MenuManagement = ({ tenantId: propTenantId }: MenuManagementProps) 
                             CONFIRM_DIALOG,
                             {
                               title: `Delete "${product.name}"?`,
-                              description: "This will permanently delete this product and cannot be undone.",
+                              description:
+                                "This will permanently delete this product and cannot be undone.",
                               actionLabel: "Delete",
                             },
-                            () => deleteProductMutation.mutate(product.id)
+                            () => deleteProductMutation.mutate(product.id),
                           )
                         }
                       >

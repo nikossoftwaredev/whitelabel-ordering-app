@@ -55,7 +55,13 @@ const DELIVERY_PROGRESS: Record<string, number> = {
 
 // Step definitions for the mini stepper
 const PICKUP_STEPS = ["NEW", "ACCEPTED", "PREPARING", "READY"] as const;
-const DELIVERY_STEPS = ["NEW", "ACCEPTED", "PREPARING", "READY", "DELIVERING"] as const;
+const DELIVERY_STEPS = [
+  "NEW",
+  "ACCEPTED",
+  "PREPARING",
+  "READY",
+  "DELIVERING",
+] as const;
 
 const STEP_ICONS: Record<string, typeof Clock> = {
   NEW: Clock,
@@ -68,10 +74,10 @@ const STEP_ICONS: Record<string, typeof Clock> = {
 
 // Ring color per status
 const RING_COLORS: Record<string, string> = {
-  NEW: "#f59e0b",       // amber
-  ACCEPTED: "#3b82f6",  // blue
-  PREPARING: "#f97316",  // orange
-  READY: "#22c55e",     // green
+  NEW: "#f59e0b", // amber
+  ACCEPTED: "#3b82f6", // blue
+  PREPARING: "#f97316", // orange
+  READY: "#22c55e", // green
   DELIVERING: "#8b5cf6", // violet
   COMPLETED: "#22c55e", // green
 };
@@ -84,21 +90,32 @@ export const OrderConfirmation = () => {
   const orderNumber = searchParams.get("orderNumber") || "---";
   const tenant = useTenant();
   const [status, setStatus] = useState<OrderStatus>("NEW");
-  const [orderType, setOrderType] = useState<"PICKUP" | "DELIVERY" | "DINE_IN">("PICKUP");
+  const [orderType, setOrderType] = useState<"PICKUP" | "DELIVERY" | "DINE_IN">(
+    "PICKUP",
+  );
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [orderCreatedAt, setOrderCreatedAt] = useState<string | null>(null);
   const [estimatedReadyAt, setEstimatedReadyAt] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const { isSupported: pushSupported, permission, isSubscribed, subscribe } = usePushSubscription("customer");
+  const {
+    isSupported: pushSupported,
+    permission,
+    isSubscribed,
+    subscribe,
+  } = usePushSubscription("customer");
   const [pushDismissed, setPushDismissed] = useState(false);
-  const showPushPrompt = pushSupported && permission === "default" && !isSubscribed && !pushDismissed;
+  const showPushPrompt =
+    pushSupported &&
+    permission === "default" &&
+    !isSubscribed &&
+    !pushDismissed;
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(
         `/api/tenants/${tenant.slug}/orders/${orderId}/cancel`,
-        { method: "POST" }
+        { method: "POST" },
       );
       if (!res.ok) throw new Error("Failed to cancel order");
     },
@@ -119,7 +136,7 @@ export const OrderConfirmation = () => {
         description: t("cancelConfirm"),
         actionLabel: t("cancelOrder"),
       },
-      () => cancelMutation.mutate()
+      () => cancelMutation.mutate(),
     );
   };
 
@@ -135,7 +152,8 @@ export const OrderConfirmation = () => {
           if (data.order.orderType) setOrderType(data.order.orderType);
           if (data.order.scheduledFor) setScheduledFor(data.order.scheduledFor);
           if (data.order.createdAt) setOrderCreatedAt(data.order.createdAt);
-          if (data.order.estimatedReadyAt) setEstimatedReadyAt(data.order.estimatedReadyAt);
+          if (data.order.estimatedReadyAt)
+            setEstimatedReadyAt(data.order.estimatedReadyAt);
         }
         setConnected(true);
       })
@@ -152,7 +170,8 @@ export const OrderConfirmation = () => {
       .channel(`order:${orderId}`)
       .on("broadcast", { event: "status_change" }, ({ payload }) => {
         setStatus(payload.status as OrderStatus);
-        if (payload.estimatedReadyAt) setEstimatedReadyAt(payload.estimatedReadyAt as string);
+        if (payload.estimatedReadyAt)
+          setEstimatedReadyAt(payload.estimatedReadyAt as string);
       })
       .subscribe();
 
@@ -163,6 +182,40 @@ export const OrderConfirmation = () => {
       channelRef.current = null;
     };
   }, [orderId]);
+
+  // Polling fallback in case Supabase Realtime misses an event
+  const statusRef = useRef(status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  useEffect(() => {
+    if (!orderId || !tenant.slug) return;
+
+    const poll = setInterval(async () => {
+      const current = statusRef.current;
+      if (
+        current === "COMPLETED" ||
+        current === "REJECTED" ||
+        current === "CANCELLED"
+      )
+        return;
+
+      try {
+        const res = await fetch(`/api/tenants/${tenant.slug}/orders/active`);
+        const data = await res.json();
+        if (data.order && data.order.status !== statusRef.current) {
+          setStatus(data.order.status);
+          if (data.order.estimatedReadyAt)
+            setEstimatedReadyAt(data.order.estimatedReadyAt);
+        }
+      } catch {
+        // Silently ignore polling errors
+      }
+    }, 10_000);
+
+    return () => clearInterval(poll);
+  }, [orderId, tenant.slug]);
 
   const isDelivery = orderType === "DELIVERY";
   const isRejected = status === "REJECTED";
@@ -190,12 +243,21 @@ export const OrderConfirmation = () => {
   const estimatedMinutes = useMemo(() => {
     if (isTerminal || isReady) return 0;
     if (estimatedReadyAt) {
-      const remaining = Math.round((new Date(estimatedReadyAt).getTime() - now) / 60_000);
+      const remaining = Math.round(
+        (new Date(estimatedReadyAt).getTime() - now) / 60_000,
+      );
       return Math.max(1, remaining);
     }
     // Fallback: use tenant prep time if no estimatedReadyAt yet (NEW status)
     return tenant.prepTimeMinutes || 20;
-  }, [status, estimatedReadyAt, now, tenant.prepTimeMinutes, isTerminal, isReady]);
+  }, [
+    status,
+    estimatedReadyAt,
+    now,
+    tenant.prepTimeMinutes,
+    isTerminal,
+    isReady,
+  ]);
 
   // Friendly messages per status
   const friendlyTitle = useMemo(() => {
@@ -218,7 +280,9 @@ export const OrderConfirmation = () => {
     return "";
   }, [status, isCompleted, t]);
 
-  const displayNumber = orderNumber.startsWith("#") ? orderNumber : `#${orderNumber}`;
+  const displayNumber = orderNumber.startsWith("#")
+    ? orderNumber
+    : `#${orderNumber}`;
 
   const StatusIcon = STEP_ICONS[status] ?? Clock;
 
@@ -227,22 +291,25 @@ export const OrderConfirmation = () => {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center px-6 text-center">
         <div className="relative mb-8">
-          <div className={cn(
-            "size-32 rounded-full flex items-center justify-center",
-            isRejected ? "bg-red-500/10" : "bg-orange-500/10"
-          )}>
-            <XCircle className={cn(
-              "size-16",
-              isRejected ? "text-red-500" : "text-orange-500"
-            )} />
+          <div
+            className={cn(
+              "size-32 rounded-full flex items-center justify-center",
+              isRejected ? "bg-red-500/10" : "bg-orange-500/10",
+            )}
+          >
+            <XCircle
+              className={cn(
+                "size-16",
+                isRejected ? "text-red-500" : "text-orange-500",
+              )}
+            />
           </div>
         </div>
 
         <h1 className="text-2xl font-bold mb-2">
           {isRejected
             ? t("orderDeclined", { number: displayNumber })
-            : t("orderCancelled", { number: displayNumber })
-          }
+            : t("orderCancelled", { number: displayNumber })}
         </h1>
         <p className="text-muted-foreground max-w-sm mb-10 text-sm leading-relaxed">
           {isRejected ? t("declinedDesc") : t("cancelledDesc")}
@@ -331,27 +398,34 @@ export const OrderConfirmation = () => {
         {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           {(() => {
-            if (isCompleted) return <PartyPopper className="size-12 text-green-500" />;
-            if (isReady) return (
-              <>
-                <HandPlatter className="size-10 text-green-500 mb-1" />
-                <span className="text-xs font-semibold text-green-500">{t("stepReady")}</span>
-              </>
+            if (isCompleted)
+              return <PartyPopper className="size-12 text-green-500" />;
+            if (isReady)
+              return (
+                <>
+                  <HandPlatter className="size-10 text-green-500 mb-1" />
+                  <span className="text-xs font-semibold text-green-500">
+                    {t("stepReady")}
+                  </span>
+                </>
+              );
+            if (estimatedMinutes > 0)
+              return (
+                <>
+                  <span
+                    className="text-4xl font-black tabular-nums leading-none"
+                    style={{ color: ringColor }}
+                  >
+                    {estimatedMinutes}
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-1 font-medium">
+                    {t("minutes")}
+                  </span>
+                </>
+              );
+            return (
+              <StatusIcon className="size-10" style={{ color: ringColor }} />
             );
-            if (estimatedMinutes > 0) return (
-              <>
-                <span
-                  className="text-4xl font-black tabular-nums leading-none"
-                  style={{ color: ringColor }}
-                >
-                  {estimatedMinutes}
-                </span>
-                <span className="text-xs text-muted-foreground mt-1 font-medium">
-                  {t("minutes")}
-                </span>
-              </>
-            );
-            return <StatusIcon className="size-10" style={{ color: ringColor }} />;
           })()}
         </div>
       </div>
@@ -382,8 +456,11 @@ export const OrderConfirmation = () => {
                 className={cn(
                   "flex items-center justify-center rounded-full transition-all duration-500",
                   isDone && "size-8 bg-primary text-primary-foreground",
-                  isCurrent && "size-10 border-2 border-primary bg-primary/10 text-primary",
-                  !isDone && !isCurrent && "size-8 bg-muted/50 text-muted-foreground/40"
+                  isCurrent &&
+                    "size-10 border-2 border-primary bg-primary/10 text-primary",
+                  !isDone &&
+                    !isCurrent &&
+                    "size-8 bg-muted/50 text-muted-foreground/40",
                 )}
               >
                 {isDone ? (
@@ -393,10 +470,12 @@ export const OrderConfirmation = () => {
                 )}
               </div>
               {idx < steps.length - 1 && (
-                <div className={cn(
-                  "w-6 h-0.5 transition-colors duration-500",
-                  isDone ? "bg-primary" : "bg-muted/50"
-                )} />
+                <div
+                  className={cn(
+                    "w-6 h-0.5 transition-colors duration-500",
+                    isDone ? "bg-primary" : "bg-muted/50",
+                  )}
+                />
               )}
             </div>
           );
@@ -408,13 +487,19 @@ export const OrderConfirmation = () => {
         <div className="rounded-xl border bg-card p-4 space-y-3 w-full max-w-xs mb-6">
           <div className="space-y-1">
             <h3 className="font-semibold text-sm">{t("pushPromptTitle")}</h3>
-            <p className="text-sm text-muted-foreground">{t("pushPromptDescription")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("pushPromptDescription")}
+            </p>
           </div>
           <div className="flex gap-2">
             <Button size="sm" onClick={() => subscribe()}>
               {t("pushPromptAccept")}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setPushDismissed(true)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setPushDismissed(true)}
+            >
               {t("pushPromptDismiss")}
             </Button>
           </div>
@@ -423,7 +508,12 @@ export const OrderConfirmation = () => {
 
       {/* ── Action buttons ─────────────────────────────────── */}
       <div className="flex gap-3 w-full max-w-xs">
-        <Button asChild variant="outline" className="flex-1 rounded-full" size="lg">
+        <Button
+          asChild
+          variant="outline"
+          className="flex-1 rounded-full"
+          size="lg"
+        >
           <Link href="/order/orders">
             <ClipboardList className="size-4 mr-2" />
             {t("orderHistory")}

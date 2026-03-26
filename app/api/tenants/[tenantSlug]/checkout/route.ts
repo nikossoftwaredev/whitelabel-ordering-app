@@ -120,7 +120,7 @@ export async function POST(
   const intentParams: Stripe.PaymentIntentCreateParams = {
     amount,
     currency: "eur",
-    payment_method_types: ["card"],
+    automatic_payment_methods: { enabled: true },
     metadata: {
       orderId: order.id,
       tenantId: order.tenantId,

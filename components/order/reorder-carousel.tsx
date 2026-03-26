@@ -37,17 +37,20 @@ interface ReorderCarouselProps {
   availableProductIds: Set<string>;
 }
 
-export function ReorderCarousel({ tenantSlug, availableProductIds }: ReorderCarouselProps) {
-  const t = useTranslations("OrderMenu");
+export function ReorderCarousel({
+  tenantSlug,
+  availableProductIds,
+}: ReorderCarouselProps) {
+  const t = useTranslations("Menu");
   const formatPrice = useFormatPrice();
   const addItem = useCartStore((s) => s.addItem);
 
   const { data } = useQuery<{ orders: ReorderOrder[] }>({
     queryKey: [...queryKeys.orders.history(tenantSlug), "reorder"],
     queryFn: () =>
-      fetch(`/api/tenants/${tenantSlug}/orders/history?limit=5&forReorder=true`).then(
-        (r) => r.json()
-      ),
+      fetch(
+        `/api/tenants/${tenantSlug}/orders/history?limit=5&forReorder=true`,
+      ).then((r) => r.json()),
   });
 
   const orders = data?.orders;
@@ -86,9 +89,9 @@ export function ReorderCarousel({ tenantSlug, availableProductIds }: ReorderCaro
 
   const formatItemsSummary = (items: ReorderItem[]) => {
     const maxShow = 2;
-    const shown = items.slice(0, maxShow).map(
-      (item) => `${item.quantity}x ${item.productName}`
-    );
+    const shown = items
+      .slice(0, maxShow)
+      .map((item) => `${item.quantity}x ${item.productName}`);
     const remaining = items.length - maxShow;
     if (remaining > 0) {
       shown.push(t("andMore", { count: remaining }));
@@ -98,16 +101,18 @@ export function ReorderCarousel({ tenantSlug, availableProductIds }: ReorderCaro
 
   return (
     <section className="px-4 pt-6">
-      <h2 className="text-xl font-bold tracking-tight mb-1">{t("orderAgain")}</h2>
+      <h2 className="text-xl font-bold tracking-tight mb-1">
+        {t("orderAgain")}
+      </h2>
       <div className="h-px bg-border mb-3" />
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex gap-3 pb-3">
           {orders.map((order) => (
             <div
               key={order.id}
-              className="inline-flex w-[180px] shrink-0 flex-col justify-between rounded-lg border bg-card p-3"
+              className="inline-flex w-45 shrink-0 flex-col justify-between rounded-lg border bg-card p-3"
             >
-              <div className="min-h-[52px]">
+              <div className="min-h-13">
                 {formatItemsSummary(order.items).map((line, i) => (
                   <p
                     key={i}

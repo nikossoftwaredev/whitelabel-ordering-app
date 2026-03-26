@@ -15,20 +15,19 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
+import { PillSelector } from "@/components/pill-selector";
 import { useTenant } from "@/components/tenant-provider";
+import { Button } from "@/components/ui/button";
 import { DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import dynamic from "next/dynamic";
-
-import { PillSelector } from "@/components/pill-selector";
 import { type Address, useAddressStore } from "@/lib/stores/address-store";
-import { Button } from "@/components/ui/button";
 
 const AddressMap = dynamic(() =>
   import("@/components/order/address-map").then((m) => m.AddressMap),

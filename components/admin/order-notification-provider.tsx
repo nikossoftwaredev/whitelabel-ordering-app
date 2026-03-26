@@ -8,7 +8,9 @@ import { toast } from "sonner";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useNotificationSound } from "@/hooks/use-notification-sound";
 import type { OrderEvent } from "@/lib/events/order-events";
+import { useRouter } from "@/lib/i18n/navigation";
 import { queryKeys } from "@/lib/query/keys";
+import { useOrderNotificationStore } from "@/lib/stores/order-notification-store";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface OrderNotificationProviderProps {
@@ -21,8 +23,14 @@ export function OrderNotificationProvider({
   const queryClient = useQueryClient();
   const formatPrice = useFormatPrice();
   const { playSound } = useNotificationSound();
+  const router = useRouter();
+  const setPendingOrderId = useOrderNotificationStore(
+    (s) => s.setPendingOrderId,
+  );
   const playSoundRef = useRef(playSound);
   const formatPriceRef = useRef(formatPrice);
+  const routerRef = useRef(router);
+  const setPendingOrderIdRef = useRef(setPendingOrderId);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
@@ -32,6 +40,14 @@ export function OrderNotificationProvider({
   useEffect(() => {
     formatPriceRef.current = formatPrice;
   }, [formatPrice]);
+
+  useEffect(() => {
+    routerRef.current = router;
+  }, [router]);
+
+  useEffect(() => {
+    setPendingOrderIdRef.current = setPendingOrderId;
+  }, [setPendingOrderId]);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -51,7 +67,8 @@ export function OrderNotificationProvider({
           action: {
             label: "View",
             onClick: () => {
-              window.location.href = `/admin/orders`;
+              setPendingOrderIdRef.current(event.orderId);
+              routerRef.current.push("/admin/orders");
             },
           },
         });

@@ -25,7 +25,7 @@ export function QuantityStepper({
       <div
         className={cn(
           "flex items-center bg-background/90 backdrop-blur-sm rounded-lg overflow-hidden border border-border shadow-md",
-          className
+          className,
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -55,7 +55,7 @@ export function QuantityStepper({
       <div
         className={cn(
           "flex items-center bg-muted rounded-xl overflow-hidden",
-          className
+          className,
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -85,7 +85,7 @@ export function QuantityStepper({
     <div
       className={cn(
         "flex items-center bg-background/80 backdrop-blur-sm rounded-lg overflow-hidden border border-border",
-        className
+        className,
       )}
       onClick={(e) => e.stopPropagation()}
     >
