@@ -1,11 +1,11 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect } from "react";
 
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -38,6 +38,9 @@ const CouponModalContent = lazy(() =>
 const PaymentModalContent = lazy(() =>
   import("@/components/order/checkout/payment-modal").then((m) => ({ default: m.PaymentModalContent }))
 );
+const ReorderContent = lazy(() =>
+  import("@/components/order/reorder-dialog").then((m) => ({ default: m.ReorderContent }))
+);
 
 export const DIALOG_KEYS = {
   CONFIRM: "confirm",
@@ -48,13 +51,27 @@ export const DIALOG_KEYS = {
   ADDRESS_MANAGER: "address-manager",
   COUPON_MODAL: "coupon-modal",
   PAYMENT_MODAL: "payment-modal",
+  REORDER: "reorder",
 } as const;
 
 function DialogFallback() {
   return (
-    <div className="flex items-center justify-center py-12">
-      <DialogTitle className="sr-only">Loading</DialogTitle>
-      <Loader2 className="size-6 animate-spin text-muted-foreground" />
+    <div className="flex flex-col flex-1">
+      <DialogHeader>
+        <DialogTitle className="sr-only">Loading</DialogTitle>
+        <div className="h-5 w-36 rounded-md bg-muted animate-pulse" />
+      </DialogHeader>
+      <div className="px-5 py-4 space-y-4 flex-1">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="size-14 rounded-lg bg-muted animate-pulse shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-32 rounded-md bg-muted animate-pulse" />
+              <div className="h-3 w-20 rounded-md bg-muted animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -102,6 +119,7 @@ export const DialogProvider = () => {
           {currentDialog === DIALOG_KEYS.PRODUCT_DETAIL && <ProductDetailContent />}
           {currentDialog === DIALOG_KEYS.COUPON_MODAL && <CouponModalContent />}
           {currentDialog === DIALOG_KEYS.PAYMENT_MODAL && <PaymentModalContent />}
+          {currentDialog === DIALOG_KEYS.REORDER && <ReorderContent />}
         </Suspense>
       </DialogContent>
     </Dialog>

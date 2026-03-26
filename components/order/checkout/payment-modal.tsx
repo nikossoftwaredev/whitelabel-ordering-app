@@ -3,7 +3,7 @@
 import { Banknote, Check, CreditCard } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { dialogPanelHeaderClass, DialogTitle } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCheckoutStore } from "@/lib/stores/checkout-store";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 
@@ -23,11 +23,11 @@ export const PaymentModalContent = () => {
   return (
     <div className="flex flex-col overflow-y-auto flex-1">
       {/* Header */}
-      <div className={dialogPanelHeaderClass}>
-        <DialogTitle className="text-lg font-bold text-foreground">
+      <DialogHeader>
+        <DialogTitle className="text-lg font-bold">
           {t("paymentMethod")}
         </DialogTitle>
-      </div>
+      </DialogHeader>
 
       <div className="px-5 pb-6 space-y-2">
         {/* Cash option */}

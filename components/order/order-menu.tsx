@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Bike,
   Check,
-  Flame,
   Gift,
   Info,
   Leaf,
@@ -24,6 +23,7 @@ import {
   STORE_INFO_DIALOG,
   type StoreInfoDialogData,
 } from "@/components/order/store-info-dialog";
+import { ProductBadge } from "@/components/product-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { cn } from "@/lib/general/utils";
 import { useRouter } from "@/lib/i18n/navigation";
 import { hasActiveOffer } from "@/lib/orders/offers";
 import { queryKeys } from "@/lib/query/keys";
@@ -153,11 +154,26 @@ function ProductCard({
 }) {
   const t = useTranslations("Menu");
   const hasRequiredModifiers = product.modifierGroups.some((g) => g.required);
+  const isInCart = quantity > 0;
+
   return (
     <div
-      className="flex gap-3 py-3 cursor-pointer group active:scale-[0.99] transition-transform duration-150"
+      className={cn(
+        "relative flex gap-3 py-3 cursor-pointer group active:scale-[0.99] transition-all duration-200",
+        isInCart && "pl-4",
+      )}
       onClick={onDetail}
     >
+      {/* Left accent bar */}
+      {isInCart && (
+        <div
+          className="absolute left-0 top-4 bottom-4 w-0.75 rounded-full"
+          style={{
+            backgroundColor: "var(--brand-primary, hsl(var(--primary)))",
+            boxShadow: "0 0 8px 1px var(--brand-primary, hsl(var(--primary)))",
+          }}
+        />
+      )}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <h3 className="font-semibold text-[15px] leading-tight line-clamp-2">
           {product.name}
@@ -194,9 +210,7 @@ function ProductCard({
         </div>
         {hasActiveOffer(product) ? (
           <div className="flex items-center gap-1.5 mt-1.5">
-            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              1+1
-            </span>
+            <ProductBadge variant="offer">1+1</ProductBadge>
             <span
               className="text-[14px] font-semibold"
               style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
@@ -206,20 +220,22 @@ function ProductCard({
             <span className="text-[12px] text-muted-foreground line-through">
               {formatPrice(product.price * 2)}
             </span>
+            {rankBadge && (
+              <ProductBadge variant="popular">{rankBadge}</ProductBadge>
+            )}
           </div>
         ) : (
-          <p
-            className="text-[14px] font-semibold mt-1.5"
-            style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-          >
-            {formatPrice(unitPrice ?? product.price)}
-          </p>
-        )}
-        {rankBadge && (
-          <span className="inline-flex items-center gap-1 mt-1.5 bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[12px] font-semibold px-2 py-0.5 rounded-full w-fit">
-            <Flame className="size-3 fill-current" />
-            {rankBadge}
-          </span>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <p
+              className="text-[14px] font-semibold"
+              style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+            >
+              {formatPrice(unitPrice ?? product.price)}
+            </p>
+            {rankBadge && (
+              <ProductBadge variant="popular">{rankBadge}</ProductBadge>
+            )}
+          </div>
         )}
       </div>
       <div className="relative shrink-0 w-25 h-25 md:w-32.5 md:h-32.5 rounded-xl overflow-hidden bg-muted">
@@ -286,9 +302,7 @@ function VariantCard({
         </p>
         {hasActiveOffer(product) ? (
           <div className="flex items-center gap-1.5 mt-1">
-            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              1+1
-            </span>
+            <ProductBadge variant="offer">1+1</ProductBadge>
             <span
               className="text-[14px] font-semibold"
               style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}

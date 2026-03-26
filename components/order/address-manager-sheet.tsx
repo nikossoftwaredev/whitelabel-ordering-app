@@ -5,7 +5,7 @@ import {
   Briefcase,
   Building2,
   Check,
-  ChevronLeft,
+
   Crosshair,
   Home,
   Loader2,
@@ -25,7 +25,7 @@ import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { PillSelector } from "@/components/pill-selector";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
-import { DialogTitle } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { type Address, useAddressStore } from "@/lib/stores/address-store";
 
@@ -350,11 +350,11 @@ export function AddressManagerContent() {
       {/* list view */}
       {view === "list" && (
         <>
-          <div className="px-6 pb-2 shrink-0">
-            <DialogTitle className="text-2xl font-bold text-foreground">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">
               {t("chooseAddress")}
             </DialogTitle>
-          </div>
+          </DialogHeader>
 
           <div className="overflow-y-auto flex-1 px-3">
             {addresses.length > 0 ? (
@@ -455,23 +455,11 @@ export function AddressManagerContent() {
       {/* search view */}
       {view === "search" && (
         <>
-          <div className="px-5 shrink-0">
-            <button
-              onClick={handleBack}
-              className="size-10 flex items-center justify-center rounded-full bg-white shadow-md text-foreground hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-            >
-              <ChevronLeft className="size-5" />
-            </button>
-          </div>
-
-          <div className="px-6 pt-4 pb-2">
-            <DialogTitle className="text-2xl font-bold text-foreground">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">
               {t("addNewAddressTitle")}
             </DialogTitle>
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-              {t("addNewAddressDesc")}
-            </p>
-          </div>
+          </DialogHeader>
 
           <div className="px-6 pt-4 pb-1">
             <div className="relative">
@@ -547,19 +535,13 @@ export function AddressManagerContent() {
       {/* form view */}
       {view === "form" && (
         <>
-          <div className="px-5 shrink-0">
-            <button
-              onClick={handleBack}
-              className="size-10 flex items-center justify-center rounded-full bg-white shadow-md text-foreground hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-            >
-              <ChevronLeft className="size-5" />
-            </button>
-          </div>
-
-          <div className="px-6 pt-2 pb-6 overflow-y-auto flex-1">
-            <DialogTitle className="text-2xl font-bold text-foreground mb-4">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">
               {t("confirmAddress")}
             </DialogTitle>
+          </DialogHeader>
+
+          <div className="px-6 pb-6 overflow-y-auto flex-1">
 
             <div className="space-y-4">
               {/* Map with draggable pin */}

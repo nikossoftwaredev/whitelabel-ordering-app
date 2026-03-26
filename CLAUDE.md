@@ -88,11 +88,38 @@ npx shadcn@latest add <component>  # Add new shadcn/ui components
 
 #### Dialog System
 
-- **Zustand store** at `lib/stores/dialog-store.ts` manages global dialog state imperatively
-- Open dialogs with `useDialogStore().openDialog(key, data?, onSuccess?)`
-- Register new dialogs in `components/dialog-provider.tsx`
-- Each dialog checks `currentDialog === MY_KEY` to determine visibility
-- Use individual Zustand selectors (not full store destructuring) to avoid unnecessary re-renders
+All dialogs share a single container managed by a Zustand stack. Content swaps inside a stable shell — the container never unmounts/remounts between stacked dialogs.
+
+**Architecture:**
+- **Store**: `lib/stores/dialog-store.ts` — stack-based (`openDialog` pushes, `closeDialog`/`goBack` pops, `closeAll` clears). Integrates with browser history via `pushState`/`popstate`.
+- **Provider**: `components/dialog-provider.tsx` — renders ONE `<Dialog>` + `<DialogContent>` that conditionally shows the current dialog's content via `DIALOG_KEYS`. All content components are lazy-loaded.
+- **Keys**: Use `DIALOG_KEYS` constants from `dialog-provider.tsx` when opening dialogs (e.g., `openDialog(DIALOG_KEYS.CART)`). Never use raw string literals.
+
+**Creating a new dialog:**
+1. Create content component (e.g., `components/order/my-dialog.tsx`) exporting `MyContent`
+2. Add lazy import + key in `dialog-provider.tsx`
+3. Add `{currentDialog === DIALOG_KEYS.MY_DIALOG && <MyContent />}` in the render
+
+**Content component structure** — every dialog content MUST follow this pattern:
+```tsx
+<div className="flex flex-col overflow-y-auto flex-1">
+  <DialogHeader>
+    <DialogTitle className="text-lg font-bold">{title}</DialogTitle>
+  </DialogHeader>
+  {/* Scrollable content with its own px-* padding */}
+  <div className="overflow-y-auto flex-1 px-5">...</div>
+  {/* Optional sticky footer */}
+  <div className="border-t border-border p-4 shrink-0">...</div>
+</div>
+```
+
+**Rules:**
+- **Always use `DialogHeader`** for the title area — it handles padding for nav buttons (back/close) on both mobile and desktop. Never use custom header divs or `dialogPanelHeaderClass` (removed).
+- **`DialogContent` has `p-0`** — content components manage their own padding. `DialogHeader` handles its own padding internally.
+- **Desktop**: fixed height (`min(600px,85vh)`) so stacked dialogs don't jump sizes. X button always visible top-right. Back arrow top-left when stacked.
+- **Mobile**: full-screen. Back chevron top-left (closes or goes back in stack).
+- **Stacking**: opening a dialog from inside another pushes onto the stack. The back button pops one level. X closes all.
+- Use individual Zustand selectors (not full store destructuring) to avoid unnecessary re-renders.
 - `components/confirm-dialog.tsx` is the reusable confirm/delete dialog (key: `CONFIRM_DIALOG`)
 
 #### File Uploads

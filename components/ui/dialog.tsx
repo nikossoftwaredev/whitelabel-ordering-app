@@ -47,21 +47,17 @@ function DialogOverlay({
   );
 }
 
-/** Shared header style for stacked dialog panels (cart, coupon, payment modals). */
-export const dialogPanelHeaderClass =
-  "flex items-center justify-between pl-16 sm:pl-5 pr-5 sm:pr-10 group-data-stacked:sm:pl-16 group-data-stacked:sm:pr-5 pt-7 pb-6 mb-2 shadow-[0_2px_4px_-1px_rgba(0,0,0,0.06)] shrink-0";
+const navBtnBase =
+  "absolute z-10 size-9 flex items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm hover:bg-muted transition-colors duration-200 cursor-pointer";
 
-const backBtnClass =
-  "absolute top-4 left-4 z-10 size-10 flex items-center justify-center rounded-full bg-white shadow-md text-foreground hover:bg-gray-50 transition-colors duration-200 cursor-pointer";
-
-const closeBtnClass =
-  "absolute top-4 right-4 z-10 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden cursor-pointer [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+const backBtnClass = `${navBtnBase} top-3.5 left-3.5`;
+const closeBtnClass = `${navBtnBase} top-3.5 right-3.5`;
 
 function MobileBackButton({ onClick }: { onClick?: () => void }) {
   if (onClick) {
     return (
       <button onClick={onClick} className={cn(backBtnClass, "sm:hidden")}>
-        <ChevronLeft className="size-5" />
+        <ChevronLeft className="size-4" />
         <span className="sr-only">Back</span>
       </button>
     );
@@ -69,48 +65,47 @@ function MobileBackButton({ onClick }: { onClick?: () => void }) {
   return (
     <DialogPrimitive.Close asChild data-slot="dialog-close">
       <button className={cn(backBtnClass, "sm:hidden")}>
-        <ChevronLeft className="size-5" />
+        <ChevronLeft className="size-4" />
         <span className="sr-only">Close</span>
       </button>
     </DialogPrimitive.Close>
   );
 }
 
-function DesktopButton({
+function DesktopButtons({
   onBack,
   onCloseAll,
 }: {
   onBack?: () => void;
   onCloseAll?: () => void;
 }) {
-  // Stacked: back arrow at top-left
-  if (onBack) {
-    return (
-      <button onClick={onBack} className={cn(backBtnClass, "hidden sm:flex")}>
-        <ChevronLeft className="size-5" />
-        <span className="sr-only">Back</span>
-      </button>
-    );
-  }
-  // Single: X at top-right
-  if (onCloseAll) {
-    return (
-      <button
-        onClick={onCloseAll}
-        className={cn(closeBtnClass, "hidden sm:flex")}
-      >
-        <XIcon />
-        <span className="sr-only">Close</span>
-      </button>
-    );
-  }
   return (
-    <DialogPrimitive.Close asChild data-slot="dialog-close">
-      <button className={cn(closeBtnClass, "hidden sm:flex")}>
-        <XIcon />
-        <span className="sr-only">Close</span>
-      </button>
-    </DialogPrimitive.Close>
+    <>
+      {/* Back arrow — only when stacked */}
+      {onBack && (
+        <button onClick={onBack} className={cn(backBtnClass, "hidden sm:flex")}>
+          <ChevronLeft className="size-4" />
+          <span className="sr-only">Back</span>
+        </button>
+      )}
+      {/* X close — always on desktop */}
+      {onCloseAll ? (
+        <button
+          onClick={onCloseAll}
+          className={cn(closeBtnClass, "hidden sm:flex")}
+        >
+          <XIcon className="size-4" />
+          <span className="sr-only">Close</span>
+        </button>
+      ) : !onBack ? (
+        <DialogPrimitive.Close asChild data-slot="dialog-close">
+          <button className={cn(closeBtnClass, "hidden sm:flex")}>
+            <XIcon className="size-4" />
+            <span className="sr-only">Close</span>
+          </button>
+        </DialogPrimitive.Close>
+      ) : null}
+    </>
   );
 }
 
@@ -152,7 +147,7 @@ function DialogContent({
                 "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                 // Desktop: centered, rounded, constrained
                 "sm:inset-auto sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]",
-                "sm:w-full sm:max-w-lg sm:max-h-[90vh] sm:rounded-2xl sm:border sm:shadow-xl",
+                "sm:w-full sm:max-w-lg sm:h-[min(600px,85vh)] sm:rounded-2xl sm:border sm:shadow-xl",
                 "data-[state=closed]:sm:zoom-out-95 data-[state=open]:sm:zoom-in-95",
               ]
             : [
@@ -168,11 +163,11 @@ function DialogContent({
         {showCloseButton && variant === "responsive" && (
           <>
             <MobileBackButton onClick={onBack ?? onCloseAll} />
-            <DesktopButton onBack={onBack} onCloseAll={onCloseAll} />
+            <DesktopButtons onBack={onBack} onCloseAll={onCloseAll} />
           </>
         )}
         {showCloseButton && variant === "default" && (
-          <DesktopButton onBack={onBack} onCloseAll={onCloseAll} />
+          <DesktopButtons onBack={onBack} onCloseAll={onCloseAll} />
         )}
         {children}
       </DialogPrimitive.Content>
@@ -185,11 +180,14 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-header"
       className={cn(
-        "flex flex-col gap-2 text-center sm:text-left",
-        "min-h-16 justify-center mb-4 pb-4",
-        "-mt-4 pt-7 -mx-6 px-6 pl-16 sm:pl-6 sm:pr-10",
+        "flex flex-col gap-1 text-center sm:text-left shrink-0",
+        "min-h-14 justify-center",
+        // Padding: clear back-btn (left) on mobile, clear X (right) on desktop
+        "pt-5 pb-4 pl-14 pr-6",
+        "sm:pl-6 sm:pr-14",
+        // When stacked on desktop, also clear back-btn on left
+        "group-data-stacked:sm:pl-14",
         "shadow-[0_2px_4px_-1px_rgba(0,0,0,0.06)]",
-        "group-data-stacked:sm:pl-16 group-data-stacked:sm:pr-6",
         className,
       )}
       {...props}

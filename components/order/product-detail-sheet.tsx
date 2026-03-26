@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
+import { ProductBadge } from "@/components/product-badge";
 import { Button } from "@/components/ui/button";
 import { DialogTitle } from "@/components/ui/dialog";
 import { useFormatPrice } from "@/hooks/use-format-price";
@@ -250,9 +251,7 @@ export const ProductDetailContent = () => {
             <div className="flex items-center gap-2 mt-2">
               {isBogoActive ? (
                 <>
-                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    1+1
-                  </span>
+                  <ProductBadge variant="offer">1+1</ProductBadge>
                   <span
                     className="text-lg font-bold"
                     style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}

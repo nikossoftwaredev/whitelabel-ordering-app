@@ -7,7 +7,7 @@ import { useEffect } from "react";
 
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
-import { dialogPanelHeaderClass, DialogTitle } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useStoreStatus } from "@/hooks/use-store-status";
 import { Link } from "@/lib/i18n/navigation";
@@ -45,11 +45,11 @@ export const CartContent = () => {
   return (
     <div className="flex flex-col overflow-y-auto flex-1">
       {/* Header */}
-      <div className={dialogPanelHeaderClass}>
-        <DialogTitle className="text-lg font-bold text-foreground">
+      <DialogHeader>
+        <DialogTitle className="text-lg font-bold">
           {t("title")}
         </DialogTitle>
-      </div>
+      </DialogHeader>
 
       {/* Address picker */}
       <button

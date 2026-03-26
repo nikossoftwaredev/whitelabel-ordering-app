@@ -15,12 +15,14 @@ export function AuthContent() {
   const t = useTranslations("AuthDialog");
 
   return (
-    <div className="p-6 space-y-6">
-      <DialogHeader className="space-y-2">
-        <DialogTitle className="text-2xl font-bold">{t("title")}</DialogTitle>
+    <div className="flex flex-col flex-1">
+      <DialogHeader>
+        <DialogTitle className="text-lg font-bold">{t("title")}</DialogTitle>
         <DialogDescription>{t("description")}</DialogDescription>
       </DialogHeader>
-      <SignInForm callbackUrl="/order" />
+      <div className="px-6 pb-6">
+        <SignInForm callbackUrl="/order" embedded />
+      </div>
     </div>
   );
 }

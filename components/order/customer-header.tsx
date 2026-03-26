@@ -26,7 +26,7 @@ export const CustomerHeader = () => {
   const tOrders = useTranslations("OrderHistory");
   const tCheckout = useTranslations("Checkout");
   const tenant = useTenant();
-  const cart = useCartStore();
+  const cartItemCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
   const selectedAddress = useAddressStore((s) => s.selectedAddress);
   const pathname = usePathname();
 
@@ -143,9 +143,10 @@ export const CustomerHeader = () => {
               size="icon"
               className={`relative size-9 rounded-lg ${hoverBgClass}`}
               onClick={() => openDialog("cart")}
+              disabled={mounted && cartItemCount === 0}
             >
               <ShoppingCart className="size-5" />
-              {mounted && cart.itemCount() > 0 && (
+              {mounted && cartItemCount > 0 && (
                 <span
                   className="absolute -top-1 -right-1 flex items-center justify-center min-w-4.5 h-4.5 rounded-full text-[10px] font-bold text-white px-1 tabular-nums"
                   style={{
@@ -153,7 +154,7 @@ export const CustomerHeader = () => {
                       "var(--brand-primary, hsl(var(--primary)))",
                   }}
                 >
-                  {cart.itemCount()}
+                  {cartItemCount}
                 </span>
               )}
             </Button>

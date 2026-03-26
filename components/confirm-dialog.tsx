@@ -45,12 +45,12 @@ export const ConfirmContent = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="flex flex-col flex-1">
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
-      <DialogFooter className="flex-row justify-center gap-2 sm:justify-center mt-4">
+      <DialogFooter className="flex-row justify-center gap-2 sm:justify-center px-6 pb-6">
         <Button variant="outline" onClick={handleCancel}>
           Cancel
         </Button>

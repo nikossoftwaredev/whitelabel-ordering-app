@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
-import { dialogPanelHeaderClass, DialogTitle } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useCartStore } from "@/lib/stores/cart-store";
@@ -216,11 +216,11 @@ export const CouponModalContent = () => {
   return (
     <div className="flex flex-col overflow-y-auto flex-1">
       {/* Header */}
-      <div className={dialogPanelHeaderClass}>
-        <DialogTitle className="text-lg font-bold text-foreground">
+      <DialogHeader>
+        <DialogTitle className="text-lg font-bold">
           {t("couponsAndPromos")}
         </DialogTitle>
-      </div>
+      </DialogHeader>
 
       <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-5">
         {/* ═══ My Coupons ═══ */}

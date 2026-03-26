@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
-export const SignInForm = ({ callbackUrl = "/" }: { callbackUrl?: string }) => {
+export const SignInForm = ({ callbackUrl = "/", embedded = false }: { callbackUrl?: string; embedded?: boolean }) => {
   const t = useTranslations("Auth");
   const [email, setEmail] = useState("");
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
@@ -126,6 +126,24 @@ export const SignInForm = ({ callbackUrl = "/" }: { callbackUrl?: string }) => {
     </div>
   );
 
+  const content = isStandalone ? (
+    <>
+      {emailForm}
+      {separator}
+      {googleButton}
+    </>
+  ) : (
+    <>
+      {googleButton}
+      {separator}
+      {emailForm}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-4">{content}</div>;
+  }
+
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
@@ -133,19 +151,7 @@ export const SignInForm = ({ callbackUrl = "/" }: { callbackUrl?: string }) => {
         <CardDescription>{t("chooseMethod")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {isStandalone ? (
-          <>
-            {emailForm}
-            {separator}
-            {googleButton}
-          </>
-        ) : (
-          <>
-            {googleButton}
-            {separator}
-            {emailForm}
-          </>
-        )}
+        {content}
       </CardContent>
     </Card>
   );

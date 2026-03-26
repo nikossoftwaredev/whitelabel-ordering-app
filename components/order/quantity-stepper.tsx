@@ -1,7 +1,7 @@
 "use client";
 
 import { Minus, Plus } from "lucide-react";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/general/utils";
 
@@ -35,8 +35,22 @@ export function QuantityStepper({
     el.classList.add("animate-shake");
   }, []);
 
+  const [expanded, setExpanded] = useState(false);
+  const collapseTimer = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Auto-collapse after 3s of no interaction
+  const scheduleCollapse = useCallback(() => {
+    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    collapseTimer.current = setTimeout(() => setExpanded(false), 3000);
+  }, []);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => { if (collapseTimer.current) clearTimeout(collapseTimer.current); };
+  }, []);
+
   if (variant === "overlay") {
-    const isCollapsed = quantity === 0;
+    const isOpen = quantity > 0 && expanded;
 
     return (
       <div
@@ -49,13 +63,16 @@ export function QuantityStepper({
         {/* Collapsible left section: minus button + quantity */}
         <div
           className="flex items-center overflow-hidden transition-all duration-300"
-          style={{ width: isCollapsed ? 0 : "3.5rem" }}
+          style={{ width: isOpen ? "3.5rem" : 0 }}
         >
           <button
             className="size-8 flex items-center justify-center hover:bg-muted transition-colors duration-200 cursor-pointer shrink-0"
             style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-            onClick={onDecrement}
-            tabIndex={isCollapsed ? -1 : 0}
+            onClick={(e) => {
+              onDecrement(e);
+              scheduleCollapse();
+            }}
+            tabIndex={isOpen ? 0 : -1}
           >
             <Minus className="size-3.5" />
           </button>
@@ -64,17 +81,30 @@ export function QuantityStepper({
           </span>
         </div>
 
-        {/* Plus button — always visible */}
+        {/* Right button: + when empty/expanded, quantity number when collapsed */}
         <button
-          ref={plusRef}
+          ref={isOpen ? plusRef : undefined}
           className="size-8 flex items-center justify-center hover:bg-muted transition-colors duration-200 cursor-pointer shrink-0"
           style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
           onClick={(e) => {
-            shake();
-            (isCollapsed ? (onAdd ?? onIncrement) : onIncrement)(e);
+            if (quantity === 0) {
+              shake();
+              (onAdd ?? onIncrement)(e);
+            } else if (isOpen) {
+              shake();
+              onIncrement(e);
+              scheduleCollapse();
+            } else {
+              setExpanded(true);
+              scheduleCollapse();
+            }
           }}
         >
-          <Plus className="size-3.5" />
+          {quantity === 0 || isOpen ? (
+            <Plus className="size-3.5" />
+          ) : (
+            <span className="text-sm font-bold tabular-nums">{quantity}</span>
+          )}
         </button>
       </div>
     );
