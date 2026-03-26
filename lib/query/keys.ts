@@ -21,12 +21,17 @@ export const queryKeys = {
   },
   analytics: {
     dashboard: (tenantId: string) => ["analytics", tenantId] as const,
+    detailed: (tenantId: string, startDate: string, endDate: string) =>
+      ["analytics", tenantId, "detailed", startDate, endDate] as const,
   },
   invoices: {
     all: (tenantId: string) => ["invoices", tenantId] as const,
   },
   promoCodes: {
     all: (tenantId: string) => ["promo-codes", tenantId] as const,
+  },
+  customerGroups: {
+    all: (tenantId: string) => ["customer-groups", tenantId] as const,
   },
   staff: {
     all: (tenantId: string) => ["staff", tenantId] as const,

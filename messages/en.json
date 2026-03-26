@@ -142,6 +142,8 @@
     "noCoupons": "No coupons available",
     "couponApplied": "Coupon applied",
     "couponExpires": "Expires {date}",
+    "noExpiry": "No expiry",
+    "recurringCoupon": "Recurring",
     "couponSaving": "Saving {amount} on this order",
     "couponMinOrder": "Min order {amount}",
     "maxSavingsNotice": "Max savings per order: {amount}",
@@ -159,6 +161,7 @@
     "addComment": "Add comment for venue...",
     "couponDiscount": "Coupon discount",
     "promoDiscount": "Promo discount",
+    "groupDiscount": "Group discount",
     "expires": "Expires",
     "totalSavings": "You save {amount} on this order!"
   },
@@ -272,7 +275,43 @@
     "popularProducts": "Top Products",
     "orderTypeBreakdown": "Order Types",
     "peakHours": "Peak Hours (Today)",
-    "noData": "No data available"
+    "noData": "No data available",
+    "detailedTitle": "Detailed Analytics",
+    "downloadPdf": "Download PDF",
+    "downloading": "Downloading...",
+    "expand": "View details",
+    "tabs": {
+      "revenue": "Revenue",
+      "orders": "Orders",
+      "orderTypes": "Order Types",
+      "peakHours": "Peak Hours"
+    },
+    "presets": {
+      "today": "Today",
+      "last7days": "Last 7 Days",
+      "thisMonth": "This Month",
+      "lastMonth": "Last Month",
+      "thisYear": "This Year",
+      "lastYear": "Last Year",
+      "custom": "Custom..."
+    },
+    "customRange": {
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "apply": "Apply"
+    },
+    "kpi": {
+      "totalRevenue": "Total Revenue",
+      "avgDailyRevenue": "Avg Daily Revenue",
+      "peakDay": "Peak Day",
+      "totalOrders": "Total Orders",
+      "avgDailyOrders": "Avg Daily Orders",
+      "avgOrderValue": "Avg Order Value",
+      "mostPopularType": "Most Popular Type",
+      "percentOfTotal": "% of Total",
+      "busiestHour": "Busiest Hour",
+      "quietestHour": "Quietest Hour"
+    }
   },
   "Kitchen": {
     "title": "Kitchen Display",

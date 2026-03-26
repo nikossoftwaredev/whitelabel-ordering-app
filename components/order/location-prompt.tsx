@@ -1,6 +1,6 @@
 "use client";
 
-import { LogIn, MapPin, Navigation, X } from "lucide-react";
+import { LogIn, MapPin, Navigation } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useCallback,useEffect, useState } from "react";
@@ -123,16 +123,8 @@ export function LocationPrompt({ onLocationSet }: LocationPromptProps) {
       <SheetContent
         side="bottom"
         className="rounded-t-3xl p-0 gap-0 max-h-[85vh]"
-        showCloseButton={false}
+        onBack={handleDismiss}
       >
-        {/* Close button */}
-        <button
-          onClick={handleDismiss}
-          className="absolute top-4 right-4 z-10 size-8 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors duration-200 cursor-pointer"
-        >
-          <X className="size-4" />
-        </button>
-
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />

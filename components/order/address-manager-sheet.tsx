@@ -2,16 +2,15 @@
 
 import { useMutation } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   Briefcase,
   Building2,
   Check,
+  ChevronLeft,
   Crosshair,
   Home,
   Loader2,
   MapPin,
   MapPinOff,
-  Plus,
   Search,
   Trash2,
 } from "lucide-react";
@@ -21,6 +20,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { AddButton } from "@/components/add-button";
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { PillSelector } from "@/components/pill-selector";
 import { useTenant } from "@/components/tenant-provider";
@@ -362,9 +362,17 @@ export function AddressManagerContent() {
                 {addresses.map((addr) => {
                   const isSelected = selectedAddress?.id === addr.id;
                   return (
-                    <button
+                    <div
                       key={addr.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleSelectAddress(addr)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleSelectAddress(addr);
+                        }
+                      }}
                       className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl my-1 transition-all duration-200 cursor-pointer text-left ${
                         isSelected
                           ? "bg-primary/10"
@@ -413,7 +421,7 @@ export function AddressManagerContent() {
                       >
                         <Trash2 className="size-3.5 text-muted-foreground hover:text-destructive" />
                       </button>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -433,14 +441,13 @@ export function AddressManagerContent() {
           </div>
 
           <div className="px-6 py-5 shrink-0">
-            <Button
+            <AddButton
               variant="brand"
               onClick={handleAddAddress}
-              icon={<Plus className="size-4.5" />}
               className="w-full h-12 rounded-xl font-semibold text-[15px]"
             >
               {t("addNewAddress")}
-            </Button>
+            </AddButton>
           </div>
         </>
       )}
@@ -451,9 +458,9 @@ export function AddressManagerContent() {
           <div className="px-5 shrink-0">
             <button
               onClick={handleBack}
-              className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
+              className="size-10 flex items-center justify-center rounded-full bg-white shadow-md text-foreground hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
             >
-              <ArrowLeft className="size-5 text-foreground" />
+              <ChevronLeft className="size-5" />
             </button>
           </div>
 
@@ -543,9 +550,9 @@ export function AddressManagerContent() {
           <div className="px-5 shrink-0">
             <button
               onClick={handleBack}
-              className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-200 cursor-pointer"
+              className="size-10 flex items-center justify-center rounded-full bg-white shadow-md text-foreground hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
             >
-              <ArrowLeft className="size-5 text-foreground" />
+              <ChevronLeft className="size-5" />
             </button>
           </div>
 

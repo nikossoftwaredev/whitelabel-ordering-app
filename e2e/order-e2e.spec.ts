@@ -58,8 +58,17 @@ test.describe("Order E2E: place and accept", () => {
       timeZone: t.timezone || "Europe/Athens",
       weekday: "short",
     }).formatToParts(now);
-    const weekdayShort = parts.find((p) => p.type === "weekday")?.value || "Sat";
-    const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const weekdayShort =
+      parts.find((p) => p.type === "weekday")?.value || "Sat";
+    const dayMap: Record<string, number> = {
+      Sun: 0,
+      Mon: 1,
+      Tue: 2,
+      Wed: 3,
+      Thu: 4,
+      Fri: 5,
+      Sat: 6,
+    };
     const todayDow = dayMap[weekdayShort] ?? 6;
 
     await prisma.operatingHour.updateMany({
@@ -112,8 +121,12 @@ test.describe("Order E2E: place and accept", () => {
       select: { id: true },
     });
     for (const o of staleOrders) {
-      await prisma.promoCodeUsage.deleteMany({ where: { orderId: o.id } }).catch(() => {});
-      await prisma.orderItemModifier.deleteMany({ where: { orderItem: { orderId: o.id } } });
+      await prisma.promoCodeUsage
+        .deleteMany({ where: { orderId: o.id } })
+        .catch(() => {});
+      await prisma.orderItemModifier.deleteMany({
+        where: { orderItem: { orderId: o.id } },
+      });
       await prisma.orderItem.deleteMany({ where: { orderId: o.id } });
       await prisma.order.delete({ where: { id: o.id } });
     }
@@ -173,7 +186,7 @@ test.describe("Order E2E: place and accept", () => {
           paymentMethod: "CASH",
           tipAmount: 0,
         },
-      }
+      },
     );
 
     // Handle store-closed gracefully
@@ -201,16 +214,18 @@ test.describe("Order E2E: place and accept", () => {
 
     // ── 3. Customer: Verify confirmation page ──
     await page.goto(
-      `/en/order/confirmation?orderId=${orderId}&orderNumber=${encodeURIComponent(orderNumber)}`
+      `/en/order/confirmation?orderId=${orderId}&orderNumber=${encodeURIComponent(orderNumber)}`,
     );
     await expect(
-      page.getByText(new RegExp(`Order.*${orderNumber.replace("#", "")}`)).first()
+      page
+        .getByText(new RegExp(`Order.*${orderNumber.replace("#", "")}`))
+        .first(),
     ).toBeVisible({ timeout: 10000 });
 
     // Should show waiting/received status
-    await expect(
-      page.getByText(/Waiting|Received/i).first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/Waiting|Received/i).first()).toBeVisible({
+      timeout: 5000,
+    });
 
     // ── 4. Admin: Accept the order (use admin cookie via extra headers) ──
     const adminHeaders = {
@@ -223,7 +238,7 @@ test.describe("Order E2E: place and accept", () => {
         method: "PATCH",
         headers: adminHeaders,
         data: { status: "ACCEPTED" },
-      }
+      },
     );
     expect(acceptRes.status()).toBe(200);
     const acceptedOrder = await acceptRes.json();
@@ -231,9 +246,9 @@ test.describe("Order E2E: place and accept", () => {
     expect(acceptedOrder.acceptedAt).toBeTruthy();
 
     // ── 5. Customer: SSE updates the page ──
-    await expect(
-      page.getByText(/accepted|confirmed/i).first()
-    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/accepted|confirmed/i).first()).toBeVisible({
+      timeout: 15000,
+    });
 
     // ── 6. Admin: Advance PREPARING → READY → COMPLETED ──
     const prepRes = await page.request.fetch(
@@ -242,7 +257,7 @@ test.describe("Order E2E: place and accept", () => {
         method: "PATCH",
         headers: adminHeaders,
         data: { status: "PREPARING" },
-      }
+      },
     );
     expect(prepRes.status()).toBe(200);
 
@@ -252,7 +267,7 @@ test.describe("Order E2E: place and accept", () => {
         method: "PATCH",
         headers: adminHeaders,
         data: { status: "READY" },
-      }
+      },
     );
     expect(readyRes.status()).toBe(200);
 
@@ -262,7 +277,7 @@ test.describe("Order E2E: place and accept", () => {
         method: "PATCH",
         headers: adminHeaders,
         data: { status: "COMPLETED" },
-      }
+      },
     );
     expect(completeRes.status()).toBe(200);
     const completedOrder = await completeRes.json();
@@ -271,7 +286,7 @@ test.describe("Order E2E: place and accept", () => {
 
     // ── 7. Customer: Confirmation page shows completion state ──
     await expect(
-      page.getByText(/complete|Enjoy your meal/i).first()
+      page.getByText(/complete|Enjoy your meal/i).first(),
     ).toBeVisible({ timeout: 15000 });
 
     // ── 8. Verify in database ──
@@ -293,8 +308,13 @@ test.describe("Order E2E: place and accept", () => {
   });
 
   // UI test is desktop-only — mobile PWA overlay and viewport constraints make it flaky
-  test("customer adds item via UI and reaches checkout", async ({ page, browserName }, testInfo) => {
-    test.skip(testInfo.project.name === "Mobile Chrome", "UI flow is desktop-only");
+  test("customer adds item via UI and reaches checkout", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name === "Mobile Chrome",
+      "UI flow is desktop-only",
+    );
 
     // Set customer auth cookie
     await page.context().addCookies([
@@ -345,20 +365,23 @@ test.describe("Order E2E: place and accept", () => {
     await page.waitForTimeout(500);
 
     // Cart bar should appear
-    await expect(
-      page.getByText(/View Cart/i).first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/View Cart/i).first()).toBeVisible({
+      timeout: 5000,
+    });
 
     // Open cart — use force click to bypass any overlapping banners
-    await page.getByText(/View Cart/i).first().click({ force: true });
+    await page
+      .getByText(/View Cart/i)
+      .first()
+      .click({ force: true });
 
     // Wait for cart sheet animation
     await page.waitForTimeout(500);
 
     // Cart sheet should show the item
-    await expect(
-      page.getByText(product.name).first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(product.name).first()).toBeVisible({
+      timeout: 5000,
+    });
 
     // Click checkout
     const checkoutBtn = page.getByText(/Proceed to checkout/i).first();
@@ -369,21 +392,21 @@ test.describe("Order E2E: place and accept", () => {
     await expect(page).toHaveURL(/checkout/, { timeout: 10000 });
 
     // Verify checkout shows the item
-    await expect(
-      page.getByText(product.name).first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(product.name).first()).toBeVisible({
+      timeout: 5000,
+    });
 
     // Verify checkout has Pickup and Cash options
-    await expect(
-      page.getByText(/Pickup/i).first()
-    ).toBeVisible({ timeout: 3000 });
-    await expect(
-      page.getByText(/Cash/i).first()
-    ).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText(/Pickup/i).first()).toBeVisible({
+      timeout: 3000,
+    });
+    await expect(page.getByText(/Cash/i).first()).toBeVisible({
+      timeout: 3000,
+    });
 
     // Verify Place order button exists
-    await expect(
-      page.getByText(/Place order/i).first()
-    ).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText(/Place order/i).first()).toBeVisible({
+      timeout: 3000,
+    });
   });
 });

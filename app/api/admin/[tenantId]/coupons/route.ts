@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { isAuthResult, requireRole } from "@/lib/auth/require-role";
-import { generateCouponCode } from "@/lib/coupons/validate";
+import { computeExpiresAt, generateCouponCode } from "@/lib/coupons/validate";
 import { prisma } from "@/lib/db";
 
 type Params = { params: Promise<{ tenantId: string }> };
@@ -27,12 +27,13 @@ export async function GET(request: NextRequest, { params }: Params) {
   if (status === "available") {
     where.isUsed = false;
     where.isActive = true;
-    where.expiresAt = { gt: now };
+    where.OR = [{ expiresAt: null }, { expiresAt: { gt: now } }];
   } else if (status === "used") {
     where.isUsed = true;
   } else if (status === "expired") {
     where.isUsed = false;
-    where.expiresAt = { lte: now };
+    where.isActive = true;
+    where.expiresAt = { not: null, lte: now };
   }
 
   const coupons = await prisma.coupon.findMany({
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
 const createCouponSchema = z.object({
   customerId: z.string().cuid(),
+  noExpiry: z.boolean().default(false),
   type: z.enum(["FIXED", "PERCENTAGE"]),
   value: z.number().int().min(1),
   description: z.string().max(200).optional(),
@@ -74,10 +76,18 @@ export async function POST(request: NextRequest, { params }: Params) {
     );
   }
 
-  const { customerId, type, value, description, minOrder, maxDiscount, validDays } =
-    parsed.data;
+  const {
+    customerId,
+    noExpiry,
+    type,
+    value,
+    description,
+    minOrder,
+    maxDiscount,
+    validDays,
+  } = parsed.data;
 
-  // Verify customer belongs to this tenant
+  // Single-use coupon for a specific customer
   const customer = await prisma.customer.findFirst({
     where: { id: customerId, tenantId },
   });
@@ -97,8 +107,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     attempts++;
   } while (attempts < 5);
 
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + validDays);
+  const expiresAt = computeExpiresAt(noExpiry, validDays);
 
   const coupon = await prisma.coupon.create({
     data: {

@@ -9,7 +9,7 @@ interface CartItemModifier {
   priceAdjustment: number;
 }
 
-interface CartItem {
+export interface CartItem {
   cartItemId: string;
   productId: string;
   productName: string;
@@ -36,6 +36,12 @@ interface CartStore {
   subtotal: () => number;
 }
 
+const modifierKey = (modifiers: CartItemModifier[]) =>
+  modifiers
+    .map((m) => m.modifierOptionId)
+    .sort()
+    .join(",");
+
 const calcTotal = (item: Omit<CartItem, "totalPrice" | "cartItemId">) => {
   const modifierTotal = item.modifiers.reduce(
     (sum, m) => sum + m.priceAdjustment,
@@ -55,13 +61,30 @@ export const useCartStore = create<CartStore>()(
       items: [],
       tenantSlug: "",
       addItem: (item) => {
-        const cartItemId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        set((state) => ({
-          items: [
-            ...state.items,
-            { ...item, cartItemId, totalPrice: calcTotal(item) },
-          ],
-        }));
+        const incomingKey = modifierKey(item.modifiers);
+
+        set((state) => {
+          const existingIndex = state.items.findIndex(
+            (existing) =>
+              existing.productId === item.productId &&
+              modifierKey(existing.modifiers) === incomingKey &&
+              existing.offerType === item.offerType
+          );
+
+          if (existingIndex !== -1) {
+            const updated = state.items.map((existing, i) => {
+              if (i !== existingIndex) return existing;
+              const merged = { ...existing, quantity: existing.quantity + item.quantity };
+              return { ...merged, totalPrice: calcTotal(merged) };
+            });
+            return { items: updated };
+          }
+
+          const cartItemId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          return {
+            items: [...state.items, { ...item, cartItemId, totalPrice: calcTotal(item) }],
+          };
+        });
       },
       removeItem: (cartItemId) => {
         set((state) => ({

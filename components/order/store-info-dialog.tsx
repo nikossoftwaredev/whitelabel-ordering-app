@@ -39,7 +39,7 @@ export const StoreInfoContent = () => {
 
   return (
     <div className="flex flex-col overflow-y-auto flex-1">
-      <DialogHeader className="p-6 pb-4">
+      <DialogHeader className="pl-14 pr-6 pt-6 pb-4 sm:p-6 sm:pb-4">
         <DialogTitle className="text-lg">{storeName}</DialogTitle>
         {description && <DialogDescription>{description}</DialogDescription>}
       </DialogHeader>

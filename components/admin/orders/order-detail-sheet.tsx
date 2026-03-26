@@ -137,7 +137,7 @@ export function OrderDetailSheet({
           </SheetTitle>
         </SheetHeader>
 
-        <div className="space-y-4 px-1">
+        <div className="space-y-4">
           {/* Scheduled badge */}
           {order.scheduledFor && (
             <div className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-lg px-2.5 py-1 w-fit">
@@ -163,15 +163,15 @@ export function OrderDetailSheet({
           </div>
 
           {/* Customer info */}
-          {order.customer && (
+          {(order.customerName || order.customer) && (
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              {order.customer.name && (
+              {order.customerName && (
                 <span className="flex items-center gap-1">
                   <User className="size-3.5" />
-                  {order.customer.name}
+                  {order.customerName}
                 </span>
               )}
-              {order.customer.phone && (
+              {order.customer?.phone && (
                 <span className="flex items-center gap-1">
                   <Phone className="size-3.5" />
                   {order.customer.phone}
@@ -255,31 +255,54 @@ export function OrderDetailSheet({
           <Separator />
 
           {/* Items */}
-          <ul className="space-y-1.5">
+          <ul className="space-y-3">
             {order.items.map((item, idx) => (
-              <li key={idx}>
-                <div className="flex items-center justify-between text-sm">
-                  <span>
-                    <span className="font-medium">{item.quantity}x</span>{" "}
-                    {item.productName}
-                  </span>
-                  <span className="text-muted-foreground">
+              <li
+                key={idx}
+                className="pb-3 border-b border-border/50 last:border-b-0 last:pb-0"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-base font-bold tabular-nums shrink-0">
+                      {item.quantity}x
+                    </span>
+                    <span className="font-semibold text-[15px]">
+                      {item.productName}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground shrink-0">
                     {formatPrice(item.unitPrice * item.quantity)}
                   </span>
                 </div>
                 {item.modifiers.length > 0 && (
-                  <div className="ml-5 text-xs text-muted-foreground">
-                    {item.modifiers
-                      .map(
-                        (m) =>
-                          `+ ${m.name}${m.priceAdjustment > 0 ? ` (${formatPrice(m.priceAdjustment)})` : ""}`,
-                      )
-                      .join(", ")}
+                  <div className="ml-9 mt-1 space-y-0.5">
+                    {item.modifiers.map((m, mi) => (
+                      <div
+                        key={mi}
+                        className="flex items-center justify-between text-sm text-muted-foreground"
+                      >
+                        <span>+ {m.name}</span>
+                        {m.priceAdjustment > 0 && (
+                          <span className="text-xs">
+                            {formatPrice(m.priceAdjustment)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </li>
             ))}
           </ul>
+
+          {/* Customer notes */}
+          {order.customerNote && (
+            <div className="px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                {order.customerNote}
+              </p>
+            </div>
+          )}
 
           <Separator />
 
@@ -289,10 +312,20 @@ export function OrderDetailSheet({
               {formatPrice(order.total)}
             </span>
             <div className="flex items-center gap-2">
-              {order.discount > 0 && (
+              {order.promoCode && order.promoDiscount > 0 && (
                 <span className="text-xs text-green-600">
-                  -{formatPrice(order.discount)}{" "}
-                  {order.promoCode && `(${order.promoCode})`}
+                  -{formatPrice(order.promoDiscount)} ({order.promoCode})
+                </span>
+              )}
+              {order.couponDiscount > 0 && (
+                <span className="text-xs text-green-600">
+                  -{formatPrice(order.couponDiscount)} coupon
+                </span>
+              )}
+              {order.groupDiscount > 0 && (
+                <span className="text-xs text-green-600">
+                  -{formatPrice(order.groupDiscount)}
+                  {order.groupDiscountName ? ` (${order.groupDiscountName})` : " group"}
                 </span>
               )}
               {order.tipAmount > 0 && (

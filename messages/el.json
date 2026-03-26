@@ -142,6 +142,8 @@
     "noCoupons": "Δεν υπάρχουν διαθέσιμα κουπόνια",
     "couponApplied": "Εφαρμόστηκε κουπόνι",
     "couponExpires": "Λήγει {date}",
+    "noExpiry": "Χωρίς λήξη",
+    "recurringCoupon": "Επαναλαμβανόμενο",
     "couponSaving": "Εξοικονομείτε {amount} σε αυτή την παραγγελία",
     "couponMinOrder": "Ελάχιστη παραγγελία {amount}",
     "maxSavingsNotice": "Μέγιστη εξοικονόμηση ανά παραγγελία: {amount}",
@@ -159,6 +161,7 @@
     "addComment": "Προσθήκη σχολίου...",
     "couponDiscount": "Έκπτωση κουπονιού",
     "promoDiscount": "Έκπτωση προσφοράς",
+    "groupDiscount": "Έκπτωση ομάδας",
     "expires": "Λήγει",
     "totalSavings": "Εξοικονομείτε {amount} σε αυτή την παραγγελία!"
   },
@@ -272,7 +275,43 @@
     "popularProducts": "Δημοφιλή Προϊόντα",
     "orderTypeBreakdown": "Τύποι Παραγγελιών",
     "peakHours": "Ώρες Αιχμής (Σήμερα)",
-    "noData": "Δεν υπάρχουν δεδομένα"
+    "noData": "Δεν υπάρχουν δεδομένα",
+    "detailedTitle": "Αναλυτικά Στατιστικά",
+    "downloadPdf": "Λήψη PDF",
+    "downloading": "Λήψη...",
+    "expand": "Προβολή λεπτομερειών",
+    "tabs": {
+      "revenue": "Έσοδα",
+      "orders": "Παραγγελίες",
+      "orderTypes": "Τύποι Παραγγελιών",
+      "peakHours": "Ώρες Αιχμής"
+    },
+    "presets": {
+      "today": "Σήμερα",
+      "last7days": "Τελευταίες 7 Ημέρες",
+      "thisMonth": "Τρέχων Μήνας",
+      "lastMonth": "Προηγούμενος Μήνας",
+      "thisYear": "Τρέχον Έτος",
+      "lastYear": "Προηγούμενο Έτος",
+      "custom": "Προσαρμοσμένο..."
+    },
+    "customRange": {
+      "startDate": "Ημ. Έναρξης",
+      "endDate": "Ημ. Λήξης",
+      "apply": "Εφαρμογή"
+    },
+    "kpi": {
+      "totalRevenue": "Συνολικά Έσοδα",
+      "avgDailyRevenue": "Μ.Ο. Ημερήσιων Εσόδων",
+      "peakDay": "Κορυφαία Ημέρα",
+      "totalOrders": "Σύνολο Παραγγελιών",
+      "avgDailyOrders": "Μ.Ο. Ημερήσιων Παραγγελιών",
+      "avgOrderValue": "Μ.Ο. Αξίας Παραγγελίας",
+      "mostPopularType": "Δημοφιλέστερος Τύπος",
+      "percentOfTotal": "% Συνόλου",
+      "busiestHour": "Πιο Πολυάσχολη Ώρα",
+      "quietestHour": "Πιο Ήσυχη Ώρα"
+    }
   },
   "Kitchen": {
     "title": "Οθόνη Κουζίνας",

@@ -18,6 +18,14 @@ interface CouponData {
   discount: number; // calculated discount in cents
 }
 
+export interface GroupDiscountData {
+  groupId: string;
+  groupName: string;
+  discountType: "FIXED" | "PERCENTAGE";
+  discountValue: number;
+  discount: number; // calculated amount in cents
+}
+
 interface CheckoutStore {
   // Order type
   orderType: OrderType;
@@ -70,8 +78,12 @@ interface CheckoutStore {
   removePromo: () => void;
 
   // Coupons
-  selectedCoupon: CouponData | null;
-  setSelectedCoupon: (coupon: CouponData | null) => void;
+  selectedCoupons: CouponData[];
+  setSelectedCoupons: (coupons: CouponData[]) => void;
+
+  // Group discount (auto-applied)
+  groupDiscount: GroupDiscountData | null;
+  setGroupDiscount: (gd: GroupDiscountData | null) => void;
 
   // Submission
   isSubmitting: boolean;
@@ -110,7 +122,8 @@ const initialState = {
   appliedPromo: null as AppliedPromo | null,
   promoLoading: false,
   promoError: "",
-  selectedCoupon: null as CouponData | null,
+  selectedCoupons: [] as CouponData[],
+  groupDiscount: null as GroupDiscountData | null,
   isSubmitting: false,
   stripeClientSecret: null as string | null,
   pendingOrderId: null as string | null,
@@ -164,7 +177,8 @@ export const useCheckoutStore = create<CheckoutStore>((set, get) => ({
   setPromoError: (promoError) => set({ promoError }),
   removePromo: () => set({ appliedPromo: null, promoInput: "", promoError: "" }),
 
-  setSelectedCoupon: (selectedCoupon) => set({ selectedCoupon }),
+  setSelectedCoupons: (selectedCoupons) => set({ selectedCoupons }),
+  setGroupDiscount: (groupDiscount) => set({ groupDiscount }),
 
   setIsSubmitting: (isSubmitting) => set({ isSubmitting }),
 

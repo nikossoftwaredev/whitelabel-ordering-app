@@ -6,7 +6,6 @@ import {
   Copy,
   Loader2,
   Percent,
-  Plus,
   Tag,
   Trash2,
   Users,
@@ -14,6 +13,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { AddButton } from "@/components/add-button";
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -264,10 +264,9 @@ export function PromoCodeManagement({ tenantId }: { tenantId: string }) {
             Create and manage discount codes for your customers.
           </p>
         </div>
-        <Button onClick={openCreate} className="cursor-pointer">
-          <Plus className="size-4 mr-2" />
+        <AddButton onClick={openCreate} className="cursor-pointer">
           Create Code
-        </Button>
+        </AddButton>
       </div>
 
       {/* Stats */}

@@ -24,7 +24,7 @@ export const createOrderSchema = z.object({
   tipAmount: z.number().int().min(0).max(100_00).optional().default(0),
   scheduledFor: z.string().datetime().optional(),
   promoCode: z.string().max(50).optional(),
-  couponIds: z.array(z.string().cuid()).max(1).optional(),
+  couponIds: z.array(z.string().cuid()).max(5).optional(),
   deliveryLat: z.number().optional(),
   deliveryLng: z.number().optional(),
   deliveryAddressDetails: z.object({

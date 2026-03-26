@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { Expand } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   Bar,
@@ -14,6 +15,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { centsToEuros } from "@/lib/general/formatters";
@@ -28,19 +30,19 @@ interface AnalyticsData {
   popularProducts: { name: string; quantity: number }[];
 }
 
-const ORDER_TYPE_COLORS: Record<string, string> = {
+export const ORDER_TYPE_COLORS: Record<string, string> = {
   PICKUP: "hsl(var(--chart-1, 220 70% 50%))",
   DELIVERY: "hsl(var(--chart-2, 160 60% 45%))",
   DINE_IN: "hsl(var(--chart-3, 30 80% 55%))",
 };
 
 
-function formatShortDay(dateStr: string) {
+export function formatShortDay(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("en", { weekday: "short" });
 }
 
-function formatHour(hour: number) {
+export function formatHour(hour: number) {
   if (hour === 0) return "12AM";
   if (hour < 12) return `${hour}AM`;
   if (hour === 12) return "12PM";
@@ -60,7 +62,7 @@ function ChartSkeleton() {
   );
 }
 
-function ChartTooltipContent({ active, payload, label, valueFormatter }: any) {
+export function ChartTooltipContent({ active, payload, label, valueFormatter }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border bg-background px-3 py-2 shadow-md">
@@ -72,7 +74,15 @@ function ChartTooltipContent({ active, payload, label, valueFormatter }: any) {
   );
 }
 
-export function AnalyticsCharts({ tenantId }: { tenantId: string }) {
+export type AnalyticsTab = "revenue" | "orders" | "orderTypes" | "peakHours";
+
+export function AnalyticsCharts({
+  tenantId,
+  onExpandChart,
+}: {
+  tenantId: string;
+  onExpandChart?: (tab: AnalyticsTab) => void;
+}) {
   const t = useTranslations("Analytics");
 
   const { data, isLoading } = useQuery<AnalyticsData>({
@@ -110,10 +120,21 @@ export function AnalyticsCharts({ tenantId }: { tenantId: string }) {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Revenue by Day */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium">
               {t("revenue7Days")}
             </CardTitle>
+            {onExpandChart && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 text-muted-foreground"
+                onClick={() => onExpandChart("revenue")}
+                title={t("expand")}
+              >
+                <Expand className="size-3.5" />
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {data.revenueByDay.every((d) => d.revenue === 0) ? (
@@ -157,10 +178,21 @@ export function AnalyticsCharts({ tenantId }: { tenantId: string }) {
 
         {/* Orders by Day */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium">
               {t("orders7Days")}
             </CardTitle>
+            {onExpandChart && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 text-muted-foreground"
+                onClick={() => onExpandChart("orders")}
+                title={t("expand")}
+              >
+                <Expand className="size-3.5" />
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {data.ordersByDay.every((d) => d.count === 0) ? (
@@ -199,10 +231,21 @@ export function AnalyticsCharts({ tenantId }: { tenantId: string }) {
 
         {/* Order Type Breakdown */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium">
               {t("orderTypeBreakdown")}
             </CardTitle>
+            {onExpandChart && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 text-muted-foreground"
+                onClick={() => onExpandChart("orderTypes")}
+                title={t("expand")}
+              >
+                <Expand className="size-3.5" />
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {data.orderTypeBreakdown.length === 0 ? (
@@ -264,10 +307,21 @@ export function AnalyticsCharts({ tenantId }: { tenantId: string }) {
 
         {/* Peak Hours */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium">
               {t("peakHours")}
             </CardTitle>
+            {onExpandChart && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 text-muted-foreground"
+                onClick={() => onExpandChart("peakHours")}
+                title={t("expand")}
+              >
+                <Expand className="size-3.5" />
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {data.peakHours.length === 0 ? (

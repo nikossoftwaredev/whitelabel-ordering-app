@@ -1,14 +1,19 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { useCallback } from "react";
 
+import { PRODUCT_DETAIL_DIALOG } from "@/components/order/product-detail-sheet";
 import { QuantityStepper } from "@/components/order/quantity-stepper";
+import { useTenant } from "@/components/tenant-provider";
 import { Separator } from "@/components/ui/separator";
 import { useFormatPrice } from "@/hooks/use-format-price";
-import { Link } from "@/lib/i18n/navigation";
-import { useCartStore } from "@/lib/stores/cart-store";
+import { queryKeys } from "@/lib/query/keys";
+import { type CartItem, useCartStore } from "@/lib/stores/cart-store";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 export function CheckoutItemsList() {
   const t = useTranslations("Checkout");
@@ -16,28 +21,55 @@ export function CheckoutItemsList() {
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const formatPrice = useFormatPrice();
+  const tenant = useTenant();
+  const openDialog = useDialogStore((s) => s.openDialog);
+
+  const { data: menuData } = useQuery<{
+    categories: { products: { id: string; [key: string]: unknown }[] }[];
+  }>({
+    queryKey: queryKeys.menu.all(tenant.slug),
+    queryFn: async () => {
+      const res = await fetch(`/api/tenants/${tenant.slug}/menu`);
+      if (!res.ok) throw new Error("Failed to fetch menu");
+      return res.json();
+    },
+  });
+
+  const handleItemClick = useCallback(
+    (item: CartItem) => {
+      if (!menuData) return;
+      const product = menuData.categories
+        .flatMap((c) => c.products)
+        .find((p) => p.id === item.productId);
+      if (!product) return;
+      openDialog(PRODUCT_DETAIL_DIALOG, {
+        product,
+        editingCartItem: {
+          cartItemId: item.cartItemId,
+          quantity: item.quantity,
+          modifiers: item.modifiers,
+          notes: item.notes,
+        },
+      });
+    },
+    [menuData, openDialog],
+  );
 
   return (
     <div className="px-4 pb-2">
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           {t("orderItems")}
         </h3>
-        <Link
-          href="/order"
-          className="text-xs font-semibold flex items-center gap-0.5 hover:opacity-80 transition-opacity"
-          style={{
-            color: "var(--brand-primary, hsl(var(--primary)))",
-          }}
-        >
-          {t("addMore")}
-        </Link>
       </div>
 
       <div className="space-y-0">
         {items.map((item, index) => (
           <div key={item.cartItemId}>
-            <div className="flex gap-3 py-3">
+            <div
+              className="flex gap-3 py-3 -mx-2 px-2 rounded-xl cursor-pointer hover:bg-muted/30 transition-colors duration-200"
+              onClick={() => handleItemClick(item)}
+            >
               {/* Product image */}
               {item.productImage ? (
                 <Image

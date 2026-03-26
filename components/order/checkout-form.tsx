@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { calculateBestGroupDiscount } from "@/lib/groups/discount";
 import { Link, useRouter } from "@/lib/i18n/navigation";
 import { useAddressStore } from "@/lib/stores/address-store";
 import { useCartStore } from "@/lib/stores/cart-store";
@@ -126,6 +127,45 @@ export const CheckoutForm = () => {
     }
   };
 
+  // Auto-apply group discount
+  const subtotal = cart.subtotal();
+  const [groupDiscountConfigs, setGroupDiscountConfigs] = useState<
+    { id: string; name: string; discountType: "FIXED" | "PERCENTAGE"; discountValue: number; minOrder: number | null; maxDiscount: number | null; discountEnabled: boolean }[]
+  >([]);
+
+  useEffect(() => {
+    if (!session || !tenant?.slug) return;
+    fetch(`/api/tenants/${tenant.slug}/coupons`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.groupDiscounts) {
+          setGroupDiscountConfigs(
+            data.groupDiscounts.map((g: Record<string, unknown>) => ({
+              id: g.id as string,
+              name: g.name as string,
+              discountType: g.discountType as "FIXED" | "PERCENTAGE",
+              discountValue: g.discountValue as number,
+              minOrder: g.minOrder as number | null,
+              maxDiscount: g.maxDiscount as number | null,
+              discountEnabled: true,
+            })),
+          );
+        }
+      })
+      .catch(() => {});
+     
+  }, [session, tenant?.slug]);
+
+  useEffect(() => {
+    if (groupDiscountConfigs.length === 0) {
+      if (checkout.groupDiscount !== null) checkout.setGroupDiscount(null);
+      return;
+    }
+    const best = calculateBestGroupDiscount(groupDiscountConfigs, subtotal);
+    checkout.setGroupDiscount(best);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupDiscountConfigs, subtotal]);
+
   const buildScheduledISO = () => {
     const now = new Date();
     const target = new Date(now);
@@ -214,8 +254,8 @@ export const CheckoutForm = () => {
             ? buildScheduledISO()
             : undefined,
         promoCode: checkout.appliedPromo?.code || undefined,
-        couponIds: checkout.selectedCoupon
-          ? [checkout.selectedCoupon.id]
+        couponIds: checkout.selectedCoupons.length > 0
+          ? checkout.selectedCoupons.map((c) => c.id)
           : undefined,
       };
 
@@ -290,11 +330,11 @@ export const CheckoutForm = () => {
 
   const isBlocked = !session || (session && !checkout.profileChecked);
   const isNotLoggedIn = !session;
-  const subtotal = cart.subtotal();
   const tipAmount = checkout.computeTip();
   const promoDiscount = checkout.appliedPromo?.discount ?? 0;
-  const couponDiscount = checkout.selectedCoupon?.discount ?? 0;
-  const totalDiscount = promoDiscount + couponDiscount;
+  const couponDiscount = checkout.selectedCoupons.reduce((sum, c) => sum + c.discount, 0);
+  const groupDiscountAmount = checkout.groupDiscount?.discount ?? 0;
+  const totalDiscount = promoDiscount + couponDiscount + groupDiscountAmount;
   const orderTotal = Math.max(0, subtotal - totalDiscount) + tipAmount;
 
   return (

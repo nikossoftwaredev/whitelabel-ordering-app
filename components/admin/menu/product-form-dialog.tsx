@@ -198,13 +198,13 @@ export const ProductFormDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh]">
+      <DialogContent className="sm:max-w-lg min-h-0">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Product" : "New Product"}
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="max-h-[60vh]">
+        <ScrollArea className="flex-1 overflow-hidden">
           <form onSubmit={handleSubmit} className="space-y-4 pr-4">
             {/* Category */}
             <div className="space-y-2">

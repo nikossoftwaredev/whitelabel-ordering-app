@@ -50,6 +50,8 @@ interface ConfigData {
   couponMinOrder: number | null;
   couponMaxDiscount: number | null;
   couponMaxSavingsPerOrder: number | null;
+  couponMaxPerOrder: number;
+  couponRedeemMinOrder: number | null;
   couponDescription: string | null;
 }
 
@@ -201,6 +203,8 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
   const [couponMinOrder, setCouponMinOrder] = useState("");
   const [couponMaxDiscount, setCouponMaxDiscount] = useState("");
   const [couponMaxSavingsPerOrder, setCouponMaxSavingsPerOrder] = useState("");
+  const [couponMaxPerOrder, setCouponMaxPerOrder] = useState(1);
+  const [couponRedeemMinOrder, setCouponRedeemMinOrder] = useState("");
   const [couponDescription, setCouponDescription] = useState("");
 
   const { data: settings, isLoading } = useQuery<TenantSettings>({
@@ -239,6 +243,8 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
       setCouponMinOrder(settings.config.couponMinOrder ? centsToEuros(settings.config.couponMinOrder) : "");
       setCouponMaxDiscount(settings.config.couponMaxDiscount ? centsToEuros(settings.config.couponMaxDiscount) : "");
       setCouponMaxSavingsPerOrder(settings.config.couponMaxSavingsPerOrder ? centsToEuros(settings.config.couponMaxSavingsPerOrder) : "");
+      setCouponMaxPerOrder(settings.config.couponMaxPerOrder || 1);
+      setCouponRedeemMinOrder(settings.config.couponRedeemMinOrder ? centsToEuros(settings.config.couponRedeemMinOrder) : "");
       setCouponDescription(settings.config.couponDescription || "");
     }
 
@@ -293,6 +299,8 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
             couponMinOrder: couponMinOrder ? eurosToCents(couponMinOrder) : null,
             couponMaxDiscount: couponMaxDiscount ? eurosToCents(couponMaxDiscount) : null,
             couponMaxSavingsPerOrder: couponMaxSavingsPerOrder ? eurosToCents(couponMaxSavingsPerOrder) : null,
+            couponMaxPerOrder,
+            couponRedeemMinOrder: couponRedeemMinOrder ? eurosToCents(couponRedeemMinOrder) : null,
             couponDescription: couponDescription || null,
           },
           operatingHours,

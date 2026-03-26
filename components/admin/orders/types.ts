@@ -27,6 +27,10 @@ export interface Order {
   paymentMethod: "STRIPE" | "CASH";
   tipAmount: number;
   discount: number;
+  promoDiscount: number;
+  couponDiscount: number;
+  groupDiscount: number;
+  groupDiscountName: string | null;
   promoCode: string | null;
   total: number;
   scheduledFor: string | null;
@@ -34,6 +38,8 @@ export interface Order {
   estimatedReadyAt: string | null;
   rejectionReason: string | null;
   deliveryAddress: string | null;
+  customerName: string | null;
+  customerNote: string | null;
   deliveryAddressDetails: Record<string, unknown> | null;
   items: OrderItem[];
   customer: OrderCustomer | null;

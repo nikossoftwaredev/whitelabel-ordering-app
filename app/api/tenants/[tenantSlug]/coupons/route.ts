@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
+import { findEligibleGroupDiscounts } from "@/lib/groups/query";
 
 export async function GET(
   _request: NextRequest,
@@ -31,6 +32,8 @@ export async function GET(
     couponMilestoneSpent,
     couponValue,
     couponType,
+    couponMaxPerOrder,
+    couponRedeemMinOrder,
   } = tenant.config;
 
   const milestoneType = couponMilestoneType || "ORDERS";
@@ -52,6 +55,7 @@ export async function GET(
     return NextResponse.json({
       enabled: true,
       coupons: [],
+      groupDiscounts: [],
       milestoneProgress: {
         type: milestoneType,
         current: 0,
@@ -61,20 +65,36 @@ export async function GET(
     });
   }
 
-  // Fetch available coupons (unused, active, not expired)
+  // Fetch available personal coupons (unused, active, not expired)
   const now = new Date();
   const coupons = await prisma.coupon.findMany({
     where: {
-      customerId: customer.id,
       tenantId: tenant.id,
       isActive: true,
+      customerId: customer.id,
     },
     orderBy: { createdAt: "desc" },
   });
 
+  // Fetch group discounts for this customer
+  const groupDiscountsRaw = await findEligibleGroupDiscounts(tenant.id, customer.id);
+  const groupDiscounts = groupDiscountsRaw.map((g) => ({
+    id: g.id,
+    name: g.name,
+    discountType: g.discountType,
+    discountValue: g.discountValue,
+    minOrder: g.minOrder,
+    maxDiscount: g.maxDiscount,
+    description: g.description,
+  }));
+
   // Split into available and expired for the UI
-  const available = coupons.filter((c) => !c.isUsed && c.expiresAt > now);
-  const expired = coupons.filter((c) => c.isUsed || c.expiresAt <= now);
+  const available = coupons.filter(
+    (c) => !c.isUsed && (c.expiresAt === null || c.expiresAt > now)
+  );
+  const expired = coupons.filter(
+    (c) => c.isUsed || (c.expiresAt !== null && c.expiresAt <= now)
+  );
 
   // Calculate milestone progress based on type
   let current: number;
@@ -95,11 +115,15 @@ export async function GET(
     enabled: true,
     coupons: available,
     expiredCoupons: expired.slice(0, 5),
+    groupDiscounts,
+    maxPerOrder: couponMaxPerOrder ?? 1,
+    redeemMinOrder: couponRedeemMinOrder ?? null,
     milestoneProgress: {
       type: milestoneType,
       current,
       required,
       hasAvailableCoupon,
+      progressFrozen: hasAvailableCoupon,
       nextReward: { type: couponType, value: couponValue },
     },
   });

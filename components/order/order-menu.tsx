@@ -9,7 +9,6 @@ import {
   Info,
   Leaf,
   Package,
-  Plus,
   Search,
   SlidersHorizontal,
   Store,
@@ -138,6 +137,7 @@ function ProductCard({
   formatPrice,
   quantity,
   modifierSummary,
+  unitPrice,
   rankBadge,
 }: {
   product: Product;
@@ -148,6 +148,7 @@ function ProductCard({
   formatPrice: (cents: number) => string;
   quantity: number;
   modifierSummary?: string;
+  unitPrice?: number;
   rankBadge?: string;
 }) {
   const t = useTranslations("Menu");
@@ -211,7 +212,7 @@ function ProductCard({
             className="text-[14px] font-semibold mt-1.5"
             style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
           >
-            {formatPrice(product.price)}
+            {formatPrice(unitPrice ?? product.price)}
           </p>
         )}
         {rankBadge && (
@@ -235,25 +236,17 @@ function ProductCard({
             <Store className="size-6 text-muted-foreground/20" />
           </div>
         )}
-        {quantity > 0 ? (
-          <QuantityStepper
-            quantity={quantity}
-            onDecrement={onQuickRemove}
-            onIncrement={onIncrement}
-            variant="overlay"
-            className="absolute top-0 right-0 m-1 shadow-md"
-          />
-        ) : (
-          <button
-            className="absolute top-0 right-0 m-1 size-8.5 flex items-center justify-center rounded-full bg-black/80 backdrop-blur-sm shadow-md text-white cursor-pointer hover:bg-white/20 transition-colors duration-200"
-            onClick={(e) => {
-              e.stopPropagation();
-              (hasRequiredModifiers ? onDetail : onQuickAdd)(e);
-            }}
-          >
-            <Plus className="size-4" />
-          </button>
-        )}
+        <QuantityStepper
+          quantity={quantity}
+          onDecrement={onQuickRemove}
+          onIncrement={onIncrement}
+          onAdd={(e) => {
+            e.stopPropagation();
+            (hasRequiredModifiers ? onDetail : onQuickAdd)(e);
+          }}
+          variant="overlay"
+          className="absolute top-0 right-0 m-1 shadow-md"
+        />
       </div>
     </div>
   );
@@ -264,6 +257,7 @@ function VariantCard({
   product,
   modifierSummary,
   quantity,
+  unitPrice,
   onEdit,
   onIncrement,
   onDecrement,
@@ -272,6 +266,7 @@ function VariantCard({
   product: Product;
   modifierSummary: string;
   quantity: number;
+  unitPrice: number;
   onEdit: () => void;
   onIncrement: (e: React.MouseEvent) => void;
   onDecrement: (e: React.MouseEvent) => void;
@@ -306,7 +301,7 @@ function VariantCard({
             className="text-[14px] font-semibold mt-1"
             style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
           >
-            {formatPrice(product.price)}
+            {formatPrice(unitPrice)}
           </p>
         )}
       </div>
@@ -1076,6 +1071,15 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                                     .join(", ") || "Default"
                                 : undefined
                             }
+                            unitPrice={
+                              variants.length > 1
+                                ? variants[variants.length - 1].basePrice +
+                                  variants[variants.length - 1].modifiers.reduce(
+                                    (s, m) => s + m.priceAdjustment,
+                                    0,
+                                  )
+                                : undefined
+                            }
                             rankBadge={
                               index < 3
                                 ? t("rankInOrders", { rank: index + 1 })
@@ -1092,6 +1096,13 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                                   "Default"
                                 }
                                 quantity={ci.quantity}
+                                unitPrice={
+                                  ci.basePrice +
+                                  ci.modifiers.reduce(
+                                    (s, m) => s + m.priceAdjustment,
+                                    0,
+                                  )
+                                }
                                 onEdit={() =>
                                   openCartItemEdit(product, ci.cartItemId)
                                 }
@@ -1163,6 +1174,15 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                                   .join(", ") || "Default"
                               : undefined
                           }
+                          unitPrice={
+                            variants.length > 1
+                              ? variants[variants.length - 1].basePrice +
+                                variants[variants.length - 1].modifiers.reduce(
+                                  (s, m) => s + m.priceAdjustment,
+                                  0,
+                                )
+                              : undefined
+                          }
                         />
                         {variants.length > 1 &&
                           variants.slice(0, -1).map((ci) => (
@@ -1174,6 +1194,13 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                                 "Default"
                               }
                               quantity={ci.quantity}
+                              unitPrice={
+                                ci.basePrice +
+                                ci.modifiers.reduce(
+                                  (s, m) => s + m.priceAdjustment,
+                                  0,
+                                )
+                              }
                               onEdit={() =>
                                 openCartItemEdit(product, ci.cartItemId)
                               }

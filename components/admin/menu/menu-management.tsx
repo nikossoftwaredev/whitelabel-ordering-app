@@ -6,13 +6,13 @@ import {
   Loader2,
   Package,
   Pencil,
-  Plus,
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { AddButton } from "@/components/add-button";
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
@@ -166,7 +166,7 @@ export const MenuManagement = ({
             <CardTitle className="text-base font-semibold">
               Categories
             </CardTitle>
-            <Button
+            <AddButton
               size="sm"
               variant="outline"
               className="cursor-pointer"
@@ -175,9 +175,8 @@ export const MenuManagement = ({
                 setCategoryDialogOpen(true);
               }}
             >
-              <Plus className="size-4" />
               <span className="hidden sm:inline">Add</span>
-            </Button>
+            </AddButton>
           </CardHeader>
           <CardContent className="p-0">
             {loadingCategories && (
@@ -267,7 +266,7 @@ export const MenuManagement = ({
                 ? `Products in "${categories.find((c: Category) => c.id === selectedCategoryId)?.name || ""}"`
                 : "All Products"}
             </CardTitle>
-            <Button
+            <AddButton
               size="sm"
               className="cursor-pointer"
               onClick={() => {
@@ -276,9 +275,8 @@ export const MenuManagement = ({
               }}
               disabled={!selectedCategoryId && categories.length > 0}
             >
-              <Plus className="size-4" />
               Add Product
-            </Button>
+            </AddButton>
           </CardHeader>
           <Separator />
           <CardContent className="p-0">

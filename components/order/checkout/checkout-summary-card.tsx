@@ -12,13 +12,15 @@ export function CheckoutSummaryCard() {
   const subtotal = useCartStore((s) => s.subtotal());
   const orderType = useCheckoutStore((s) => s.orderType);
   const appliedPromo = useCheckoutStore((s) => s.appliedPromo);
-  const selectedCoupon = useCheckoutStore((s) => s.selectedCoupon);
+  const selectedCoupons = useCheckoutStore((s) => s.selectedCoupons);
+  const groupDiscount = useCheckoutStore((s) => s.groupDiscount);
   const computeTip = useCheckoutStore((s) => s.computeTip);
 
   const tipAmount = computeTip();
   const promoDiscount = appliedPromo?.discount ?? 0;
-  const couponDiscount = selectedCoupon?.discount ?? 0;
-  const orderTotal = Math.max(0, subtotal - promoDiscount - couponDiscount) + tipAmount;
+  const couponDiscount = selectedCoupons.reduce((sum, c) => sum + c.discount, 0);
+  const groupDiscountAmount = groupDiscount?.discount ?? 0;
+  const orderTotal = Math.max(0, subtotal - promoDiscount - couponDiscount - groupDiscountAmount) + tipAmount;
 
   return (
     <div className="px-4 pb-6">
@@ -46,10 +48,25 @@ export function CheckoutSummaryCard() {
           <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
             <span>
               {t("couponDiscount")}
-              {selectedCoupon?.code ? ` (${selectedCoupon.code})` : ""}
+              {selectedCoupons.length > 0
+                ? ` (${selectedCoupons.map((c) => c.code).join(", ")})`
+                : ""}
             </span>
             <span className="tabular-nums font-medium">
               -{formatPrice(couponDiscount)}
+            </span>
+          </div>
+        )}
+
+        {/* Group discount */}
+        {groupDiscountAmount > 0 && (
+          <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+            <span>
+              {t("groupDiscount")}
+              {groupDiscount?.groupName ? ` (${groupDiscount.groupName})` : ""}
+            </span>
+            <span className="tabular-nums font-medium">
+              -{formatPrice(groupDiscountAmount)}
             </span>
           </div>
         )}

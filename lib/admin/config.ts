@@ -3,7 +3,6 @@ import {
   FileText,
   LayoutDashboard,
   LucideIcon,
-  Receipt,
   Settings,
   Shield,
   ShoppingBag,
@@ -23,9 +22,7 @@ interface AdminNavItem {
 }
 
 export const adminNavItems: Record<string, AdminNavItem[]> = {
-  Overview: [
-    { label: "Dashboard", href: "", icon: LayoutDashboard },
-  ],
+  Overview: [{ label: "Dashboard", href: "", icon: LayoutDashboard }],
   Operations: [
     { label: "Orders", href: "orders", icon: ShoppingBag },
     { label: "Kitchen", href: "kitchen", icon: ChefHat },
@@ -37,15 +34,11 @@ export const adminNavItems: Record<string, AdminNavItem[]> = {
     { label: "Staff", href: "staff", icon: Users },
   ],
   Marketing: [
-    { label: "Promo Codes", href: "promo-codes", icon: Tag },
     { label: "Coupons", href: "coupons", icon: Ticket },
+    { label: "Promo Codes", href: "promo-codes", icon: Tag },
   ],
-  Finance: [
-    { label: "Invoices", href: "invoices", icon: FileText },
-  ],
-  Settings: [
-    { label: "Settings", href: "settings", icon: Settings },
-  ],
+  Finance: [{ label: "Invoices", href: "invoices", icon: FileText }],
+  Settings: [{ label: "Settings", href: "settings", icon: Settings }],
   Platform: [
     {
       label: "Tenants",

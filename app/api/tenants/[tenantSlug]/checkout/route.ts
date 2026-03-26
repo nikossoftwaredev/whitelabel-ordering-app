@@ -31,12 +31,6 @@ export async function POST(
 
   const { orderId } = await request.json();
 
-  // Radar fraud signal — extracted server-side, never trusted from client body
-  const clientIp =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
-    undefined;
-
   if (!orderId || typeof orderId !== "string") {
     return NextResponse.json(
       { error: "orderId is required" },
@@ -127,7 +121,6 @@ export async function POST(
       orderNumber: order.orderNumber,
     },
     ...(order.customerEmail && { receipt_email: order.customerEmail }),
-    ...(clientIp && { radar_options: { ip_address: clientIp } as Stripe.PaymentIntentCreateParams.RadarOptions }),
   };
 
   // If tenant has a Stripe Connect account, route funds there with platform fee

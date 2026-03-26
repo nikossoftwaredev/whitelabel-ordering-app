@@ -88,6 +88,7 @@ export const DialogProvider = () => {
       }}
     >
       <DialogContent
+        className="p-0"
         showCloseButton
         onBack={stackDepth > 1 ? goBack : undefined}
         onCloseAll={closeAll}

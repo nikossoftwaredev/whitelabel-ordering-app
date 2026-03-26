@@ -13,7 +13,7 @@ export function CheckoutCouponCard() {
   const t = useTranslations("Checkout");
   const tenant = useTenant();
   const { data: session } = useSession();
-  const selectedCoupon = useCheckoutStore((s) => s.selectedCoupon);
+  const selectedCoupons = useCheckoutStore((s) => s.selectedCoupons);
   const appliedPromo = useCheckoutStore((s) => s.appliedPromo);
   const openDialog = useDialogStore((s) => s.openDialog);
 
@@ -46,7 +46,7 @@ export function CheckoutCouponCard() {
     fetchCount();
   }, [session?.user, tenant.slug]);
 
-  const hasSelection = !!selectedCoupon || !!appliedPromo;
+  const hasSelection = selectedCoupons.length > 0 || !!appliedPromo;
 
   return (
     <button
@@ -77,7 +77,9 @@ export function CheckoutCouponCard() {
         <p className="text-sm font-semibold truncate">{t("coupon")}</p>
         {hasSelection && (
           <p className="text-xs text-muted-foreground truncate">
-            {selectedCoupon ? selectedCoupon.code : appliedPromo?.code}
+            {selectedCoupons.length > 0
+              ? selectedCoupons.map((c) => c.code).join(", ")
+              : appliedPromo?.code}
           </p>
         )}
       </div>

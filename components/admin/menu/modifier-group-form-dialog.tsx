@@ -1,8 +1,9 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useEffect,useState } from "react";
 
+import { AddButton } from "@/components/add-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -150,12 +151,12 @@ export function ModifierGroupFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl min-h-0">
         <DialogHeader>
           <DialogTitle>{group ? "Edit modifier group" : "New modifier group"}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-4">
           {/* Group fields */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -259,10 +260,9 @@ export function ModifierGroupFormDialog({
                 </Button>
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={addOption} className="gap-1.5">
-              <Plus className="size-3.5" />
+            <AddButton variant="outline" size="sm" onClick={addOption}>
               Add option
-            </Button>
+            </AddButton>
           </div>
         </div>
 

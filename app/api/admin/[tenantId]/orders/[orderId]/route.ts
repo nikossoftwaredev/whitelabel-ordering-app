@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isAuthResult, requireRole } from "@/lib/auth/require-role";
-import { generateCouponCode } from "@/lib/coupons/validate";
+import { computeExpiresAt, generateCouponCode } from "@/lib/coupons/validate";
 import { prisma } from "@/lib/db";
 import { sendOrderStatusUpdate } from "@/lib/email/send";
 import { orderEvents } from "@/lib/events/order-events";
@@ -139,90 +139,107 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         couponMinOrder: true,
         couponMaxDiscount: true,
         couponDescription: true,
+        couponMilestoneNoExpiry: true,
       },
     });
 
     if (config?.couponEnabled) {
-      const milestoneType = config.couponMilestoneType || "ORDERS";
-
-      // Increment completedOrderCount + completedSpent
-      const updatedCustomer = await prisma.customer.update({
-        where: { id: updated.customer.id },
-        data: {
-          completedOrderCount: { increment: 1 },
-          completedSpent: { increment: updated.total },
+      // Skip milestone progress if customer already has an active milestone coupon
+      // or if this order used a coupon (coupon orders don't count toward milestones)
+      const orderUsedCoupon = updated.couponDiscount > 0;
+      const activeMilestoneCoupon = await prisma.coupon.findFirst({
+        where: {
+          customerId: updated.customer.id,
+          tenantId,
+          source: "MILESTONE",
+          isUsed: false,
+          isActive: true,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
       });
+      const skipMilestone = orderUsedCoupon || !!activeMilestoneCoupon;
 
-      let shouldCreateCoupon = false;
-      let milestoneLevel = 0;
-      let milestoneDescription = "";
+      if (!skipMilestone) {
+        const milestoneType = config.couponMilestoneType || "ORDERS";
 
-      if (milestoneType === "ORDERS" && config.couponMilestoneOrders > 0) {
-        const newCount = updatedCustomer.completedOrderCount;
-        if (newCount % config.couponMilestoneOrders === 0) {
-          shouldCreateCoupon = true;
-          milestoneLevel = newCount;
-          milestoneDescription =
-            config.couponDescription ||
-            `Reward for ${newCount} completed orders!`;
+        // Increment completedOrderCount + completedSpent
+        const updatedCustomer = await prisma.customer.update({
+          where: { id: updated.customer.id },
+          data: {
+            completedOrderCount: { increment: 1 },
+            completedSpent: { increment: updated.total },
+          },
+        });
+
+        let shouldCreateCoupon = false;
+        let milestoneLevel = 0;
+        let milestoneDescription = "";
+
+        if (milestoneType === "ORDERS" && config.couponMilestoneOrders > 0) {
+          const newCount = updatedCustomer.completedOrderCount;
+          if (newCount % config.couponMilestoneOrders === 0) {
+            shouldCreateCoupon = true;
+            milestoneLevel = newCount;
+            milestoneDescription =
+              config.couponDescription ||
+              `Reward for ${newCount} completed orders!`;
+          }
+        } else if (milestoneType === "SPENDING" && config.couponMilestoneSpent > 0) {
+          const previousLevel = Math.floor(
+            (updatedCustomer.completedSpent - updated.total) /
+              config.couponMilestoneSpent,
+          );
+          const currentLevel = Math.floor(
+            updatedCustomer.completedSpent / config.couponMilestoneSpent,
+          );
+          if (currentLevel > previousLevel) {
+            shouldCreateCoupon = true;
+            milestoneLevel = currentLevel;
+            const thresholdEur = (
+              config.couponMilestoneSpent / 100
+            ).toFixed(2);
+            milestoneDescription =
+              config.couponDescription ||
+              `Reward for spending \u20AC${(currentLevel * config.couponMilestoneSpent / 100).toFixed(2)} (every \u20AC${thresholdEur})!`;
+          }
         }
-      } else if (milestoneType === "SPENDING" && config.couponMilestoneSpent > 0) {
-        const previousLevel = Math.floor(
-          (updatedCustomer.completedSpent - updated.total) /
-            config.couponMilestoneSpent,
-        );
-        const currentLevel = Math.floor(
-          updatedCustomer.completedSpent / config.couponMilestoneSpent,
-        );
-        if (currentLevel > previousLevel) {
-          shouldCreateCoupon = true;
-          milestoneLevel = currentLevel;
-          const thresholdEur = (
-            config.couponMilestoneSpent / 100
-          ).toFixed(2);
-          milestoneDescription =
-            config.couponDescription ||
-            `Reward for spending \u20AC${(currentLevel * config.couponMilestoneSpent / 100).toFixed(2)} (every \u20AC${thresholdEur})!`;
-        }
-      }
 
-      if (shouldCreateCoupon) {
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + config.couponValidDays);
+        if (shouldCreateCoupon) {
+          const expiresAt = computeExpiresAt(config.couponMilestoneNoExpiry, config.couponValidDays);
 
-        // Generate unique code with retry
-        let code: string;
-        let attempts = 0;
-        do {
-          code = generateCouponCode("LOYAL");
-          const existing = await prisma.coupon.findUnique({
-            where: { tenantId_code: { tenantId, code } },
-          });
-          if (!existing) break;
-          attempts++;
-        } while (attempts < 5);
+          // Generate unique code with retry
+          let code: string;
+          let attempts = 0;
+          do {
+            code = generateCouponCode("LOYAL");
+            const existing = await prisma.coupon.findUnique({
+              where: { tenantId_code: { tenantId, code } },
+            });
+            if (!existing) break;
+            attempts++;
+          } while (attempts < 5);
 
-        // Create coupon (unique constraint prevents duplicates)
-        try {
-          await prisma.coupon.create({
-            data: {
-              tenantId,
-              customerId: updated.customer.id,
-              code,
-              type: config.couponType,
-              value: config.couponValue,
-              description: milestoneDescription,
-              minOrder: config.couponMinOrder,
-              maxDiscount: config.couponMaxDiscount,
-              expiresAt,
-              source: "MILESTONE",
-              milestoneOrderCount: milestoneLevel,
-              sourceOrderId: orderId,
-            },
-          });
-        } catch {
-          // Unique constraint violation = duplicate milestone coupon, safe to ignore
+          // Create coupon (unique constraint prevents duplicates)
+          try {
+            await prisma.coupon.create({
+              data: {
+                tenantId,
+                customerId: updated.customer.id,
+                code,
+                type: config.couponType,
+                value: config.couponValue,
+                description: milestoneDescription,
+                minOrder: config.couponMinOrder,
+                maxDiscount: config.couponMaxDiscount,
+                expiresAt,
+                source: "MILESTONE",
+                milestoneOrderCount: milestoneLevel,
+                sourceOrderId: orderId,
+              },
+            });
+          } catch {
+            // Unique constraint violation = duplicate milestone coupon, safe to ignore
+          }
         }
       }
     }

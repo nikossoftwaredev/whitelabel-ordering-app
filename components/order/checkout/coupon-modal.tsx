@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
-import { DialogTitle } from "@/components/ui/dialog";
+import { dialogPanelHeaderClass, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useCartStore } from "@/lib/stores/cart-store";
@@ -29,8 +29,9 @@ interface CouponItem {
   type: "FIXED" | "PERCENTAGE";
   value: number;
   description: string | null;
-  expiresAt: string;
+  expiresAt: string | null;
   isUsed: boolean;
+  name?: string | null;
 }
 
 export const CouponModalContent = () => {
@@ -40,8 +41,8 @@ export const CouponModalContent = () => {
   const formatPrice = useFormatPrice();
   const subtotal = useCartStore((s) => s.subtotal)();
 
-  const selectedCoupon = useCheckoutStore((s) => s.selectedCoupon);
-  const setSelectedCoupon = useCheckoutStore((s) => s.setSelectedCoupon);
+  const selectedCoupons = useCheckoutStore((s) => s.selectedCoupons);
+  const setSelectedCoupons = useCheckoutStore((s) => s.setSelectedCoupons);
   const appliedPromo = useCheckoutStore((s) => s.appliedPromo);
   const setAppliedPromo = useCheckoutStore((s) => s.setAppliedPromo);
   const promoInput = useCheckoutStore((s) => s.promoInput);
@@ -55,21 +56,27 @@ export const CouponModalContent = () => {
 
   const [coupons, setCoupons] = useState<CouponItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [localSelectedCoupon, setLocalSelectedCoupon] = useState<CouponItem | null>(null);
+  const [localSelectedCoupons, setLocalSelectedCoupons] = useState<CouponItem[]>([]);
+  const [maxPerOrder, setMaxPerOrder] = useState(1);
+  const [redeemMinOrder, setRedeemMinOrder] = useState<number | null>(null);
   const mountedRef = useRef(true);
+
+  const belowMinOrder = redeemMinOrder !== null && subtotal < redeemMinOrder;
 
   // Sync initial state from store
   useEffect(() => {
-    if (selectedCoupon) {
-      setLocalSelectedCoupon({
-        id: selectedCoupon.id,
-        code: selectedCoupon.code,
-        type: selectedCoupon.type,
-        value: selectedCoupon.value,
-        description: selectedCoupon.description,
-        expiresAt: "",
-        isUsed: false,
-      });
+    if (selectedCoupons.length > 0) {
+      setLocalSelectedCoupons(
+        selectedCoupons.map((c) => ({
+          id: c.id,
+          code: c.code,
+          type: c.type,
+          value: c.value,
+          description: c.description,
+          expiresAt: "",
+          isUsed: false,
+        })),
+      );
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -96,6 +103,8 @@ export const CouponModalContent = () => {
         const data = await res.json();
         if (mountedRef.current) {
           setCoupons(data.coupons ?? []);
+          setMaxPerOrder(data.maxPerOrder ?? 1);
+          setRedeemMinOrder(data.redeemMinOrder ?? null);
           setLoading(false);
         }
       } catch {
@@ -124,7 +133,7 @@ export const CouponModalContent = () => {
         setAppliedPromo({ code: data.code, discount: data.discount });
         setPromoError("");
         // Clear coupon selection when promo is applied
-        setLocalSelectedCoupon(null);
+        setLocalSelectedCoupons([]);
       }
     } catch {
       setPromoError(t("somethingWentWrong"));
@@ -134,12 +143,23 @@ export const CouponModalContent = () => {
   };
 
   const handleSelectCoupon = (coupon: CouponItem) => {
-    if (localSelectedCoupon?.id === coupon.id) {
-      setLocalSelectedCoupon(null);
-    } else {
-      setLocalSelectedCoupon(coupon);
-      // Clear promo when selecting coupon
+    if (belowMinOrder) return;
+
+    const isSelected = localSelectedCoupons.some((c) => c.id === coupon.id);
+
+    if (isSelected) {
+      // Deselect
+      setLocalSelectedCoupons(localSelectedCoupons.filter((c) => c.id !== coupon.id));
+    } else if (maxPerOrder === 1) {
+      // Radio-style: replace selection
+      setLocalSelectedCoupons([coupon]);
       if (appliedPromo) removePromo();
+    } else {
+      // Multi-select: add if under limit
+      if (localSelectedCoupons.length < maxPerOrder) {
+        setLocalSelectedCoupons([...localSelectedCoupons, coupon]);
+        if (appliedPromo) removePromo();
+      }
     }
   };
 
@@ -164,25 +184,31 @@ export const CouponModalContent = () => {
     });
   };
 
-  const totalSavings = localSelectedCoupon
-    ? calculateCouponDiscount(localSelectedCoupon)
+  const totalCouponSavings = localSelectedCoupons.reduce(
+    (sum, c) => sum + calculateCouponDiscount(c),
+    0,
+  );
+  const totalSavings = totalCouponSavings > 0
+    ? totalCouponSavings
     : appliedPromo?.discount ?? 0;
 
   const handleApply = () => {
-    if (localSelectedCoupon) {
-      setSelectedCoupon({
-        id: localSelectedCoupon.id,
-        code: localSelectedCoupon.code,
-        type: localSelectedCoupon.type,
-        value: localSelectedCoupon.value,
-        description: localSelectedCoupon.description,
-        discount: calculateCouponDiscount(localSelectedCoupon),
-      });
+    if (localSelectedCoupons.length > 0) {
+      setSelectedCoupons(
+        localSelectedCoupons.map((c) => ({
+          id: c.id,
+          code: c.code,
+          type: c.type,
+          value: c.value,
+          description: c.description,
+          discount: calculateCouponDiscount(c),
+        })),
+      );
       // Clear any promo
       if (appliedPromo) removePromo();
     } else if (!appliedPromo) {
       // Neither coupon nor promo — clear everything
-      setSelectedCoupon(null);
+      setSelectedCoupons([]);
     }
     closeDialog();
   };
@@ -190,7 +216,7 @@ export const CouponModalContent = () => {
   return (
     <div className="flex flex-col overflow-y-auto flex-1">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+      <div className={dialogPanelHeaderClass}>
         <DialogTitle className="text-lg font-bold text-foreground">
           {t("couponsAndPromos")}
         </DialogTitle>
@@ -200,9 +226,22 @@ export const CouponModalContent = () => {
         {/* ═══ My Coupons ═══ */}
         {session?.user && (
           <div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              {t("myCoupons")}
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                {t("myCoupons")}
+              </h3>
+              {maxPerOrder > 1 && coupons.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {localSelectedCoupons.length}/{maxPerOrder}
+                </span>
+              )}
+            </div>
+
+            {belowMinOrder && coupons.length > 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                {t("couponMinOrder", { amount: formatPrice(redeemMinOrder!) })}
+              </p>
+            )}
 
             {loading && (
               <div className="flex items-center justify-center py-8">
@@ -220,15 +259,21 @@ export const CouponModalContent = () => {
             {!loading && coupons.length > 0 && (
               <div className="space-y-2">
                 {coupons.map((coupon) => {
-                  const isSelected = localSelectedCoupon?.id === coupon.id;
+                  const isSelected = localSelectedCoupons.some((c) => c.id === coupon.id);
                   const discount = calculateCouponDiscount(coupon);
+                  const isDisabled = belowMinOrder || (!isSelected && localSelectedCoupons.length >= maxPerOrder);
 
                   return (
                     <button
                       key={coupon.id}
                       type="button"
                       onClick={() => handleSelectCoupon(coupon)}
-                      className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all duration-200 text-left cursor-pointer ${
+                      disabled={isDisabled && !isSelected}
+                      className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all duration-200 text-left ${
+                        isDisabled && !isSelected
+                          ? "border-border/30 opacity-50 cursor-not-allowed"
+                          : "cursor-pointer"
+                      } ${
                         isSelected
                           ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
                           : "border-border/50 hover:border-border"
@@ -248,7 +293,7 @@ export const CouponModalContent = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold truncate">
-                            {coupon.description || coupon.code}
+                            {coupon.name || coupon.description || coupon.code}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
@@ -260,9 +305,15 @@ export const CouponModalContent = () => {
                           >
                             -{formatCouponValue(coupon)} ({formatPrice(discount)})
                           </span>
-                          <span className="text-xs text-muted-foreground">
-                            {t("expires")} {formatExpiryDate(coupon.expiresAt)}
-                          </span>
+                          {coupon.expiresAt ? (
+                            <span className="text-xs text-muted-foreground">
+                              {t("expires")} {formatExpiryDate(coupon.expiresAt)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-green-600 dark:text-green-400">
+                              {t("noExpiry")}
+                            </span>
+                          )}
                         </div>
                       </div>
                       {isSelected && (

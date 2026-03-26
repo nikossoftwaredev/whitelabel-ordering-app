@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { MapPin, Plus, Trash2, User } from "lucide-react";
+import { MapPin, Trash2, User } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
+import { AddButton } from "@/components/add-button";
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { PhoneInput } from "@/components/phone-input";
 import { useTenant } from "@/components/tenant-provider";
@@ -196,16 +197,15 @@ export function ProfilePage() {
                   {t("noAddressesYet")}
                 </p>
               )}
-              <Button
+              <AddButton
                 variant="outline"
                 className="w-full mt-2"
                 onClick={() =>
                   openDialog("address-manager", { initialView: "search" })
                 }
               >
-                <Plus className="size-4" />
                 {tAddr("addNewAddress")}
-              </Button>
+              </AddButton>
             </div>
 
             <Button onClick={handleSave} disabled={saving} className="w-full">

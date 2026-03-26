@@ -4,15 +4,16 @@ import { Bike, Loader2, Store, UtensilsCrossed } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
+import type { Order } from "@/components/admin/orders/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { KdsOrder } from "@/lib/general/order-types";
 import { ORDER_TYPE_LABELS } from "@/lib/general/order-types";
 import type { OrderStatus } from "@/lib/general/status-config";
 
 interface KdsOrderCardProps {
-  order: KdsOrder;
+  order: Order;
   onAdvance: (orderId: string, nextStatus: OrderStatus) => void;
+  onClick: () => void;
   isPending: boolean;
 }
 
@@ -32,7 +33,7 @@ function getNextStatus(current: OrderStatus): OrderStatus | null {
   return flow[current] || null;
 }
 
-export function KdsOrderCard({ order, onAdvance, isPending }: KdsOrderCardProps) {
+export function KdsOrderCard({ order, onAdvance, onClick, isPending }: KdsOrderCardProps) {
   const t = useTranslations("Kitchen");
   const [elapsed, setElapsed] = useState(0);
 
@@ -68,7 +69,8 @@ export function KdsOrderCard({ order, onAdvance, isPending }: KdsOrderCardProps)
 
   return (
     <div
-      className={`rounded-2xl border-2 bg-card shadow-sm transition-all duration-300 ${borderColor}`}
+      className={`rounded-2xl border-2 bg-card shadow-sm transition-all duration-300 cursor-pointer ${borderColor}`}
+      onClick={onClick}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
@@ -125,7 +127,10 @@ export function KdsOrderCard({ order, onAdvance, isPending }: KdsOrderCardProps)
       {nextStatus && (
         <div className="px-4 pb-4">
           <Button
-            onClick={() => onAdvance(order.id, nextStatus)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdvance(order.id, nextStatus);
+            }}
             disabled={isPending}
             className="w-full h-12 text-[15px] font-bold rounded-xl cursor-pointer"
             style={{

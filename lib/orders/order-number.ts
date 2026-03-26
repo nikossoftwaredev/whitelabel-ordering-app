@@ -2,10 +2,13 @@ import { prisma } from "@/lib/db";
 
 export async function generateOrderNumber(tenantId: string): Promise<string> {
   const today = new Date();
-  const datePrefix = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
 
   // Count today's orders for this tenant
-  const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const startOfDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
   const count = await prisma.order.count({

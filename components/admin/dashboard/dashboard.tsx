@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Clock,
-  DollarSign,
+  Euro,
   Heart,
   RotateCcw,
   ShoppingBag,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useState } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
@@ -23,11 +24,17 @@ import { centsToEuros, timeAgo } from "@/lib/general/formatters";
 import { ORDER_STATUS_COLORS } from "@/lib/general/status-config";
 import { queryKeys } from "@/lib/query/keys";
 
+import type { AnalyticsTab } from "./analytics-charts";
 import { StatCard } from "./stat-card";
 
 const AnalyticsCharts = dynamic(() =>
   import("./analytics-charts").then((m) => m.AnalyticsCharts),
   { ssr: false, loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" /> }
+);
+
+const AnalyticsDetailDialog = dynamic(() =>
+  import("./analytics-detail-dialog").then((m) => m.AnalyticsDetailDialog),
+  { ssr: false }
 );
 
 interface DashboardStats {
@@ -75,6 +82,13 @@ function ListSkeleton({ rows = 5 }: { rows?: number }) {
 
 export function Dashboard({ tenantId }: { tenantId: string }) {
   const tenant = useTenant();
+  const [analyticsDialogOpen, setAnalyticsDialogOpen] = useState(false);
+  const [analyticsInitialTab, setAnalyticsInitialTab] = useState<AnalyticsTab>("revenue");
+
+  const handleExpandChart = (tab: AnalyticsTab) => {
+    setAnalyticsInitialTab(tab);
+    setAnalyticsDialogOpen(true);
+  };
 
   const { data, isLoading } = useQuery<DashboardStats>({
     queryKey: queryKeys.stats.dashboard(tenantId),
@@ -109,7 +123,7 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
             <StatCard
               title="Today's Revenue"
               value={<>&euro;{centsToEuros(data?.today.revenue ?? 0)}</>}
-              icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+              icon={<Euro className="h-4 w-4 text-muted-foreground" />}
             />
             <StatCard
               title="Today's Orders"
@@ -258,7 +272,17 @@ export function Dashboard({ tenantId }: { tenantId: string }) {
       </div>
 
       {/* Analytics Charts */}
-      <AnalyticsCharts tenantId={tenantId} />
+      <AnalyticsCharts tenantId={tenantId} onExpandChart={handleExpandChart} />
+
+      {/* Analytics Detail Dialog */}
+      {analyticsDialogOpen && (
+        <AnalyticsDetailDialog
+          open={analyticsDialogOpen}
+          onOpenChange={setAnalyticsDialogOpen}
+          tenantId={tenantId}
+          initialTab={analyticsInitialTab}
+        />
+      )}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight,Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight,Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { AddButton } from "@/components/add-button";
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,17 +73,15 @@ export function ModifierGroupPanel({ tenantId }: Props) {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Modifier Groups</CardTitle>
-            <Button
+            <AddButton
               size="sm"
-              className="gap-1.5"
               onClick={() => {
                 setEditingGroup(null);
                 setDialogOpen(true);
               }}
             >
-              <Plus className="size-3.5" />
               Add group
-            </Button>
+            </AddButton>
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-auto p-0">

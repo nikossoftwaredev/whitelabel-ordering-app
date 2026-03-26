@@ -1,11 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { AddButton } from "@/components/add-button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { queryKeys } from "@/lib/query/keys";
@@ -126,13 +125,11 @@ export function ReorderCarousel({
                 <span className="text-sm font-semibold">
                   {formatPrice(order.total)}
                 </span>
-                <Button
+                <AddButton
                   size="icon"
                   className="h-8 w-8 rounded-full"
                   onClick={() => handleReorder(order)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+                />
               </div>
             </div>
           ))}

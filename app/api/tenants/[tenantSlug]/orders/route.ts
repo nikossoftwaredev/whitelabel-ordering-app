@@ -6,6 +6,8 @@ import { validateCoupon } from "@/lib/coupons/validate";
 import { prisma } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/email/send";
 import { orderEvents } from "@/lib/events/order-events";
+import { calculateBestGroupDiscount } from "@/lib/groups/discount";
+import { findEligibleGroupDiscounts } from "@/lib/groups/query";
 import { calculateDistanceKm } from "@/lib/orders/distance";
 import { generateOrderNumber } from "@/lib/orders/order-number";
 import { isStoreOpen } from "@/lib/orders/store-hours";
@@ -43,6 +45,8 @@ export async function POST(
           primaryColor: true,
           couponEnabled: true,
           couponMaxSavingsPerOrder: true,
+          couponMaxPerOrder: true,
+          couponRedeemMinOrder: true,
         },
       },
     },
@@ -171,27 +175,55 @@ export async function POST(
     },
   });
 
-  // Validate coupon if provided
+  // Auto-apply group discount (independent of couponEnabled)
+  const groupsWithDiscounts = await findEligibleGroupDiscounts(tenant.id, customer.id);
+  const groupDiscountResult = calculateBestGroupDiscount(groupsWithDiscounts, validation.subtotal);
+  let groupDiscountAmount = groupDiscountResult?.discount ?? 0;
+
+  // Validate coupons if provided
   let couponDiscount = 0;
-  let couponToUse: { id: string } | null = null;
+  const couponsToUse: { id: string; discount: number }[] = [];
   if (couponIds?.length && tenant.config?.couponEnabled) {
-    const coupon = await prisma.coupon.findFirst({
+    const maxPerOrder = tenant.config.couponMaxPerOrder ?? 1;
+    if (couponIds.length > maxPerOrder) {
+      return NextResponse.json(
+        { error: `Maximum ${maxPerOrder} coupon(s) per order` },
+        { status: 400 },
+      );
+    }
+
+    const redeemMinOrder = tenant.config.couponRedeemMinOrder;
+    if (redeemMinOrder && validation.subtotal < redeemMinOrder) {
+      return NextResponse.json(
+        { error: `Minimum order of \u20AC${(redeemMinOrder / 100).toFixed(2)} required to use coupons` },
+        { status: 400 },
+      );
+    }
+
+    // Batch-fetch all coupons in one query
+    const fetchedCoupons = await prisma.coupon.findMany({
       where: {
-        id: couponIds[0],
+        id: { in: couponIds },
         tenantId: tenant.id,
         customerId: customer.id,
       },
     });
-    if (!coupon) {
-      return NextResponse.json({ error: "Coupon not found" }, { status: 404 });
+    const couponMap = new Map(fetchedCoupons.map((c) => [c.id, c]));
+
+    let remainingSubtotal = validation.subtotal - promoDiscount - groupDiscountAmount;
+    for (const couponId of couponIds) {
+      const coupon = couponMap.get(couponId);
+      if (!coupon) {
+        return NextResponse.json({ error: "Coupon not found" }, { status: 404 });
+      }
+      const couponResult = validateCoupon(coupon, customer.id, remainingSubtotal);
+      if (!couponResult.valid) {
+        return NextResponse.json({ error: couponResult.error }, { status: 400 });
+      }
+      couponsToUse.push({ id: coupon.id, discount: couponResult.discount });
+      couponDiscount += couponResult.discount;
+      remainingSubtotal -= couponResult.discount;
     }
-    const remainingSubtotal = validation.subtotal - promoDiscount;
-    const couponResult = validateCoupon(coupon, customer.id, remainingSubtotal);
-    if (!couponResult.valid) {
-      return NextResponse.json({ error: couponResult.error }, { status: 400 });
-    }
-    couponDiscount = couponResult.discount;
-    couponToUse = { id: coupon.id };
   }
 
   // Check per-user promo usage
@@ -204,17 +236,20 @@ export async function POST(
     }
   }
 
-  // Calculate totals with combined discount cap
-  let totalDiscount = promoDiscount + couponDiscount;
+  // Calculate totals with combined discount cap (promo > coupon > group priority)
+  let totalDiscount = promoDiscount + couponDiscount + groupDiscountAmount;
   const maxSavings = tenant.config?.couponMaxSavingsPerOrder;
   if (maxSavings && totalDiscount > maxSavings) {
     totalDiscount = maxSavings;
-    // Proportionally reduce if needed — promo first, coupon on remainder
     if (promoDiscount >= maxSavings) {
       promoDiscount = maxSavings;
       couponDiscount = 0;
-    } else {
+      groupDiscountAmount = 0;
+    } else if (promoDiscount + couponDiscount >= maxSavings) {
       couponDiscount = maxSavings - promoDiscount;
+      groupDiscountAmount = 0;
+    } else {
+      groupDiscountAmount = maxSavings - promoDiscount - couponDiscount;
     }
   }
   totalDiscount = Math.min(totalDiscount, validation.subtotal);
@@ -240,6 +275,8 @@ export async function POST(
         discount: totalDiscount,
         promoDiscount,
         couponDiscount,
+        groupDiscount: groupDiscountAmount,
+        groupDiscountName: groupDiscountResult?.groupName ?? null,
         promoCode: promoCodeStr?.toUpperCase() ?? null,
         tipAmount,
         total,
@@ -285,18 +322,19 @@ export async function POST(
       });
     }
 
-    // 3. Mark coupon as used (optimistic lock: WHERE isUsed = false)
-    if (couponToUse && couponDiscount > 0) {
+    // 3. Mark coupons as used (optimistic lock: WHERE isUsed = false)
+    const couponIdsToMark = couponsToUse.filter((c) => c.discount > 0).map((c) => c.id);
+    if (couponIdsToMark.length > 0) {
       const updated = await tx.coupon.updateMany({
-        where: { id: couponToUse.id, isUsed: false },
+        where: { id: { in: couponIdsToMark }, isUsed: false },
         data: {
           isUsed: true,
           usedAt: new Date(),
           orderId: newOrder.id,
         },
       });
-      if (updated.count === 0) {
-        throw new Error("Coupon has already been used");
+      if (updated.count !== couponIdsToMark.length) {
+        throw new Error("One or more coupons have already been used");
       }
     }
 

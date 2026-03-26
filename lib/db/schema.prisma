@@ -55,6 +55,7 @@ model Tenant {
   invoiceSequences InvoiceSequence[]
   promoCodes     PromoCode[]
   coupons        Coupon[]
+  customerGroups CustomerGroup[]
   pushSubscriptions  PushSubscription[]
 
   @@index([slug])
@@ -99,7 +100,10 @@ model TenantConfig {
   couponMinOrder           Int?      @map("coupon_min_order")
   couponMaxDiscount        Int?      @map("coupon_max_discount")
   couponMaxSavingsPerOrder Int?      @map("coupon_max_savings_per_order")
+  couponMaxPerOrder        Int       @default(1) @map("coupon_max_per_order")
+  couponRedeemMinOrder     Int?      @map("coupon_redeem_min_order")
   couponDescription        String?   @map("coupon_description")
+  couponMilestoneNoExpiry  Boolean   @default(false) @map("coupon_milestone_no_expiry")
 
   tenant          Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -233,8 +237,9 @@ model Customer {
   orders         Order[]
   favorites      Favorite[]
   addresses      Address[]
-  promoUsages    PromoCodeUsage[]
-  coupons        Coupon[]
+  promoUsages       PromoCodeUsage[]
+  coupons           Coupon[]
+  groupMemberships  CustomerGroupMember[]
 
   @@unique([tenantId, userId])
   @@map("customers")
@@ -396,6 +401,7 @@ enum PromoType {
 enum CouponSource {
   MILESTONE
   MANUAL
+  RECURRING
 }
 
 model PromoCode {
@@ -443,33 +449,73 @@ model PromoCodeUsage {
 model Coupon {
   id                  String       @id @default(cuid())
   tenantId            String       @map("tenant_id")
-  customerId          String       @map("customer_id")
+  customerId          String?      @map("customer_id")
   code                String       @map("code")
   type                PromoType    @default(FIXED)
   value               Int
+  name                String?
   description         String?
   minOrder            Int?         @map("min_order")
   maxDiscount         Int?         @map("max_discount")
-  expiresAt           DateTime     @map("expires_at")
+  expiresAt           DateTime?    @map("expires_at")
   isUsed              Boolean      @default(false) @map("is_used")
   isActive            Boolean      @default(true) @map("is_active")
   usedAt              DateTime?    @map("used_at")
-  orderId             String?      @unique @map("order_id")
+  orderId             String?      @map("order_id")
   source              CouponSource @default(MILESTONE)
   milestoneOrderCount Int?         @map("milestone_order_count")
   sourceOrderId       String?      @map("source_order_id")
   createdAt           DateTime     @default(now()) @map("created_at")
 
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  order    Order?   @relation(fields: [orderId], references: [id])
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order    Order?    @relation(fields: [orderId], references: [id])
 
   @@unique([tenantId, code])
   @@unique([customerId, tenantId, source, milestoneOrderCount])
   @@index([customerId, isUsed, expiresAt])
   @@index([tenantId, createdAt])
+  @@index([orderId])
   @@map("coupons")
 }
+
+// ─── CUSTOMER GROUPS ────────────────────────────────────────
+
+model CustomerGroup {
+  id              String     @id @default(cuid())
+  tenantId        String     @map("tenant_id")
+  name            String
+  discountType    PromoType? @map("discount_type")
+  discountValue   Int?       @map("discount_value")
+  minOrder        Int?       @map("min_order")
+  maxDiscount     Int?       @map("max_discount")
+  description     String?    @map("discount_description")
+  discountEnabled Boolean    @default(false) @map("discount_enabled")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  tenant  Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members CustomerGroupMember[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("customer_groups")
+}
+
+model CustomerGroupMember {
+  id              String   @id @default(cuid())
+  customerGroupId String   @map("customer_group_id")
+  customerId      String   @map("customer_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  group    CustomerGroup @relation(fields: [customerGroupId], references: [id], onDelete: Cascade)
+  customer Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerGroupId, customerId])
+  @@index([customerId])
+  @@map("customer_group_members")
+}
+
 
 // ─── PUSH NOTIFICATIONS ─────────────────────────────────────
 
@@ -547,8 +593,10 @@ model Order {
   subtotal       Int
   discount       Int @default(0)
   promoDiscount  Int @default(0) @map("promo_discount")
-  couponDiscount Int @default(0) @map("coupon_discount")
-  tipAmount      Int @default(0) @map("tip_amount")
+  couponDiscount    Int     @default(0) @map("coupon_discount")
+  groupDiscount     Int     @default(0) @map("group_discount")
+  groupDiscountName String? @map("group_discount_name")
+  tipAmount         Int     @default(0) @map("tip_amount")
   total          Int
 
   // Scheduling & Pickup
@@ -578,8 +626,8 @@ model Order {
   customer Customer?   @relation(fields: [customerId], references: [id])
   items      OrderItem[]
   invoice    Invoice?
-  promoUsage PromoCodeUsage?
-  coupon     Coupon?
+  promoUsage   PromoCodeUsage?
+  coupons      Coupon[]
 
   @@index([tenantId, status])
   @@index([tenantId, createdAt])

@@ -7,7 +7,6 @@ import {
   Mail,
   Pause,
   Play,
-  Plus,
   ShoppingCart,
   Store,
   Trash2,
@@ -18,6 +17,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { AddButton } from "@/components/add-button";
 import { EmptyState } from "@/components/empty-state";
 import { SearchInput } from "@/components/search-input";
 import { Badge } from "@/components/ui/badge";
@@ -278,16 +278,15 @@ function DomainField({
               <p className="mt-1 text-xs text-destructive">{domainError}</p>
             )}
           </div>
-          <Button
+          <AddButton
             type="button"
             variant="outline"
             size="sm"
             className="shrink-0 h-9"
             onClick={onAdd}
           >
-            <Plus className="mr-1 h-3 w-3" />
             Add
-          </Button>
+          </AddButton>
         </div>
         <p className="text-xs text-muted-foreground">
           Bare domains only — no http:// or paths.
@@ -551,10 +550,9 @@ export function TenantManagement() {
         {/* Create Tenant Dialog */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
+            <AddButton>
               Create Tenant
-            </Button>
+            </AddButton>
           </DialogTrigger>
           <DialogContent className="max-w-lg gap-0 p-0">
             <DialogHeader className="px-6 pt-6 pb-4">

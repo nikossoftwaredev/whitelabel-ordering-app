@@ -3,7 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
-  Plus,
   Trash2,
   UserPlus,
   Users,
@@ -11,6 +10,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { AddButton } from "@/components/add-button";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorCard } from "@/components/error-card";
 import { PageHeader } from "@/components/page-header";
@@ -228,10 +228,9 @@ export function StaffManagement({ tenantId }: { tenantId: string }) {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader title="Staff Management">
-        <Button onClick={() => setAddDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
+        <AddButton onClick={() => setAddDialogOpen(true)}>
           Add Staff
-        </Button>
+        </AddButton>
       </PageHeader>
 
       <Separator />

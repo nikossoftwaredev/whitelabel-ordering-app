@@ -7,20 +7,17 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { OrderNotificationProvider } from "@/components/admin/order-notification-provider";
+import { OrderDetailSheet } from "@/components/admin/orders/order-detail-sheet";
+import type { Order, OrdersResponse } from "@/components/admin/orders/types";
 import { Button } from "@/components/ui/button";
+import { useFormatPrice } from "@/hooks/use-format-price";
 import { useSoundSettings } from "@/hooks/use-notification-sound";
-import type { KdsOrder } from "@/lib/general/order-types";
 import type { OrderStatus } from "@/lib/general/status-config";
 import { orderStatusConfig } from "@/lib/general/status-config";
 import { Link } from "@/lib/i18n/navigation";
 import { queryKeys } from "@/lib/query/keys";
 
 import { KdsOrderCard } from "./kds-order-card";
-
-interface OrdersResponse {
-  orders: KdsOrder[];
-  total: number;
-}
 
 interface KitchenDisplayProps {
   tenantId: string;
@@ -39,8 +36,10 @@ export function KitchenDisplay({ tenantId }: KitchenDisplayProps) {
   const queryClient = useQueryClient();
   const muted = useSoundSettings((s) => s.muted);
   const toggleMute = useSoundSettings((s) => s.toggleMute);
+  const formatPrice = useFormatPrice();
   const [clock, setClock] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [detailOrder, setDetailOrder] = useState<Order | null>(null);
 
   // Live clock
   useEffect(() => {
@@ -72,14 +71,22 @@ export function KitchenDisplay({ tenantId }: KitchenDisplayProps) {
     mutationFn: async ({
       orderId,
       status,
+      rejectionReason: reason,
+      estimatedMinutes: minutes,
     }: {
       orderId: string;
       status: OrderStatus;
+      rejectionReason?: string;
+      estimatedMinutes?: number;
     }) => {
+      const body: Record<string, unknown> = { status };
+      if (reason) body.rejectionReason = reason;
+      if (minutes) body.estimatedMinutes = minutes;
+
       const res = await fetch(`/api/admin/${tenantId}/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Failed to update order status");
       return res.json();
@@ -131,6 +138,41 @@ export function KitchenDisplay({ tenantId }: KitchenDisplayProps) {
     setPendingId(orderId);
     updateStatus.mutate({ orderId, status: nextStatus });
   };
+
+  // Refund mutation
+  const refundOrder = useMutation({
+    mutationFn: async ({
+      orderId,
+      amount,
+      reason,
+    }: {
+      orderId: string;
+      amount?: number;
+      reason?: string;
+    }) => {
+      const res = await fetch(
+        `/api/admin/${tenantId}/orders/${orderId}/refund`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount, reason }),
+        },
+      );
+      if (!res.ok) throw new Error("Failed to refund order");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Order refunded successfully");
+    },
+    onError: () => {
+      toast.error("Failed to refund order");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.orders.all(tenantId),
+      });
+    },
+  });
 
   const orders = data?.orders || [];
 
@@ -227,6 +269,7 @@ export function KitchenDisplay({ tenantId }: KitchenDisplayProps) {
                     key={order.id}
                     order={order}
                     onAdvance={handleAdvance}
+                    onClick={() => setDetailOrder(order)}
                     isPending={pendingId === order.id}
                   />
                 ))}
@@ -235,6 +278,46 @@ export function KitchenDisplay({ tenantId }: KitchenDisplayProps) {
           ))}
         </div>
       </div>
+
+      {/* Order detail drawer */}
+      <OrderDetailSheet
+        order={detailOrder}
+        open={!!detailOrder}
+        onOpenChange={(open) => {
+          if (!open) setDetailOrder(null);
+        }}
+        onAccept={() => {}}
+        onConfirmAccept={(orderId, minutes) => {
+          updateStatus.mutate({ orderId, status: "ACCEPTED", estimatedMinutes: minutes });
+          setDetailOrder(null);
+        }}
+        onReject={(orderId, reason) => {
+          updateStatus.mutate({ orderId, status: "REJECTED", rejectionReason: reason });
+          setDetailOrder(null);
+        }}
+        onStartPreparing={(orderId) => {
+          updateStatus.mutate({ orderId, status: "PREPARING" });
+          setDetailOrder(null);
+        }}
+        onMarkReady={(orderId) => {
+          updateStatus.mutate({ orderId, status: "READY" });
+          setDetailOrder(null);
+        }}
+        onOutForDelivery={(orderId) => {
+          updateStatus.mutate({ orderId, status: "DELIVERING" });
+          setDetailOrder(null);
+        }}
+        onComplete={(orderId) => {
+          updateStatus.mutate({ orderId, status: "COMPLETED" });
+          setDetailOrder(null);
+        }}
+        onRefund={(orderId, amount, reason) => {
+          refundOrder.mutate({ orderId, amount, reason });
+          setDetailOrder(null);
+        }}
+        formatPrice={formatPrice}
+        isPending={updateStatus.isPending}
+      />
     </>
   );
 }

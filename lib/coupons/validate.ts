@@ -19,7 +19,7 @@ export interface CouponValidationError {
 export function validateCoupon(
   coupon: Coupon,
   customerId: string,
-  subtotal: number
+  subtotal: number,
 ): CouponValidationResult | CouponValidationError {
   if (coupon.customerId !== customerId) {
     return { valid: false, error: "This coupon does not belong to you" };
@@ -33,7 +33,8 @@ export function validateCoupon(
     return { valid: false, error: "This coupon has already been used" };
   }
 
-  if (coupon.expiresAt < new Date()) {
+  // Expiry: null means no expiry
+  if (coupon.expiresAt !== null && coupon.expiresAt < new Date()) {
     return { valid: false, error: "This coupon has expired" };
   }
 
@@ -69,4 +70,14 @@ export function generateCouponCode(prefix: string = "LOYAL"): string {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return `${prefix}-${code}`;
+}
+
+/**
+ * Compute the expiration date for a coupon, or null if no expiry.
+ */
+export function computeExpiresAt(noExpiry: boolean, validDays: number): Date | null {
+  if (noExpiry) return null;
+  const d = new Date();
+  d.setDate(d.getDate() + validDays);
+  return d;
 }

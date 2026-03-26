@@ -80,7 +80,7 @@ export function ProfilePromptSheet() {
     >
       <SheetContent
         side="bottom"
-        className="rounded-t-2xl max-w-lg mx-auto px-6 pb-10"
+        className="rounded-t-2xl max-w-lg mx-auto pb-10"
       >
         <SheetHeader className="text-left">
           <SheetTitle>{t("title")}</SheetTitle>
