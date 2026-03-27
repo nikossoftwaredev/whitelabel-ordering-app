@@ -313,7 +313,15 @@ export function OrderBoard({
   const printedIdsRef = useRef<Set<string>>(
     new Set(
       typeof window !== "undefined"
-        ? (JSON.parse(localStorage.getItem(PRINTED_KEY) ?? "[]") as string[])
+        ? (() => {
+            try {
+              return JSON.parse(
+                localStorage.getItem(PRINTED_KEY) ?? "[]",
+              ) as string[];
+            } catch {
+              return [];
+            }
+          })()
         : [],
     ),
   );
