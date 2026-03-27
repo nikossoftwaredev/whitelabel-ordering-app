@@ -159,6 +159,7 @@ export function AnalyticsCharts({
                     width={55}
                   />
                   <Tooltip
+                    cursor={{ fill: "hsl(var(--muted))" }}
                     content={
                       <ChartTooltipContent
                         valueFormatter={(v: number) => `€${centsToEuros(v)}`}
@@ -216,7 +217,7 @@ export function AnalyticsCharts({
                     width={30}
                     allowDecimals={false}
                   />
-                  <Tooltip content={<ChartTooltipContent />} />
+                  <Tooltip cursor={{ fill: "hsl(var(--muted))" }} content={<ChartTooltipContent />} />
                   <Bar
                     dataKey="count"
                     fill={brandColor}
@@ -346,6 +347,7 @@ export function AnalyticsCharts({
                     allowDecimals={false}
                   />
                   <Tooltip
+                    cursor={{ fill: "hsl(var(--muted))" }}
                     content={<ChartTooltipContent />}
                     labelFormatter={(v) => formatHour(v as number)}
                   />
