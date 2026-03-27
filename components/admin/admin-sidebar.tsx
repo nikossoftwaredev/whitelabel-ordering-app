@@ -1,12 +1,11 @@
 "use client";
 
-import { ChevronsUpDown, Command, Eye } from "lucide-react";
+import { ChevronsUpDown, Command, Eye, ExternalLink } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
 import { TenantSummary, TenantSwitcherItem } from "@/components/tenant-switcher-item";
-import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -104,7 +103,7 @@ export const AdminSidebar = () => {
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem className="relative">
+          <SidebarMenuItem>
             <Popover>
               <PopoverTrigger asChild>
                 <SidebarMenuButton
@@ -150,19 +149,18 @@ export const AdminSidebar = () => {
                     <TenantSwitcherItem key={t.id} tenant={t} isActive={t.id === tenant.id} />
                   ))
                 )}
+                <div className="mt-1 border-t border-border pt-1">
+                  <Link
+                    href="/order"
+                    target="_blank"
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors duration-300"
+                  >
+                    <ExternalLink className="size-3.5 shrink-0" />
+                    View storefront
+                  </Link>
+                </div>
               </PopoverContent>
             </Popover>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 size-7 shrink-0 z-10 group-data-[collapsible=icon]:hidden"
-              asChild
-            >
-              <Link href="/order" target="_blank">
-                <Eye className="size-3.5" />
-              </Link>
-            </Button>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
