@@ -49,8 +49,7 @@ async function getCroppedBlob(
     canvas.toBlob(
       (blob) =>
         blob ? resolve(blob) : reject(new Error("Canvas export failed")),
-      "image/jpeg",
-      0.95,
+      "image/png",
     );
   });
 }
@@ -142,8 +141,8 @@ export const ImageUpload = ({
 
     try {
       const croppedBlob = await getCroppedBlob(pendingImage, croppedAreaPixels);
-      const croppedFile = new File([croppedBlob], "cropped.jpg", {
-        type: "image/jpeg",
+      const croppedFile = new File([croppedBlob], "cropped.png", {
+        type: "image/png",
       });
 
       const formData = new FormData();
