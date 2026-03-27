@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { prisma } from "@/lib/db";
+import { redis } from "@/lib/redis";
 import { stripe } from "@/lib/stripe/server";
 
 function extractPaymentIntentId(
@@ -23,6 +24,12 @@ export async function POST(request: NextRequest) {
     );
   } catch {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+
+  // Idempotency: skip events already processed (Stripe retries on non-2xx for up to 72h)
+  const idempotencyKey = `stripe:event:${event.id}`;
+  if (await redis.get(idempotencyKey)) {
+    return NextResponse.json({ received: true });
   }
 
   switch (event.type) {
@@ -97,5 +104,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Mark as processed — 25h TTL covers Stripe's 24h retry window
+  await redis.set(idempotencyKey, "1", { ex: 90000 });
   return NextResponse.json({ received: true });
 }
