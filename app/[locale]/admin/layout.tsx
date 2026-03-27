@@ -4,6 +4,7 @@ import { setRequestLocale } from "next-intl/server";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { OrderNotificationProvider } from "@/components/admin/order-notification-provider";
+import { ThermalReceiptMount } from "@/components/admin/orders/thermal-receipt-mount";
 import { SuperAdminSidebar } from "@/components/admin/super-admin-sidebar";
 import { ErrorPage } from "@/components/error-page";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -48,6 +49,7 @@ const AdminLayout = async ({ children, params }: BaseLayoutProps) => {
         </ScrollArea>
       </SidebarInset>
       {!superAdmin && tenantId && <OrderNotificationProvider tenantId={tenantId} />}
+      <ThermalReceiptMount />
     </SidebarProvider>
   );
 };
