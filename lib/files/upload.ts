@@ -18,15 +18,8 @@ const s3Client = new S3Client({
 
 export const IMAGES_BUCKET = "uploads";
 
-export type ImageType = "product" | "logo" | "cover";
-
-export const IMAGE_TYPE_FOLDER: Record<ImageType, string> = {
-  product: "products",
-  logo: "logos",
-  cover: "covers",
-};
-
-export const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export type { ImageType } from "./constants";
+export { IMAGE_TYPE_FOLDER, MAX_IMAGE_FILE_SIZE } from "./constants";
 
 const MAX_DIMENSION = 1200;
 const WEBP_QUALITY = 85;

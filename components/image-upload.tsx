@@ -8,7 +8,7 @@ import Cropper from "react-easy-crop";
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { MAX_IMAGE_FILE_SIZE, type ImageType } from "@/lib/files/upload";
+import { MAX_IMAGE_FILE_SIZE, type ImageType } from "@/lib/files/constants";
 import { cn } from "@/lib/general/utils";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 
