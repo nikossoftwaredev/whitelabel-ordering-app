@@ -46,9 +46,9 @@ function DialogOverlay({
   );
 }
 
-// Theme-agnostic pill button — no border, foreground-tinted bg
+// Always-visible nav button — dark semi-transparent bg works on images AND solid backgrounds
 const navBtn =
-  "absolute z-10 size-9 flex items-center justify-center rounded-full bg-foreground/10 hover:bg-foreground/[0.16] text-foreground transition-colors duration-300 cursor-pointer";
+  "absolute z-10 size-9 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors duration-300 cursor-pointer";
 
 function CloseButton({ onClick }: { onClick?: () => void }) {
   const cls = cn(navBtn, "top-3.5 right-3.5");
