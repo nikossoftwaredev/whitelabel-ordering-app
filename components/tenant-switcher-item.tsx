@@ -35,7 +35,8 @@ export const TenantSwitcherItem = ({
   return (
     <button
       onClick={handleClick}
-      className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors duration-150 cursor-pointer text-left"
+      aria-current={isActive ? "true" : undefined}
+      className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors duration-300 cursor-pointer text-left"
     >
       {/* Logo or initial fallback */}
       <div className="flex size-7 shrink-0 items-center justify-center rounded-md overflow-hidden bg-muted">
@@ -47,8 +48,7 @@ export const TenantSwitcherItem = ({
           />
         ) : (
           <span
-            className="text-xs font-bold text-white flex items-center justify-center size-full"
-            style={{ backgroundColor: "hsl(var(--primary))" }}
+            className="text-xs font-bold text-white flex items-center justify-center size-full bg-primary"
           >
             {tenant.name.charAt(0).toUpperCase()}
           </span>
