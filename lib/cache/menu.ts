@@ -27,6 +27,8 @@ export async function getCachedMenu(tenantId: string, tenantSlug: string) {
           descriptionEl: true,
           image: true,
           price: true,
+          hasPreset: true,
+          presetOptionIds: true,
           isVegan: true,
           isVegetarian: true,
           isGlutenFree: true,
@@ -41,6 +43,7 @@ export async function getCachedMenu(tenantId: string, tenantSlug: string) {
           modifierGroups: {
             orderBy: { sortOrder: "asc" },
             select: {
+              freeCount: true,
               modifierGroup: {
                 select: {
                   id: true,
@@ -73,7 +76,10 @@ export async function getCachedMenu(tenantId: string, tenantSlug: string) {
     ...cat,
     products: cat.products.map((product) => ({
       ...product,
-      modifierGroups: product.modifierGroups.map((pmg) => pmg.modifierGroup),
+      modifierGroups: product.modifierGroups.map((pmg) => ({
+        ...pmg.modifierGroup,
+        freeCount: pmg.freeCount,
+      })),
     })),
   }));
 }

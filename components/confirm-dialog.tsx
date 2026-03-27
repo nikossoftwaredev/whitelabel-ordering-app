@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   selectDialogData,
   selectOnSuccess,
@@ -45,19 +45,17 @@ export const ConfirmContent = () => {
   };
 
   return (
-    <div className="flex flex-col flex-1">
-      <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-      </DialogHeader>
-      <DialogFooter className="flex-row justify-center gap-2 sm:justify-center px-6 pb-6">
+    <>
+      <DialogTitle>{title}</DialogTitle>
+      <DialogDescription className="mt-1">{description}</DialogDescription>
+      <div className="flex justify-end gap-2 mt-4">
         <Button variant="outline" onClick={handleCancel}>
           Cancel
         </Button>
         <Button variant="destructive" onClick={handleConfirm}>
           {actionLabel}
         </Button>
-      </DialogFooter>
-    </div>
+      </div>
+    </>
   );
 };

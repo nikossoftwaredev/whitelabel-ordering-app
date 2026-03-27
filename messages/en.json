@@ -191,6 +191,7 @@
     "cancelError": "Failed to cancel order. Please try again.",
     "orderCancelled": "Order {number} Cancelled",
     "cancelledDesc": "Your order has been cancelled.",
+    "placedAt": "Placed at {time}",
     "scheduledForTime": "Scheduled for {time}",
     "minutes": "minutes",
     "estimatedTime": "estimated",
@@ -444,7 +445,10 @@
     "addToOrder": "Add to order",
     "addNote": "Add a note",
     "orderNote": "Order note",
-    "notePlaceholder": "e.g. No onions, extra sauce..."
+    "notePlaceholder": "e.g. No onions, extra sauce...",
+    "withEverything": "With everything",
+    "chooseIngredients": "Choose ingredients",
+    "freeIncluded": "{count} free"
   },
   "Pwa": {
     "getFullExperience": "Get the full experience — install the app",

@@ -5,7 +5,6 @@ import {
   Briefcase,
   Building2,
   Check,
-
   Crosshair,
   Home,
   Loader2,

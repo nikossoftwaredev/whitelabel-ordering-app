@@ -38,6 +38,7 @@ export async function GET(
       modifierGroups: {
         orderBy: { sortOrder: "asc" },
         select: {
+          freeCount: true,
           modifierGroup: {
             select: {
               id: true,
@@ -70,6 +71,9 @@ export async function GET(
 
   return NextResponse.json({
     ...product,
-    modifierGroups: product.modifierGroups.map((pmg) => pmg.modifierGroup),
+    modifierGroups: product.modifierGroups.map((pmg) => ({
+      ...pmg.modifierGroup,
+      freeCount: pmg.freeCount,
+    })),
   });
 }

@@ -10,6 +10,7 @@ export const orderItemSchema = z.object({
   quantity: z.number().int().min(1).max(99),
   modifiers: z.array(orderItemModifierSchema).optional().default([]),
   notes: z.string().max(500).optional().default(""),
+  isPreset: z.boolean().optional().default(false),
 });
 
 export const createOrderSchema = z.object({

@@ -1,14 +1,15 @@
 "use client";
 
-import { MessageSquare, Square, SquareCheck, Store } from "lucide-react";
+import { Circle, CircleCheck, MessageSquare, Square, SquareCheck, Store } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ProductBadge } from "@/components/product-badge";
 import { Button } from "@/components/ui/button";
 import { DialogTitle } from "@/components/ui/dialog";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { applyFreeCount } from "@/lib/orders/free-count";
 import { calcBogoTotal, hasActiveOffer } from "@/lib/orders/offers";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { selectDialogData, useDialogStore } from "@/lib/stores/dialog-store";
@@ -30,6 +31,7 @@ interface ModifierGroup {
   required: boolean;
   minSelect: number;
   maxSelect: number;
+  freeCount?: number;
   options: ModifierOption[];
 }
 
@@ -48,6 +50,8 @@ interface Product {
   isSpicy: boolean;
   allergens: string | null;
   modifierGroups: ModifierGroup[];
+  hasPreset?: boolean;
+  presetOptionIds?: string[];
   offerType?: string | null;
   offerPrice?: number | null;
   offerStart?: string | null;
@@ -67,6 +71,27 @@ interface CartItemEdit {
   quantity: number;
   modifiers: { modifierOptionId: string; name: string; priceAdjustment: number }[];
   notes?: string;
+  isPreset?: boolean;
+}
+
+/** Build a map of modifier group → selected option IDs for default/preset selections */
+function buildDefaultModifiers(
+  groups: ModifierGroup[],
+  presetOptionIds?: string[],
+): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>();
+  const presetSet = presetOptionIds?.length ? new Set(presetOptionIds) : null;
+
+  for (const group of groups) {
+    if (presetSet) {
+      // Use per-product preset IDs
+      map.set(group.id, new Set(group.options.filter((o) => presetSet.has(o.id)).map((o) => o.id)));
+    } else {
+      // Fallback to isDefault on each option
+      map.set(group.id, new Set(group.options.filter((o) => o.isDefault).map((o) => o.id)));
+    }
+  }
+  return map;
 }
 
 export const PRODUCT_DETAIL_DIALOG = "product-detail";
@@ -84,6 +109,7 @@ export const ProductDetailContent = () => {
     Map<string, Set<string>>
   >(new Map());
   const [isEditing, setIsEditing] = useState(false);
+  const [presetMode, setPresetMode] = useState<"preset" | "custom">("preset");
   const [notes, setNotes] = useState("");
   const [showNotes, setShowNotes] = useState(false);
 
@@ -94,30 +120,31 @@ export const ProductDetailContent = () => {
         setQuantity(editingCartItem.quantity);
         setNotes(editingCartItem.notes || "");
         setShowNotes(!!editingCartItem.notes);
-        const modMap = new Map<string, Set<string>>();
-        for (const group of product.modifierGroups) {
-          const selectedIds = new Set(
-            editingCartItem.modifiers
-              .filter((m) => group.options.some((o) => o.id === m.modifierOptionId))
-              .map((m) => m.modifierOptionId)
-          );
-          modMap.set(group.id, selectedIds);
+        // Restore preset mode when editing
+        if (product.hasPreset && editingCartItem.isPreset) {
+          setPresetMode("preset");
+          setSelectedModifiers(buildDefaultModifiers(product.modifierGroups, product.presetOptionIds));
+        } else {
+          setPresetMode(product.hasPreset ? "custom" : "preset");
+          const modMap = new Map<string, Set<string>>();
+          for (const group of product.modifierGroups) {
+            const selectedIds = new Set(
+              editingCartItem.modifiers
+                .filter((m) => group.options.some((o) => o.id === m.modifierOptionId))
+                .map((m) => m.modifierOptionId)
+            );
+            modMap.set(group.id, selectedIds);
+          }
+          setSelectedModifiers(modMap);
         }
-        setSelectedModifiers(modMap);
       } else {
         setIsEditing(false);
         // Default to 2 for BOGO products so they get the deal
         setQuantity(hasActiveOffer(product) ? 2 : 1);
         setNotes("");
         setShowNotes(false);
-        const defaults = new Map<string, Set<string>>();
-        for (const group of product.modifierGroups) {
-          const defaultIds = new Set(
-            group.options.filter((o) => o.isDefault).map((o) => o.id)
-          );
-          defaults.set(group.id, defaultIds);
-        }
-        setSelectedModifiers(defaults);
+        setPresetMode("preset");
+        setSelectedModifiers(buildDefaultModifiers(product.modifierGroups, product.presetOptionIds));
       }
     }
   }, [product, editingCartItem]);
@@ -146,17 +173,48 @@ export const ProductDetailContent = () => {
     []
   );
 
+  const handlePresetModeChange = useCallback(
+    (mode: "preset" | "custom") => {
+      if (!product) return;
+      setPresetMode(mode);
+      if (mode === "preset") {
+        setSelectedModifiers(buildDefaultModifiers(product.modifierGroups, product.presetOptionIds));
+      } else {
+        const empty = new Map<string, Set<string>>();
+        for (const group of product.modifierGroups) {
+          empty.set(group.id, new Set());
+        }
+        setSelectedModifiers(empty);
+      }
+    },
+    [product]
+  );
+
+  const showPresetToggle = !!product?.hasPreset && (product.modifierGroups?.length ?? 0) > 0;
+
+  const defaultOptionNames = useMemo(() => {
+    if (!showPresetToggle || !product) return [];
+    const ps = product.presetOptionIds?.length ? new Set(product.presetOptionIds) : null;
+    return product.modifierGroups
+      .flatMap((g) => g.options.filter((o) => (ps ? ps.has(o.id) : o.isDefault)))
+      .map((o) => o.name);
+  }, [showPresetToggle, product]);
+
+  const modifierTotal = useMemo(() => {
+    if (!product) return 0;
+    return product.modifierGroups.reduce((sum, group) => {
+      const selected = selectedModifiers.get(group.id) || new Set();
+      const selectedOpts = group.options
+        .filter((o) => selected.has(o.id))
+        .map((o) => ({ modifierOptionId: o.id, name: o.name, priceAdjustment: o.priceAdjustment }));
+      const effective = applyFreeCount(selectedOpts, group.freeCount ?? 0);
+      return sum + effective.reduce((s, m) => s + m.priceAdjustment, 0);
+    }, 0);
+  }, [product, selectedModifiers]);
+
   if (!product) return null;
 
   const isBogoActive = hasActiveOffer(product);
-
-  const modifierTotal = product.modifierGroups.reduce((sum, group) => {
-    const selected = selectedModifiers.get(group.id) || new Set();
-    for (const opt of group.options) {
-      if (selected.has(opt.id)) sum += opt.priceAdjustment;
-    }
-    return sum;
-  }, 0);
 
   let totalPrice: number;
   if (isBogoActive && quantity >= 2) {
@@ -168,17 +226,15 @@ export const ProductDetailContent = () => {
   const buildModifiers = () =>
     product.modifierGroups.flatMap((group) => {
       const selected = selectedModifiers.get(group.id) || new Set();
-      return group.options
+      const selectedOpts = group.options
         .filter((o) => selected.has(o.id))
-        .map((o) => ({
-          modifierOptionId: o.id,
-          name: o.name,
-          priceAdjustment: o.priceAdjustment,
-        }));
+        .map((o) => ({ modifierOptionId: o.id, name: o.name, priceAdjustment: o.priceAdjustment }));
+      return applyFreeCount(selectedOpts, group.freeCount ?? 0);
     });
 
   const handleSubmit = () => {
     const modifiers = buildModifiers();
+    const isPresetSelection = showPresetToggle && presetMode === "preset";
 
     if (isEditing && editingCartItem) {
       cart.updateItem(editingCartItem.cartItemId, { quantity, modifiers, notes: notes.trim() });
@@ -191,6 +247,7 @@ export const ProductDetailContent = () => {
         quantity,
         modifiers,
         notes: notes.trim(),
+        isPreset: isPresetSelection,
         ...(isBogoActive && {
           offerType: product.offerType,
           offerPrice: product.offerPrice,
@@ -206,14 +263,7 @@ export const ProductDetailContent = () => {
     setQuantity(1);
     setNotes("");
     setShowNotes(false);
-    const defaults = new Map<string, Set<string>>();
-    for (const group of product.modifierGroups) {
-      const defaultIds = new Set(
-        group.options.filter((o) => o.isDefault).map((o) => o.id)
-      );
-      defaults.set(group.id, defaultIds);
-    }
-    setSelectedModifiers(defaults);
+    setSelectedModifiers(buildDefaultModifiers(product.modifierGroups, product.presetOptionIds));
   };
 
   return (
@@ -310,17 +360,89 @@ export const ProductDetailContent = () => {
             )}
           </div>
 
+          {/* Preset Toggle */}
+          {showPresetToggle && (
+            <div className="px-5 pb-2">
+              <div className="h-px bg-border mb-5" />
+              <div className="space-y-2">
+                {/* Απ' όλα option */}
+                <button
+                  className={`w-full flex items-start gap-3 p-3.5 rounded-xl border transition-colors duration-200 cursor-pointer text-left ${
+                    presetMode === "preset"
+                      ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
+                      : "border-border hover:bg-muted"
+                  }`}
+                  onClick={() => handlePresetModeChange("preset")}
+                >
+                  {presetMode === "preset" ? (
+                    <CircleCheck
+                      className="size-5 shrink-0 mt-0.5"
+                      style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+                    />
+                  ) : (
+                    <Circle className="size-5 shrink-0 mt-0.5 text-muted-foreground/50" />
+                  )}
+                  <div className="min-w-0">
+                    <span className={`text-sm font-semibold ${presetMode === "preset" ? "text-foreground" : "text-muted-foreground"}`}>
+                      {t("withEverything")}
+                    </span>
+                    {defaultOptionNames.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        ({defaultOptionNames.join(", ")})
+                      </p>
+                    )}
+                  </div>
+                </button>
+
+                {/* Επιλέξτε υλικά option */}
+                <button
+                  className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors duration-200 cursor-pointer text-left ${
+                    presetMode === "custom"
+                      ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
+                      : "border-border hover:bg-muted"
+                  }`}
+                  onClick={() => handlePresetModeChange("custom")}
+                >
+                  {presetMode === "custom" ? (
+                    <CircleCheck
+                      className="size-5 shrink-0"
+                      style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+                    />
+                  ) : (
+                    <Circle className="size-5 shrink-0 text-muted-foreground/50" />
+                  )}
+                  <span className={`text-sm font-semibold ${presetMode === "custom" ? "text-foreground" : "text-muted-foreground"}`}>
+                    {t("chooseIngredients")}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Modifier Groups */}
-          {product.modifierGroups.length > 0 && (
+          {product.modifierGroups.length > 0 && (!showPresetToggle || presetMode === "custom") && (
             <div className="px-5 space-y-5 pb-6">
-              <div className="h-px bg-border" />
+              {!showPresetToggle && <div className="h-px bg-border" />}
               {product.modifierGroups.map((group) => {
                 const selected = selectedModifiers.get(group.id) || new Set();
                 return (
                   <div key={group.id}>
-                    <h3 className="text-base font-bold text-foreground">
-                      {group.name}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-foreground">
+                        {group.name}
+                      </h3>
+                      {(group.freeCount ?? 0) > 0 && (
+                        <span
+                          className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: "color-mix(in srgb, var(--brand-primary, hsl(var(--primary))) 15%, transparent)",
+                            color: "var(--brand-primary, hsl(var(--primary)))",
+                          }}
+                        >
+                          {t("freeIncluded", { count: group.freeCount! })}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {group.required
                         ? getRequiredLabel(group.minSelect, t)

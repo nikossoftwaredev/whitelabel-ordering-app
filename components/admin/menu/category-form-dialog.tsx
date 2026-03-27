@@ -92,13 +92,13 @@ export const CategoryFormDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md p-0">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Category" : "New Category"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-6 pt-4 pb-6">
           <div className="space-y-2">
             <Label htmlFor="cat-name">
               <Tag className="inline size-3.5" /> Name (English)

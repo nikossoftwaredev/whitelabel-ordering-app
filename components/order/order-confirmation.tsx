@@ -329,7 +329,7 @@ export const OrderConfirmation = () => {
   return (
     <div className="min-h-[80vh] flex flex-col items-center px-6 pt-8 pb-32">
       {/* Order number badge */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-1">
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
           {t("orderTitle", { number: displayNumber })}
         </span>
@@ -340,6 +340,16 @@ export const OrderConfirmation = () => {
           </span>
         )}
       </div>
+      {orderCreatedAt && (
+        <span className="text-[11px] text-muted-foreground/70 mb-2">
+          {t("placedAt", {
+            time: new Date(orderCreatedAt).toLocaleTimeString(undefined, {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          })}
+        </span>
+      )}
 
       {/* Scheduled badge */}
       {scheduledFor && (

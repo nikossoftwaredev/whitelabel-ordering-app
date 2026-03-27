@@ -21,6 +21,7 @@ export interface CartItem {
   totalPrice: number;
   offerType?: string | null;
   offerPrice?: number | null;
+  isPreset?: boolean;
 }
 
 interface CartStore {
@@ -68,7 +69,8 @@ export const useCartStore = create<CartStore>()(
             (existing) =>
               existing.productId === item.productId &&
               modifierKey(existing.modifiers) === incomingKey &&
-              existing.offerType === item.offerType
+              existing.offerType === item.offerType &&
+              (existing.isPreset ?? false) === (item.isPreset ?? false)
           );
 
           if (existingIndex !== -1) {

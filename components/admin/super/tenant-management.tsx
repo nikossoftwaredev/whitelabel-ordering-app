@@ -930,16 +930,14 @@ export function TenantManagement() {
         open={deleteConfirm !== null}
         onOpenChange={(open) => !open && setDeleteConfirm(null)}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Tenant Permanently</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
+        <DialogContent variant="compact" showCloseButton={false}>
+          <DialogTitle>Delete Tenant Permanently</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">
             Are you sure you want to permanently delete this tenant? This will
             remove all orders, products, categories, customers, and settings.
             This action cannot be undone.
           </p>
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-2 mt-4">
             <Button
               variant="outline"
               onClick={() => setDeleteConfirm(null)}

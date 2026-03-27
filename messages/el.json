@@ -191,6 +191,7 @@
     "cancelError": "Αποτυχία ακύρωσης παραγγελίας. Παρακαλώ δοκιμάστε ξανά.",
     "orderCancelled": "Παραγγελία {number} Ακυρώθηκε",
     "cancelledDesc": "Η παραγγελία σας έχει ακυρωθεί.",
+    "placedAt": "Καταχωρήθηκε στις {time}",
     "scheduledForTime": "Προγραμματισμένη για {time}",
     "minutes": "λεπτά",
     "estimatedTime": "εκτίμηση",
@@ -444,7 +445,10 @@
     "addToOrder": "Προσθήκη στην παραγγελία",
     "addNote": "Προσθήκη σχολίου",
     "orderNote": "Σχόλια παραγγελίας",
-    "notePlaceholder": "π.χ. Χωρίς κρεμμύδια, extra σάλτσα..."
+    "notePlaceholder": "π.χ. Χωρίς κρεμμύδια, extra σάλτσα...",
+    "withEverything": "Απ' όλα",
+    "chooseIngredients": "Επιλέξτε υλικά",
+    "freeIncluded": "{count} δωρεάν"
   },
   "Pwa": {
     "getFullExperience": "Αποκτήστε την πλήρη εμπειρία — εγκαταστήστε την εφαρμογή",

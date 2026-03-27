@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { applyFreeCount } from "@/lib/orders/free-count";
 import { calcBogoTotal, hasActiveOffer } from "@/lib/orders/offers";
 
 interface CartItemModifier {
@@ -10,6 +11,7 @@ interface CartItem {
   quantity: number;
   modifiers?: CartItemModifier[];
   notes?: string;
+  isPreset?: boolean;
 }
 
 interface ValidatedItem {
@@ -23,6 +25,7 @@ interface ValidatedItem {
     priceAdjustment: number;
   }[];
   totalPrice: number;
+  isPreset: boolean;
 }
 
 interface ValidationResult {
@@ -83,7 +86,8 @@ export async function validateCart(
         group.options.some((o) => o.id === m.modifierOptionId)
       );
 
-      if (group.required && selectedForGroup.length < group.minSelect) {
+      // Skip required check for preset items (defaults are auto-selected)
+      if (!item.isPreset && group.required && selectedForGroup.length < group.minSelect) {
         errors.push(
           `${product.name}: ${group.name} requires at least ${group.minSelect} selection(s)`
         );
@@ -95,19 +99,23 @@ export async function validateCart(
         );
       }
 
+      const rawModifiers: ValidatedItem["modifiers"] = [];
       for (const sel of selectedForGroup) {
         const option = group.options.find(
           (o) => o.id === sel.modifierOptionId
         );
         if (option) {
-          validatedModifiers.push({
+          rawModifiers.push({
             modifierOptionId: option.id,
             name: option.name,
             priceAdjustment: option.priceAdjustment,
           });
-          modifierTotal += option.priceAdjustment;
         }
       }
+
+      const effectiveModifiers = applyFreeCount(rawModifiers, pmg.freeCount);
+      validatedModifiers.push(...effectiveModifiers);
+      modifierTotal += effectiveModifiers.reduce((s, m) => s + m.priceAdjustment, 0);
     }
 
     const isBogoActive = hasActiveOffer(product);
@@ -130,6 +138,7 @@ export async function validateCart(
       unitPrice,
       modifiers: validatedModifiers,
       totalPrice,
+      isPreset: item.isPreset ?? false,
     });
   }
 

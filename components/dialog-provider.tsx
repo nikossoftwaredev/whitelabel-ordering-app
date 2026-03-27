@@ -54,6 +54,9 @@ export const DIALOG_KEYS = {
   REORDER: "reorder",
 } as const;
 
+/** Dialogs that use the compact variant (auto-height, no close button) */
+const COMPACT_DIALOGS = new Set<string>([DIALOG_KEYS.CONFIRM]);
+
 function DialogFallback() {
   return (
     <div className="flex flex-col flex-1">
@@ -95,6 +98,8 @@ export const DialogProvider = () => {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [closeDialog]);
 
+  const isCompact = COMPACT_DIALOGS.has(currentDialog!);
+
   if (!currentDialog) return null;
 
   return (
@@ -105,8 +110,9 @@ export const DialogProvider = () => {
       }}
     >
       <DialogContent
-        className="p-0"
-        showCloseButton
+        className={isCompact ? undefined : "p-0"}
+        variant={isCompact ? "compact" : "responsive"}
+        showCloseButton={!isCompact}
         onBack={stackDepth > 1 ? goBack : undefined}
         onCloseAll={closeAll}
       >

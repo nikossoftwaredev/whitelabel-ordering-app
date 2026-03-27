@@ -21,6 +21,7 @@ export const CART_DIALOG = "cart";
 
 export const CartContent = () => {
   const t = useTranslations("Cart");
+  const tProduct = useTranslations("Product");
   const cart = useCartStore();
   const { data: session } = useSession();
   const formatPrice = useFormatPrice();
@@ -54,7 +55,7 @@ export const CartContent = () => {
       {/* Address picker */}
       <button
         onClick={() => openDialog("address-manager")}
-        className="mx-4 mb-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors duration-200 cursor-pointer"
+        className="mx-4 mt-2 mb-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors duration-200 cursor-pointer"
       >
         <Home className="size-4 shrink-0 text-muted-foreground" />
         <div className="flex-1 min-w-0 text-left">
@@ -91,7 +92,9 @@ export const CartContent = () => {
                   {/* Modifier summary */}
                   {item.modifiers.length > 0 && (
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {t("addIngredients", { items: item.modifiers.map((m) => m.name).join(", ") })}
+                      {item.isPreset
+                        ? tProduct("withEverything")
+                        : t("addIngredients", { items: item.modifiers.map((m) => m.name).join(", ") })}
                     </p>
                   )}
 

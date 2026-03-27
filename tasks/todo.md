@@ -2,20 +2,22 @@
 
 ## Active Tasks
 
-### 19. Reorder Card → Cart Selector Refactor — NOT STARTED
-
-- [ ] Refactor "Order Again" card so clicking opens a sheet/modal instead of adding all items blindly
-- [ ] Show previously ordered items as a mini-cart with checkboxes/toggles
-- [ ] Allow user to select which items to add to current cart
-- [ ] Allow quantity adjustment per item
-- [ ] Handle unavailable products gracefully (greyed out, unselectable)
-- [ ] Preserve modifier selections from original order
-- [ ] "Add Selected to Cart" confirmation button
-- [ ] i18n: Translate new labels (EN + EL)
-
 ---
 
 ## Completed Tasks
+
+### 19. Reorder Card → Cart Selector Refactor — DONE
+
+- [x] Refactor "Order Again" card so clicking opens a sheet/modal instead of adding all items blindly
+- [x] Show previously ordered items as a mini-cart with checkboxes/toggles
+- [x] Allow user to select which items to add to current cart
+- [x] Allow quantity adjustment per item
+- [x] Handle unavailable products gracefully (greyed out, unselectable)
+- [x] Preserve modifier selections from original order
+- [x] "Add Selected to Cart" confirmation button
+- [x] i18n: Translate new labels (EN + EL)
+
+---
 
 ### 5. Full Address System (Map Pin + Details) — DONE
 
@@ -237,7 +239,7 @@
 
 | #      | Feature                                   | Complexity | Status          |
 | ------ | ----------------------------------------- | ---------- | --------------- |
-| **19** | **Reorder Card → Cart Selector Refactor** | **Medium** | **Not started** |
+| 19     | Reorder Card → Cart Selector Refactor     | Medium     | **Done**        |
 | **13** | **Live Chat Support**                     | **Large**  | **Not started** |
 | 5      | Address Overhaul (map + details)          | Large      | **Done**        |
 | 11     | Push Notifications                        | Medium     | **Done**        |

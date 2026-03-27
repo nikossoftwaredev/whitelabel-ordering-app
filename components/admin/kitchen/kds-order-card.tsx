@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import type { Order } from "@/components/admin/orders/types";
+import { PresetBadge } from "@/components/preset-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ORDER_TYPE_LABELS } from "@/lib/general/order-types";
@@ -103,9 +104,12 @@ export function KdsOrderCard({ order, onAdvance, onClick, isPending }: KdsOrderC
               {item.quantity}x
             </span>
             <div className="min-w-0">
-              <p className="font-semibold text-[15px] leading-tight">
-                {item.productName}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-semibold text-[15px] leading-tight">
+                  {item.productName}
+                </p>
+                {item.isPreset && <PresetBadge />}
+              </div>
               {item.modifiers.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {item.modifiers.map((m) => m.name).join(", ")}

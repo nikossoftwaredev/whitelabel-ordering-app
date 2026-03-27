@@ -84,9 +84,9 @@ export function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background pt-14">
-      <main className="mx-auto max-w-2xl px-4 py-6">
+      <main className="mx-auto max-w-2xl px-4 pt-6 pb-4">
         <Card>
-          <CardContent className="p-6 space-y-5">
+          <CardContent className="px-5 pt-4 pb-5 space-y-5">
             <div className="flex items-center gap-3 pb-2">
               <div className="size-12 rounded-full bg-muted flex items-center justify-center">
                 {session?.user?.image ? (
@@ -149,10 +149,10 @@ export function ProfilePage() {
                       <button
                         type="button"
                         onClick={() => setSelectedAddress(addr)}
-                        className="flex-1 flex items-start gap-2.5 p-3 cursor-pointer text-left"
+                        className="flex-1 min-w-0 flex items-start gap-2.5 p-3 cursor-pointer text-left"
                       >
                         <MapPin className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 flex-1 overflow-hidden">
                           <p className="text-sm font-medium truncate">
                             {addr.street}
                           </p>

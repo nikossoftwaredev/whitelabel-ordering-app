@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { PresetBadge } from "@/components/preset-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -269,6 +270,7 @@ export function OrderDetailSheet({
                     <span className="font-semibold text-[15px]">
                       {item.productName}
                     </span>
+                    {item.isPreset && <PresetBadge />}
                   </div>
                   <span className="text-sm font-medium text-muted-foreground shrink-0">
                     {formatPrice(item.unitPrice * item.quantity)}

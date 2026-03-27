@@ -151,12 +151,12 @@ export function ModifierGroupFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl min-h-0">
+      <DialogContent className="sm:max-w-2xl min-h-0 p-0">
         <DialogHeader>
           <DialogTitle>{group ? "Edit modifier group" : "New modifier group"}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto min-h-0 space-y-4">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 px-6 pt-4">
           {/* Group fields */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -266,7 +266,7 @@ export function ModifierGroupFormDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 pb-6">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving || !name.trim()}>
             {saving ? "Saving..." : saveLabel}

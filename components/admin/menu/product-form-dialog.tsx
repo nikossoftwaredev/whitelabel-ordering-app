@@ -1,8 +1,8 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { DollarSign, Gift, Languages, Leaf, Loader2, Tag } from "lucide-react";
-import { useEffect, useState } from "react";
+import { DollarSign, Gift, Languages, Leaf, ListChecks, Loader2, Tag } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ImageUpload } from "@/components/image-upload";
@@ -28,16 +28,12 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { centsToDecimal, decimalToCents } from "@/lib/general/formatters";
 import { OFFER_TYPE_BOGO } from "@/lib/orders/offers";
+import type { ModifierGroupRef } from "@/types/admin-menu";
 
 interface Category {
   id: string;
   name: string;
   nameEl: string | null;
-}
-
-interface ModifierGroupRef {
-  id: string;
-  name: string;
 }
 
 interface Product {
@@ -52,7 +48,9 @@ interface Product {
   isGlutenFree: boolean;
   description: string | null;
   categoryId: string;
-  modifierGroups?: { modifierGroup: ModifierGroupRef }[];
+  modifierGroups?: { modifierGroup: ModifierGroupRef; freeCount?: number }[];
+  hasPreset?: boolean;
+  presetOptionIds?: string[];
   offerType?: string | null;
   offerPrice?: number | null;
   offerStart?: string | null;
@@ -89,6 +87,7 @@ export const ProductFormDialog = ({
 }: ProductFormDialogProps) => {
   const queryClient = useQueryClient();
   const isEditing = !!product;
+  const sessionUploadedUrl = useRef<string | null>(null);
 
   const [name, setName] = useState("");
   const [nameEl, setNameEl] = useState("");
@@ -100,12 +99,25 @@ export const ProductFormDialog = ({
   const [dietary, setDietary] = useState<Record<string, boolean>>({});
   const [allergens, setAllergens] = useState("");
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [hasPreset, setHasPreset] = useState(false);
+  const [presetOptionIds, setPresetOptionIds] = useState<string[]>([]);
+  const [freeCountByGroup, setFreeCountByGroup] = useState<Record<string, number>>({});
   const [offerEnabled, setOfferEnabled] = useState(false);
   const [offerPrice, setOfferPrice] = useState("");
   const [offerStart, setOfferStart] = useState("");
   const [offerEnd, setOfferEnd] = useState("");
 
   useEffect(() => {
+    if (!open && sessionUploadedUrl.current) {
+      const urlToDelete = sessionUploadedUrl.current;
+      sessionUploadedUrl.current = null;
+      fetch(`/api/admin/${tenantId}/upload`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urlToDelete }),
+      }).catch(() => {});
+    }
+
     if (product) {
       setName(product.name);
       setNameEl(product.nameEl || "");
@@ -121,6 +133,15 @@ export const ProductFormDialog = ({
       setSelectedGroupIds(
         product.modifierGroups?.map((mg) => mg.modifierGroup.id) ?? []
       );
+      setHasPreset(product.hasPreset ?? false);
+      setPresetOptionIds(product.presetOptionIds ?? []);
+      const fcMap: Record<string, number> = {};
+      product.modifierGroups?.forEach((mg) => {
+        if (mg.freeCount && mg.freeCount > 0) {
+          fcMap[mg.modifierGroup.id] = mg.freeCount;
+        }
+      });
+      setFreeCountByGroup(fcMap);
       setOfferEnabled(product.offerType === OFFER_TYPE_BOGO);
       setOfferPrice(product.offerPrice ? centsToDecimal(product.offerPrice) : "");
       setOfferStart(product.offerStart ? product.offerStart.slice(0, 16) : "");
@@ -136,6 +157,9 @@ export const ProductFormDialog = ({
       setDietary({});
       setAllergens("");
       setSelectedGroupIds([]);
+      setHasPreset(false);
+      setPresetOptionIds([]);
+      setFreeCountByGroup({});
       setOfferEnabled(false);
       setOfferPrice("");
       setOfferStart("");
@@ -164,6 +188,9 @@ export const ProductFormDialog = ({
           categoryId: selectedCategoryId,
           allergens: allergens || null,
           modifierGroupIds: selectedGroupIds,
+          freeCountByGroup,
+          hasPreset,
+          presetOptionIds: hasPreset ? presetOptionIds : [],
           offerType: offerEnabled ? OFFER_TYPE_BOGO : null,
           offerPrice: offerEnabled && offerPrice ? decimalToCents(offerPrice) : null,
           offerStart: offerEnabled && offerStart ? new Date(offerStart).toISOString() : null,
@@ -176,6 +203,7 @@ export const ProductFormDialog = ({
       return res.json();
     },
     onSuccess: () => {
+      sessionUploadedUrl.current = null;
       queryClient.invalidateQueries({
         queryKey: ["admin", "products", tenantId],
       });
@@ -198,14 +226,14 @@ export const ProductFormDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg min-h-0">
+      <DialogContent className="sm:max-w-lg min-h-0 p-0">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Product" : "New Product"}
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 overflow-hidden">
-          <form onSubmit={handleSubmit} className="space-y-4 pr-4">
+          <form onSubmit={handleSubmit} className="space-y-4 px-6 pt-4 pb-6">
             {/* Category */}
             <div className="space-y-2">
               <Label>Category</Label>
@@ -231,7 +259,11 @@ export const ProductFormDialog = ({
               <Label>Product Image</Label>
               <ImageUpload
                 value={imageUrl || undefined}
-                onChange={(url) => setImageUrl(url || null)}
+                onChange={(url) => {
+                  if (url) sessionUploadedUrl.current = url;
+                  setImageUrl(url || null);
+                }}
+                onRemove={() => { sessionUploadedUrl.current = null; }}
                 uploadUrl={`/api/admin/${tenantId}/upload`}
               />
             </div>
@@ -390,25 +422,114 @@ export const ProductFormDialog = ({
             {modifierGroups.length > 0 && (
               <div className="space-y-2">
                 <Label>Modifier groups</Label>
-                <div className="space-y-1.5 max-h-40 overflow-y-auto border rounded-md p-2">
+                <div className="space-y-1.5 max-h-48 overflow-y-auto border rounded-md p-2">
                   {modifierGroups.map((group) => (
-                    <label key={group.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="rounded"
-                        checked={selectedGroupIds.includes(group.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedGroupIds([...selectedGroupIds, group.id]);
-                          } else {
-                            setSelectedGroupIds(selectedGroupIds.filter((id) => id !== group.id));
-                          }
-                        }}
-                      />
-                      <span className="text-sm">{group.name}</span>
-                    </label>
+                    <div key={group.id} className="flex items-center gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                        <input
+                          type="checkbox"
+                          className="rounded shrink-0"
+                          checked={selectedGroupIds.includes(group.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedGroupIds([...selectedGroupIds, group.id]);
+                            } else {
+                              setSelectedGroupIds(selectedGroupIds.filter((id) => id !== group.id));
+                              setFreeCountByGroup((prev) => {
+                                const next = { ...prev };
+                                delete next[group.id];
+                                return next;
+                              });
+                            }
+                          }}
+                        />
+                        <span className="text-sm truncate">{group.name}</span>
+                      </label>
+                      {selectedGroupIds.includes(group.id) &&
+                        group.options.some((o) => o.priceAdjustment > 0) && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-xs text-muted-foreground">Free:</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            className="w-14 h-7 text-xs px-1.5"
+                            value={freeCountByGroup[group.id] ?? 0}
+                            onChange={(e) =>
+                              setFreeCountByGroup((prev) => ({
+                                ...prev,
+                                [group.id]: parseInt(e.target.value) || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Preset Mode */}
+            {selectedGroupIds.length > 0 && (
+              <div className="space-y-3">
+                <Label>
+                  <ListChecks className="inline size-3.5" /> Preset Mode
+                </Label>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <span className="text-sm">Enable &quot;Απ&apos; όλα&quot; option</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Customers can choose &quot;With everything&quot; or customize ingredients
+                    </p>
+                  </div>
+                  <Switch
+                    checked={hasPreset}
+                    onCheckedChange={(checked) => {
+                      setHasPreset(checked);
+                      if (!checked) setPresetOptionIds([]);
+                    }}
+                  />
+                </div>
+
+                {/* Per-product preset option picker */}
+                {hasPreset && (
+                  <div className="space-y-3 pl-1">
+                    <p className="text-xs text-muted-foreground">
+                      Select which options are included in &quot;Απ&apos; όλα&quot; for this product:
+                    </p>
+                    {modifierGroups
+                      .filter((g) => selectedGroupIds.includes(g.id))
+                      .map((group) => (
+                        <div key={group.id}>
+                          <p className="text-sm font-medium text-foreground mb-1.5">
+                            {group.name}
+                          </p>
+                          <div className="space-y-1 border rounded-md p-2">
+                            {group.options.map((opt) => (
+                              <label
+                                key={opt.id}
+                                className="flex items-center gap-2 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="rounded"
+                                  checked={presetOptionIds.includes(opt.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setPresetOptionIds([...presetOptionIds, opt.id]);
+                                    } else {
+                                      setPresetOptionIds(presetOptionIds.filter((id) => id !== opt.id));
+                                    }
+                                  }}
+                                />
+                                <span className="text-sm">{opt.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
             )}
 

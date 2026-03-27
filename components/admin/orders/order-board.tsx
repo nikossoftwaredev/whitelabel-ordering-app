@@ -435,11 +435,11 @@ export function OrderBoard({
           if (!open) setPendingReject(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md p-0">
           <DialogHeader>
             <DialogTitle>Reject Order</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 px-6 pt-4 pb-6">
             <div className="space-y-2">
               <Label htmlFor="rejection-reason">Reason for rejection</Label>
               <Textarea

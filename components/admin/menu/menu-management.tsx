@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useDialogStore } from "@/lib/stores/dialog-store";
+import type { ModifierGroupRef } from "@/types/admin-menu";
 
 import { CategoryFormDialog } from "./category-form-dialog";
 import { ModifierGroupPanel } from "./modifier-group-panel";
@@ -35,11 +36,6 @@ interface Category {
   isActive: boolean;
   sortOrder: number;
   _count: { products: number };
-}
-
-interface ModifierGroupRef {
-  id: string;
-  name: string;
 }
 
 interface Product {

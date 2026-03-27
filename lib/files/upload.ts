@@ -16,7 +16,7 @@ const s3Client = new S3Client({
   forcePathStyle: true,
 });
 
-export const IMAGES_BUCKET = process.env.SUPABASE_S3_BUCKET || "uploads";
+export const IMAGES_BUCKET = "uploads";
 
 const MAX_DIMENSION = 1200;
 const WEBP_QUALITY = 85;
@@ -52,13 +52,12 @@ export const uploadFile = async (
 };
 
 export const deleteFile = async (fileUrl: string): Promise<void> => {
-  const urlParts = fileUrl.split(`/public/${IMAGES_BUCKET}/`);
-  if (urlParts.length !== 2) throw new Error("Invalid file URL format");
+  // Support URLs from any bucket name (handles legacy "uploads" and current "images")
+  const match = fileUrl.match(/\/public\/([^/]+)\/(.+)$/);
+  if (!match) throw new Error("Invalid file URL format");
+  const [, bucket, key] = match;
 
   await s3Client.send(
-    new DeleteObjectCommand({
-      Bucket: IMAGES_BUCKET,
-      Key: urlParts[1],
-    })
+    new DeleteObjectCommand({ Bucket: bucket, Key: key })
   );
 };

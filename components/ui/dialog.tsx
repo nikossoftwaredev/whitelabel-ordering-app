@@ -89,7 +89,7 @@ function DesktopButtons({
         </button>
       )}
       {/* X close — always on desktop */}
-      {onCloseAll ? (
+      {onCloseAll && (
         <button
           onClick={onCloseAll}
           className={cn(closeBtnClass, "hidden sm:flex")}
@@ -97,17 +97,45 @@ function DesktopButtons({
           <XIcon className="size-4" />
           <span className="sr-only">Close</span>
         </button>
-      ) : !onBack ? (
+      )}
+      {!onCloseAll && !onBack && (
         <DialogPrimitive.Close asChild data-slot="dialog-close">
           <button className={cn(closeBtnClass, "hidden sm:flex")}>
             <XIcon className="size-4" />
             <span className="sr-only">Close</span>
           </button>
         </DialogPrimitive.Close>
-      ) : null}
+      )}
     </>
   );
 }
+
+const variantClasses = {
+  responsive: [
+    // Mobile: full-screen
+    "inset-0 flex flex-col bg-background px-6 pb-6",
+    "pt-4",
+    "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+    // Desktop: centered, rounded, constrained
+    "sm:inset-auto sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]",
+    "sm:w-full sm:max-w-lg sm:h-[min(600px,85vh)] sm:rounded-2xl sm:shadow-xl sm:overflow-hidden",
+    "data-[state=closed]:sm:zoom-out-95 data-[state=open]:sm:zoom-in-95",
+  ],
+  compact: [
+    // Compact: centered, auto-height, small width (for confirms/alerts)
+    "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]",
+    "w-[calc(100%-2rem)] max-w-sm",
+    "rounded-lg border bg-background p-6 shadow-lg",
+    "data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+    "data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+  ],
+  default: [
+    // Default: always centered (legacy behavior)
+    "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-lg border bg-background p-6 shadow-lg",
+    "data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+    "sm:max-w-lg",
+  ],
+};
 
 /**
  * DialogContent — responsive by default:
@@ -115,6 +143,7 @@ function DesktopButtons({
  * - Desktop (sm+): centered, rounded, max-width constrained
  *
  * Use `variant="default"` for standard centered dialogs (old behavior).
+ * Use `variant="compact"` for small auto-height dialogs (confirms/alerts).
  */
 function DialogContent({
   className,
@@ -126,7 +155,7 @@ function DialogContent({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
-  variant?: "responsive" | "default";
+  variant?: "responsive" | "default" | "compact";
   onBack?: () => void;
   onCloseAll?: () => void;
 }) {
@@ -139,23 +168,7 @@ function DialogContent({
         className={cn(
           "group",
           "fixed z-50 outline-none duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in",
-          variant === "responsive"
-            ? [
-                // Mobile: full-screen
-                "inset-0 flex flex-col bg-background px-6 pb-6",
-                "pt-4",
-                "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-                // Desktop: centered, rounded, constrained
-                "sm:inset-auto sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]",
-                "sm:w-full sm:max-w-lg sm:h-[min(600px,85vh)] sm:rounded-2xl sm:border sm:shadow-xl",
-                "data-[state=closed]:sm:zoom-out-95 data-[state=open]:sm:zoom-in-95",
-              ]
-            : [
-                // Default: always centered (legacy behavior)
-                "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-lg border bg-background p-6 shadow-lg",
-                "data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-                "sm:max-w-lg",
-              ],
+          variantClasses[variant],
           className,
         )}
         {...props}

@@ -1,10 +1,9 @@
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth/auth";
 import { validateCoupon } from "@/lib/coupons/validate";
-import { Prisma } from "@prisma/client";
-
 import { prisma } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/email/send";
 import { orderEvents } from "@/lib/events/order-events";
@@ -296,6 +295,7 @@ export async function POST(
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
+            isPreset: item.isPreset,
             modifiers: {
               create: item.modifiers.map((mod) => ({
                 modifierOptionId: mod.modifierOptionId,

@@ -326,7 +326,7 @@ export function StaffManagement({ tenantId }: { tenantId: string }) {
 
       {/* Add Staff Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent>
+        <DialogContent className="p-0">
           <DialogHeader>
             <DialogTitle>Add Staff Member</DialogTitle>
           </DialogHeader>
@@ -336,7 +336,7 @@ export function StaffManagement({ tenantId }: { tenantId: string }) {
               setAddError("");
               addMutation.mutate({ email: addEmail, role: addRole });
             }}
-            className="space-y-4"
+            className="space-y-4 px-6 pt-4 pb-6"
           >
             <div className="space-y-2">
               <Label htmlFor="staff-email">Email</Label>
@@ -400,18 +400,16 @@ export function StaffManagement({ tenantId }: { tenantId: string }) {
         open={!!confirmDelete}
         onOpenChange={(open) => !open && setConfirmDelete(null)}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Remove Staff Member</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
+        <DialogContent variant="compact" showCloseButton={false}>
+          <DialogTitle>Remove Staff Member</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">
             Are you sure you want to remove{" "}
             <span className="font-medium text-foreground">
               {confirmDelete?.user.name || confirmDelete?.user.email}
             </span>{" "}
             from your staff? They will lose access to the admin panel.
           </p>
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setConfirmDelete(null)}>
               Cancel
             </Button>

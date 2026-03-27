@@ -211,6 +211,7 @@ export const CheckoutForm = () => {
             modifierOptionId: m.modifierOptionId,
           })),
           notes: item.notes || undefined,
+          isPreset: item.isPreset ?? false,
         })),
         orderType: checkout.orderType,
         paymentMethod: checkout.paymentMethod,

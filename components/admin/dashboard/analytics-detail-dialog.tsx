@@ -168,8 +168,8 @@ export function AnalyticsDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl min-h-0 overflow-y-auto">
-        <DialogHeader className="flex flex-row items-center justify-between space-y-0 gap-2 pr-10">
+      <DialogContent className="sm:max-w-3xl min-h-0 p-0 overflow-hidden sm:h-auto sm:max-h-[90vh]">
+        <DialogHeader className="flex flex-row items-center space-y-0 gap-3 pr-10">
           <DialogTitle>{t("detailedTitle")}</DialogTitle>
           <Button
             variant="outline"
@@ -188,6 +188,7 @@ export function AnalyticsDetailDialog({
           </Button>
         </DialogHeader>
 
+        <div className="overflow-y-auto flex-1 min-h-0 px-5 pb-5">
         {/* Date Presets */}
         <div className="flex gap-1.5 flex-wrap mt-2">
           {DATE_PRESET_KEYS.map((preset) => (
@@ -543,6 +544,7 @@ export function AnalyticsDetailDialog({
             </TabsContent>
           </div>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );

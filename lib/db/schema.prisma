@@ -316,6 +316,8 @@ model Product {
   price         Int       // cents (e.g., 350 = 3.50 EUR)
   sortOrder     Int       @default(0) @map("sort_order")
   isActive      Boolean   @default(true) @map("is_active")
+  hasPreset        Boolean   @default(false) @map("has_preset")
+  presetOptionIds  String[]  @default([]) @map("preset_option_ids")
 
   // 1+1 / Buy-one-get-one offers
   offerType     String?   @map("offer_type")   // "BOGO" or null
@@ -366,6 +368,7 @@ model ProductModifierGroup {
   productId       String @map("product_id")
   modifierGroupId String @map("modifier_group_id")
   sortOrder       Int    @default(0) @map("sort_order")
+  freeCount       Int    @default(0) @map("free_count")
 
   product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
   modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
@@ -646,6 +649,7 @@ model OrderItem {
   unitPrice  Int    @map("unit_price")
   totalPrice Int    @map("total_price")
   notes      String?
+  isPreset   Boolean @default(false) @map("is_preset")
 
   productName String @map("product_name")
 

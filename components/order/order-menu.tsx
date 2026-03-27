@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { cn } from "@/lib/general/utils";
 import { useRouter } from "@/lib/i18n/navigation";
+import { applyFreeCount } from "@/lib/orders/free-count";
 import { hasActiveOffer } from "@/lib/orders/offers";
 import { queryKeys } from "@/lib/query/keys";
 import { useCartStore } from "@/lib/stores/cart-store";
@@ -60,6 +61,7 @@ interface ModifierGroup {
   required: boolean;
   minSelect: number;
   maxSelect: number;
+  freeCount?: number;
   options: ModifierOption[];
 }
 
@@ -78,6 +80,8 @@ interface Product {
   isSpicy: boolean;
   allergens: string | null;
   modifierGroups: ModifierGroup[];
+  hasPreset?: boolean;
+  presetOptionIds?: string[];
   offerType?: string | null;
   offerPrice?: number | null;
   offerStart?: string | null;
@@ -398,6 +402,7 @@ function getMilestoneBarColor(percent: number) {
 /* ═══════════════════ MAIN COMPONENT ═══════════════════ */
 export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const t = useTranslations("Menu");
+  const tProduct = useTranslations("Product");
   const { data: session } = useSession();
   const router = useRouter();
   const formatPrice = useFormatPrice();
@@ -648,15 +653,13 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const handleQuickAdd = useCallback(
     (product: Product) => (e: React.MouseEvent) => {
       e.stopPropagation();
-      const defaultModifiers = product.modifierGroups.flatMap((group) =>
-        group.options
-          .filter((o) => o.isDefault)
-          .map((o) => ({
-            modifierOptionId: o.id,
-            name: o.name,
-            priceAdjustment: o.priceAdjustment,
-          })),
-      );
+      const presetSet = product.presetOptionIds?.length ? new Set(product.presetOptionIds) : null;
+      const defaultModifiers = product.modifierGroups.flatMap((group) => {
+        const selected = group.options
+          .filter((o) => (presetSet ? presetSet.has(o.id) : o.isDefault))
+          .map((o) => ({ modifierOptionId: o.id, name: o.name, priceAdjustment: o.priceAdjustment }));
+        return applyFreeCount(selected, group.freeCount ?? 0);
+      });
       const isBogo = hasActiveOffer(product);
       addItem({
         productId: product.id,
@@ -666,6 +669,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         quantity: isBogo ? 2 : 1,
         modifiers: defaultModifiers,
         notes: "",
+        isPreset: product.hasPreset ?? false,
         ...(isBogo && {
           offerType: product.offerType,
           offerPrice: product.offerPrice,
@@ -673,6 +677,14 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       });
     },
     [addItem],
+  );
+
+  const variantSummary = useCallback(
+    (ci: { modifiers: { name: string }[]; isPreset?: boolean }) =>
+      ci.isPreset
+        ? tProduct("withEverything")
+        : ci.modifiers.map((m) => m.name).join(", ") || "Default",
+    [tProduct],
   );
 
   if (data?.tenant?.isPaused) {
@@ -1094,9 +1106,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                             }
                             modifierSummary={
                               variants.length > 1
-                                ? variants[variants.length - 1].modifiers
-                                    .map((m) => m.name)
-                                    .join(", ") || "Default"
+                                ? variantSummary(variants[variants.length - 1])
                                 : undefined
                             }
                             unitPrice={
@@ -1120,8 +1130,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                                 key={ci.cartItemId}
                                 product={product}
                                 modifierSummary={
-                                  ci.modifiers.map((m) => m.name).join(", ") ||
-                                  "Default"
+                                  variantSummary(ci)
                                 }
                                 quantity={ci.quantity}
                                 unitPrice={

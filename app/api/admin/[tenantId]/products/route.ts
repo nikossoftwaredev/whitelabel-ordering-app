@@ -67,6 +67,9 @@ export async function POST(
     offerPrice,
     offerStart,
     offerEnd,
+    hasPreset,
+    presetOptionIds,
+    freeCountByGroup,
   } = body;
 
   if (!name || !categoryId || price === undefined) {
@@ -99,6 +102,8 @@ export async function POST(
       containsNuts: containsNuts ?? false,
       isSpicy: isSpicy ?? false,
       allergens,
+      hasPreset: hasPreset ?? false,
+      presetOptionIds: presetOptionIds ?? [],
       offerType: offerType || null,
       offerPrice: offerPrice ?? null,
       offerStart: offerStart ? new Date(offerStart) : null,
@@ -108,6 +113,7 @@ export async function POST(
           create: modifierGroupIds.map((groupId: string, i: number) => ({
             modifierGroupId: groupId,
             sortOrder: i,
+            freeCount: freeCountByGroup?.[groupId] ?? 0,
           })),
         },
       }),

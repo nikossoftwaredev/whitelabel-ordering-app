@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingBag, RotateCcw } from "lucide-react";
+import { RotateCcw,ShoppingBag } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { DIALOG_KEYS } from "@/components/dialog-provider";
@@ -67,87 +67,91 @@ export function ReorderCarousel({
     return shown;
   };
 
+  let content;
+
+  if (isLoading) {
+    content = (
+      <div className="flex gap-3 pb-3">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="w-48 shrink-0 rounded-xl border border-border/60 bg-card p-3.5 space-y-2"
+          >
+            <Skeleton className="h-3.5 w-32 rounded" />
+            <Skeleton className="h-3.5 w-24 rounded" />
+            <div className="flex items-center justify-between mt-3">
+              <Skeleton className="h-4 w-14 rounded" />
+              <Skeleton className="size-8 rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  } else if (!orders?.length) {
+    content = (
+      <div className="flex items-center gap-3 py-6 text-muted-foreground">
+        <ShoppingBag className="size-5 shrink-0" />
+        <p className="text-sm">{t("noOrdersYet")}</p>
+      </div>
+    );
+  } else {
+    content = (
+      <ScrollArea className="w-full whitespace-nowrap">
+        <div className="flex gap-3 pb-3">
+          {orders.map((order) => (
+            <button
+              key={order.id}
+              type="button"
+              onClick={() =>
+                openDialog(DIALOG_KEYS.REORDER, {
+                  order,
+                  availableProductIds: [...availableProductIds],
+                })
+              }
+              className="group inline-flex w-48 shrink-0 flex-col justify-between rounded-xl border border-border/60 bg-card p-3.5 text-left transition-all duration-300 hover:border-(--brand-primary,hsl(var(--primary)))/40 hover:shadow-[0_0_20px_-4px_var(--brand-primary,hsl(var(--primary)))/15] active:scale-[0.97] cursor-pointer"
+            >
+              <div className="min-h-13 space-y-0.5">
+                {formatItemsSummary(order.items).map((line, i) => (
+                  <p
+                    key={i}
+                    className="truncate text-[13px] text-muted-foreground whitespace-normal leading-snug"
+                  >
+                    {line}
+                  </p>
+                ))}
+              </div>
+
+              <div className="mt-3 flex items-center justify-between">
+                <span
+                  className="text-sm font-bold tabular-nums"
+                  style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+                >
+                  {formatPrice(order.total)}
+                </span>
+                <div
+                  className="flex size-8 items-center justify-center rounded-full transition-colors duration-300 bg-(--brand-primary,hsl(var(--primary)))/10 group-hover:bg-(--brand-primary,hsl(var(--primary)))/20"
+                >
+                  <RotateCcw
+                    className="size-3.5 transition-transform duration-300 group-hover:-rotate-45"
+                    style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+                  />
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+    );
+  }
+
   return (
     <section className="px-4 pt-6">
       <h2 className="text-xl font-bold tracking-tight mb-1">
         {t("orderAgain")}
       </h2>
       <div className="h-px bg-border mb-3" />
-
-      {isLoading ? (
-        /* Skeleton cards while loading */
-        <div className="flex gap-3 pb-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="w-48 shrink-0 rounded-xl border border-border/60 bg-card p-3.5 space-y-2"
-            >
-              <Skeleton className="h-3.5 w-32 rounded" />
-              <Skeleton className="h-3.5 w-24 rounded" />
-              <div className="flex items-center justify-between mt-3">
-                <Skeleton className="h-4 w-14 rounded" />
-                <Skeleton className="size-8 rounded-full" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : !orders?.length ? (
-        /* Empty state */
-        <div className="flex items-center gap-3 py-6 text-muted-foreground">
-          <ShoppingBag className="size-5 shrink-0" />
-          <p className="text-sm">{t("noOrdersYet")}</p>
-        </div>
-      ) : (
-        /* Order cards */
-        <ScrollArea className="w-full whitespace-nowrap">
-          <div className="flex gap-3 pb-3">
-            {orders.map((order) => (
-              <button
-                key={order.id}
-                type="button"
-                onClick={() =>
-                  openDialog(DIALOG_KEYS.REORDER, {
-                    order,
-                    availableProductIds: [...availableProductIds],
-                  })
-                }
-                className="group inline-flex w-48 shrink-0 flex-col justify-between rounded-xl border border-border/60 bg-card p-3.5 text-left transition-all duration-300 hover:border-(--brand-primary,hsl(var(--primary)))/40 hover:shadow-[0_0_20px_-4px_var(--brand-primary,hsl(var(--primary)))/15] active:scale-[0.97] cursor-pointer"
-              >
-                {/* Items list */}
-                <div className="min-h-13 space-y-0.5">
-                  {formatItemsSummary(order.items).map((line, i) => (
-                    <p
-                      key={i}
-                      className="truncate text-[13px] text-muted-foreground whitespace-normal leading-snug"
-                    >
-                      {line}
-                    </p>
-                  ))}
-                </div>
-
-                {/* Footer: price + reorder icon */}
-                <div className="mt-3 flex items-center justify-between">
-                  <span
-                    className="text-sm font-bold tabular-nums"
-                    style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                  >
-                    {formatPrice(order.total)}
-                  </span>
-                  <div
-                    className="flex size-8 items-center justify-center rounded-full transition-colors duration-300 bg-(--brand-primary,hsl(var(--primary)))/10 group-hover:bg-(--brand-primary,hsl(var(--primary)))/20"
-                  >
-                    <RotateCcw
-                      className="size-3.5 transition-transform duration-300 group-hover:-rotate-45"
-                      style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                    />
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-      )}
+      {content}
     </section>
   );
 }
