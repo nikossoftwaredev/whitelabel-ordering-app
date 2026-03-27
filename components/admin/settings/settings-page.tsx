@@ -12,6 +12,7 @@ import { useCallback, useRef } from "react";
 import { useEffect,useState } from "react";
 import { toast } from "sonner";
 
+import { ImageUpload } from "@/components/image-upload";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +43,8 @@ interface ConfigData {
   secondaryColor: string;
   accentColor: string;
   currency: string;
+  logo: string | null;
+  coverImage: string | null;
   couponEnabled: boolean;
   couponMilestoneOrders: number;
   couponType: "FIXED" | "PERCENTAGE";
@@ -206,6 +209,8 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
   const [couponMaxPerOrder, setCouponMaxPerOrder] = useState(1);
   const [couponRedeemMinOrder, setCouponRedeemMinOrder] = useState("");
   const [couponDescription, setCouponDescription] = useState("");
+  const [logo, setLogo] = useState<string | null>(null);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
 
   const { data: settings, isLoading } = useQuery<TenantSettings>({
     queryKey: queryKeys.settings.all(resolvedTenantId),
@@ -246,6 +251,8 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
       setCouponMaxPerOrder(settings.config.couponMaxPerOrder || 1);
       setCouponRedeemMinOrder(settings.config.couponRedeemMinOrder ? centsToEuros(settings.config.couponRedeemMinOrder) : "");
       setCouponDescription(settings.config.couponDescription || "");
+      setLogo(settings.config.logo || null);
+      setCoverImage(settings.config.coverImage || null);
     }
 
     if (settings.operatingHours && settings.operatingHours.length > 0) {
@@ -291,6 +298,8 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
             secondaryColor,
             accentColor,
             currency,
+            logo,
+            coverImage,
             couponEnabled,
             couponMilestoneOrders,
             couponType,
@@ -322,6 +331,23 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
       toast.error(error.message || "Failed to save settings");
     },
   });
+
+  // Immediately persist a branding image change to the DB (no need to click Save)
+  const saveBrandingImage = async (field: "logo" | "coverImage", url: string | null) => {
+    try {
+      const res = await fetch(`/api/admin/${resolvedTenantId}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config: { [field]: url } }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.settings.all(resolvedTenantId),
+      });
+    } catch {
+      toast.error("Failed to save image");
+    }
+  };
 
   const updateOperatingHour = (
     index: number,
@@ -557,6 +583,52 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
                 onChange={(e) => setCurrency(e.target.value.toUpperCase())}
                 placeholder="EUR"
                 className="w-32"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Branding Images */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Branding Images</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label>Main Logo</Label>
+              <p className="text-sm text-muted-foreground">
+                Used in the header and order pages.
+              </p>
+              <ImageUpload
+                value={logo}
+                onChange={(url) => {
+                  const val = url || null;
+                  setLogo(val);
+                  saveBrandingImage("logo", val);
+                }}
+                uploadUrl={`/api/admin/${resolvedTenantId}/upload`}
+                imageType="logo"
+                aspectRatio={1}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="grid gap-2">
+              <Label>Cover Image</Label>
+              <p className="text-sm text-muted-foreground">
+                Used as a banner or background image.
+              </p>
+              <ImageUpload
+                value={coverImage}
+                onChange={(url) => {
+                  const val = url || null;
+                  setCoverImage(val);
+                  saveBrandingImage("coverImage", val);
+                }}
+                uploadUrl={`/api/admin/${resolvedTenantId}/upload`}
+                imageType="cover"
+                aspectRatio={16 / 9}
               />
             </div>
           </CardContent>

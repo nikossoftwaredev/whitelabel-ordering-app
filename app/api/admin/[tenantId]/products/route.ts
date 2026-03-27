@@ -69,6 +69,8 @@ export async function POST(
     offerEnd,
     hasPreset,
     presetOptionIds,
+    presetName,
+    presetNameEl,
     freeCountByGroup,
   } = body;
 
@@ -104,6 +106,8 @@ export async function POST(
       allergens,
       hasPreset: hasPreset ?? false,
       presetOptionIds: presetOptionIds ?? [],
+      presetName: presetName || null,
+      presetNameEl: presetNameEl || null,
       offerType: offerType || null,
       offerPrice: offerPrice ?? null,
       offerStart: offerStart ? new Date(offerStart) : null,

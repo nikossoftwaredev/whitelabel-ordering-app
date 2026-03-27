@@ -16,13 +16,14 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   STORE_INFO_DIALOG,
   type StoreInfoDialogData,
 } from "@/components/order/store-info-dialog";
+import { resolvePresetLabel } from "@/lib/orders/resolve-preset-label";
 import { ProductBadge } from "@/components/product-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +83,8 @@ interface Product {
   modifierGroups: ModifierGroup[];
   hasPreset?: boolean;
   presetOptionIds?: string[];
+  presetName?: string | null;
+  presetNameEl?: string | null;
   offerType?: string | null;
   offerPrice?: number | null;
   offerStart?: string | null;
@@ -403,6 +406,7 @@ function getMilestoneBarColor(percent: number) {
 export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const t = useTranslations("Menu");
   const tProduct = useTranslations("Product");
+  const locale = useLocale();
   const { data: session } = useSession();
   const router = useRouter();
   const formatPrice = useFormatPrice();
@@ -670,19 +674,22 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         modifiers: defaultModifiers,
         notes: "",
         isPreset: product.hasPreset ?? false,
+        ...(product.hasPreset && {
+          presetName: resolvePresetLabel(product, locale, ""),
+        }),
         ...(isBogo && {
           offerType: product.offerType,
           offerPrice: product.offerPrice,
         }),
       });
     },
-    [addItem],
+    [addItem, locale],
   );
 
   const variantSummary = useCallback(
-    (ci: { modifiers: { name: string }[]; isPreset?: boolean }) =>
+    (ci: { modifiers: { name: string }[]; isPreset?: boolean; presetName?: string }) =>
       ci.isPreset
-        ? tProduct("withEverything")
+        ? (ci.presetName || tProduct("withEverything"))
         : ci.modifiers.map((m) => m.name).join(", ") || "Default",
     [tProduct],
   );

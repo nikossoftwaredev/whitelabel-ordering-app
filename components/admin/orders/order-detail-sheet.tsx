@@ -270,7 +270,7 @@ export function OrderDetailSheet({
                     <span className="font-semibold text-[15px]">
                       {item.productName}
                     </span>
-                    {item.isPreset && <PresetBadge />}
+                    {item.isPreset && <PresetBadge label={item.presetName || undefined} />}
                   </div>
                   <span className="text-sm font-medium text-muted-foreground shrink-0">
                     {formatPrice(item.unitPrice * item.quantity)}

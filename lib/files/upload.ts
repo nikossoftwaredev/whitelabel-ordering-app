@@ -18,13 +18,23 @@ const s3Client = new S3Client({
 
 export const IMAGES_BUCKET = "uploads";
 
+export type ImageType = "product" | "logo" | "cover";
+
+export const IMAGE_TYPE_FOLDER: Record<ImageType, string> = {
+  product: "products",
+  logo: "logos",
+  cover: "covers",
+};
+
+export const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 const MAX_DIMENSION = 1200;
 const WEBP_QUALITY = 85;
 
 const compressImage = async (buffer: Buffer): Promise<Buffer> => {
   return sharp(buffer)
     .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
-    .webp({ quality: WEBP_QUALITY })
+    .webp({ quality: WEBP_QUALITY, effort: 5 })
     .toBuffer();
 };
 

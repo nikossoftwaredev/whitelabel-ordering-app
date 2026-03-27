@@ -1,6 +1,6 @@
 import { cn } from "@/lib/general/utils";
 
-export function PresetBadge({ className }: { className?: string }) {
+export function PresetBadge({ label, className }: { label?: string; className?: string }) {
   return (
     <span
       className={cn(
@@ -8,7 +8,7 @@ export function PresetBadge({ className }: { className?: string }) {
         className,
       )}
     >
-      ΑΠ&apos; ΟΛΑ
+      {label || "ΑΠ' ΟΛΑ"}
     </span>
   );
 }

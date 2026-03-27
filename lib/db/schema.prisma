@@ -318,6 +318,8 @@ model Product {
   isActive      Boolean   @default(true) @map("is_active")
   hasPreset        Boolean   @default(false) @map("has_preset")
   presetOptionIds  String[]  @default([]) @map("preset_option_ids")
+  presetName       String?   @map("preset_name")
+  presetNameEl     String?   @map("preset_name_el")
 
   // 1+1 / Buy-one-get-one offers
   offerType     String?   @map("offer_type")   // "BOGO" or null
@@ -650,6 +652,7 @@ model OrderItem {
   totalPrice Int    @map("total_price")
   notes      String?
   isPreset   Boolean @default(false) @map("is_preset")
+  presetName String? @map("preset_name")
 
   productName String @map("product_name")
 

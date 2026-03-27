@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthResult,requireRole } from "@/lib/auth/require-role";
 import { invalidateMenuCache, invalidateTenantCache } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
+import { deleteFile } from "@/lib/files/upload";
 
 export async function GET(
   _request: NextRequest,
@@ -53,14 +54,6 @@ export async function PUT(
     operatingHours,
   } = body;
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId },
-  });
-
-  if (!tenant) {
-    return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
-  }
-
   // Build tenant update data (including currency from config if present)
   const tenantData: Record<string, unknown> = {
     ...(name !== undefined && { name }),
@@ -81,6 +74,15 @@ export async function PUT(
     tenantData.currency = configFields.currency;
     delete configFields.currency;
   }
+
+  const imageFields = ["logo", "logoSmall", "coverImage"] as const;
+  const needsImageCleanup = configFields && imageFields.some((f) => configFields[f] !== undefined);
+  const oldImages: Record<string, string | null> = needsImageCleanup
+    ? (await prisma.tenantConfig.findUnique({
+        where: { tenantId },
+        select: { logo: true, logoSmall: true, coverImage: true },
+      })) ?? {}
+    : {};
 
   // Batch all writes in a single transaction
   const operations: any[] = [
@@ -133,8 +135,20 @@ export async function PUT(
     },
   });
 
-  await invalidateMenuCache(tenantId);
-  await invalidateTenantCache(tenantId);
+  if (configFields) {
+    for (const field of imageFields) {
+      const oldUrl = oldImages[field];
+      const newUrl = configFields[field];
+      if (oldUrl && newUrl !== undefined && oldUrl !== newUrl) {
+        deleteFile(oldUrl).catch((err) => console.warn("Failed to clean up old image:", err.message));
+      }
+    }
+  }
+
+  await Promise.all([
+    invalidateMenuCache(tenantId),
+    invalidateTenantCache(tenantId),
+  ]);
 
   return NextResponse.json(result);
 }

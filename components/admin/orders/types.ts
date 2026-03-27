@@ -11,6 +11,7 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   isPreset: boolean;
+  presetName?: string | null;
   modifiers: OrderItemModifier[];
 }
 

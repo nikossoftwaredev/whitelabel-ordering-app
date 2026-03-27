@@ -2,9 +2,10 @@
 
 import { Circle, CircleCheck, MessageSquare, Square, SquareCheck, Store } from "lucide-react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { resolvePresetLabel } from "@/lib/orders/resolve-preset-label";
 import { ProductBadge } from "@/components/product-badge";
 import { Button } from "@/components/ui/button";
 import { DialogTitle } from "@/components/ui/dialog";
@@ -52,6 +53,8 @@ interface Product {
   modifierGroups: ModifierGroup[];
   hasPreset?: boolean;
   presetOptionIds?: string[];
+  presetName?: string | null;
+  presetNameEl?: string | null;
   offerType?: string | null;
   offerPrice?: number | null;
   offerStart?: string | null;
@@ -101,6 +104,7 @@ export const ProductDetailContent = () => {
   const product = dialogData?.product ?? null;
   const editingCartItem = dialogData?.editingCartItem ?? null;
   const closeAll = useDialogStore((s) => s.closeAll);
+  const locale = useLocale();
   const t = useTranslations("Product");
   const cart = useCartStore();
   const formatPrice = useFormatPrice();
@@ -192,6 +196,11 @@ export const ProductDetailContent = () => {
 
   const showPresetToggle = !!product?.hasPreset && (product.modifierGroups?.length ?? 0) > 0;
 
+  const resolvedPresetName = useMemo(() => {
+    if (!product) return t("withEverything");
+    return resolvePresetLabel(product, locale, t("withEverything"));
+  }, [product, locale, t]);
+
   const defaultOptionNames = useMemo(() => {
     if (!showPresetToggle || !product) return [];
     const ps = product.presetOptionIds?.length ? new Set(product.presetOptionIds) : null;
@@ -248,6 +257,7 @@ export const ProductDetailContent = () => {
         modifiers,
         notes: notes.trim(),
         isPreset: isPresetSelection,
+        ...(isPresetSelection && { presetName: resolvedPresetName }),
         ...(isBogoActive && {
           offerType: product.offerType,
           offerPrice: product.offerPrice,
@@ -384,7 +394,7 @@ export const ProductDetailContent = () => {
                   )}
                   <div className="min-w-0">
                     <span className={`text-sm font-semibold ${presetMode === "preset" ? "text-foreground" : "text-muted-foreground"}`}>
-                      {t("withEverything")}
+                      {resolvedPresetName}
                     </span>
                     {defaultOptionNames.length > 0 && (
                       <p className="text-xs text-muted-foreground mt-0.5">

@@ -12,6 +12,7 @@ interface CartItem {
   modifiers?: CartItemModifier[];
   notes?: string;
   isPreset?: boolean;
+  presetName?: string;
 }
 
 interface ValidatedItem {
@@ -26,6 +27,7 @@ interface ValidatedItem {
   }[];
   totalPrice: number;
   isPreset: boolean;
+  presetName?: string;
 }
 
 interface ValidationResult {
@@ -139,6 +141,7 @@ export async function validateCart(
       modifiers: validatedModifiers,
       totalPrice,
       isPreset: item.isPreset ?? false,
+      presetName: item.presetName,
     });
   }
 
