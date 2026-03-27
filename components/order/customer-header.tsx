@@ -3,7 +3,6 @@
 import {
   ArrowLeft,
   ChevronDown,
-  MapPin,
   ShoppingCart,
 } from "lucide-react";
 import Image from "next/image";
@@ -15,6 +14,7 @@ import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { UserAvatarMenu } from "@/components/user-avatar-menu";
 import { Link, usePathname } from "@/lib/i18n/navigation";
+import { getAddressLabelIcon } from "@/lib/address/label-icon";
 import { useAddressStore } from "@/lib/stores/address-store";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useDialogStore } from "@/lib/stores/dialog-store";
@@ -96,29 +96,12 @@ export const CustomerHeader = () => {
             </>
           ) : (
             <>
-              {/* Store Logo / Name — hidden on mobile (shown in hero) */}
-              <Link href="/order" className="hidden sm:flex items-center gap-2 shrink-0">
-                {tenant.logo ? (
-                  <Image
-                    src={tenant.logo}
-                    alt={tenant.name}
-                    width={80}
-                    height={32}
-                    className="h-7 w-auto object-contain"
-                  />
-                ) : (
-                  <span className="text-lg font-bold italic tracking-tight drop-shadow-md">
-                    {tenant.name}
-                  </span>
-                )}
-              </Link>
-
               {/* Address Picker */}
               <button
                 onClick={() => openDialog(DIALOG_KEYS.ADDRESS_MANAGER)}
                 className={`flex items-center gap-1.5 py-1.5 px-2 sm:px-3 rounded-lg ${hoverBgClass} transition-colors duration-200 cursor-pointer shrink min-w-0`}
               >
-                <MapPin className={`size-4 shrink-0 ${subtleTextClass}`} />
+                {getAddressLabelIcon(selectedAddress?.label, `size-4 shrink-0 ${subtleTextClass}`)}
                 <span className="text-sm font-semibold truncate drop-shadow-sm max-w-32 sm:max-w-none">
                   {addressDisplay}
                 </span>
