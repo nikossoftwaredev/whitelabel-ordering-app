@@ -186,7 +186,7 @@ export const OrderHistory = () => {
                     {/* Order header */}
                     <div className="flex items-center justify-between">
                       <span className="font-semibold">
-                        #{order.orderNumber}
+                        {order.orderNumber}
                       </span>
                       <Badge
                         variant="secondary"

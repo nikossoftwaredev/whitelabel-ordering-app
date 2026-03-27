@@ -1,8 +1,9 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,6 @@ import {
 import { QuantityStepper } from "./quantity-stepper";
 import type { ReorderItem, ReorderOrder } from "./reorder-carousel";
 
-export const REORDER_DIALOG = "reorder";
 
 interface ItemState {
   item: ReorderItem;
@@ -34,15 +34,11 @@ export const ReorderContent = () => {
     availableProductIds: string[];
   } | null;
 
-  const availableSet = useMemo(
-    () => new Set(dialogData?.availableProductIds ?? []),
-    [dialogData?.availableProductIds],
-  );
-
   const [items, setItems] = useState<ItemState[]>(() => {
     if (!dialogData?.order) return [];
+    const available = new Set(dialogData.availableProductIds);
     return dialogData.order.items
-      .filter((item) => availableSet.has(item.productId))
+      .filter((item) => available.has(item.productId))
       .map((item) => ({ item, quantity: item.quantity }));
   });
 
@@ -60,9 +56,6 @@ export const ReorderContent = () => {
     );
   };
 
-  const removeItem = (index: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
-  };
 
   const getLineTotal = (entry: ItemState) => {
     const modTotal = entry.item.modifiers.reduce((s, m) => s + m.priceAdjustment, 0);
@@ -93,7 +86,7 @@ export const ReorderContent = () => {
 
   return (
     <div className="flex flex-col overflow-y-auto flex-1">
-      {/* Header */}
+
       <DialogHeader>
         <DialogTitle className="text-lg font-bold flex items-center gap-2">
           <RotateCcw className="size-4.5" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} />
@@ -101,7 +94,7 @@ export const ReorderContent = () => {
         </DialogTitle>
       </DialogHeader>
 
-      {/* Items list */}
+
       {items.length === 0 ? (
         <div className="flex-1 flex items-center justify-center px-4 py-12">
           <p className="text-muted-foreground text-sm">{t("reorderEmpty")}</p>
@@ -113,13 +106,15 @@ export const ReorderContent = () => {
               key={entry.item.id}
               className="flex items-center gap-3 py-3 border-b border-border last:border-b-0"
             >
-              {/* Product image */}
+
               <div className="relative shrink-0 size-14 rounded-lg overflow-hidden bg-muted">
                 {entry.item.product?.image ? (
-                  <img
+                  <Image
                     src={entry.item.product.image}
                     alt={entry.item.productName}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="56px"
+                    className="object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -128,7 +123,7 @@ export const ReorderContent = () => {
                 )}
               </div>
 
-              {/* Info */}
+
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-sm text-foreground leading-tight truncate">
                   {entry.item.productName}
@@ -146,14 +141,10 @@ export const ReorderContent = () => {
                 </p>
               </div>
 
-              {/* Quantity controls */}
+
               <QuantityStepper
                 quantity={entry.quantity}
-                onDecrement={() =>
-                  entry.quantity <= 1
-                    ? removeItem(index)
-                    : updateQuantity(index, -1)
-                }
+                onDecrement={() => updateQuantity(index, -1)}
                 onIncrement={() => updateQuantity(index, 1)}
               />
             </div>
@@ -161,7 +152,7 @@ export const ReorderContent = () => {
         </div>
       )}
 
-      {/* Footer */}
+
       {items.length > 0 && (
         <div className="border-t border-border p-4 pb-6 sm:pb-4 space-y-3 shrink-0">
           <div className="flex justify-between items-center">

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 
 import { AddButton } from "@/components/add-button";
 import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
+import { DIALOG_KEYS } from "@/components/dialog-provider";
 import { PhoneInput } from "@/components/phone-input";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
@@ -201,7 +202,7 @@ export function ProfilePage() {
                 variant="outline"
                 className="w-full mt-2"
                 onClick={() =>
-                  openDialog("address-manager", { initialView: "search" })
+                  openDialog(DIALOG_KEYS.ADDRESS_MANAGER, { initialView: "search" })
                 }
               >
                 {tAddr("addNewAddress")}

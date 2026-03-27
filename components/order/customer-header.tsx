@@ -10,6 +10,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
+import { DIALOG_KEYS } from "@/components/dialog-provider";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { UserAvatarMenu } from "@/components/user-avatar-menu";
@@ -114,7 +115,7 @@ export const CustomerHeader = () => {
 
               {/* Address Picker */}
               <button
-                onClick={() => openDialog("address-manager")}
+                onClick={() => openDialog(DIALOG_KEYS.ADDRESS_MANAGER)}
                 className={`flex items-center gap-1.5 py-1.5 px-2 sm:px-3 rounded-lg ${hoverBgClass} transition-colors duration-200 cursor-pointer shrink min-w-0`}
               >
                 <MapPin className={`size-4 shrink-0 ${subtleTextClass}`} />
@@ -134,7 +135,7 @@ export const CustomerHeader = () => {
             {/* User Avatar */}
             <UserAvatarMenu
               showCustomerLinks
-              onSignInClick={() => openDialog("auth")}
+              onSignInClick={() => openDialog(DIALOG_KEYS.AUTH)}
             />
 
             {/* Cart Button */}
@@ -142,7 +143,7 @@ export const CustomerHeader = () => {
               variant="ghost"
               size="icon"
               className={`relative size-9 rounded-lg ${hoverBgClass}`}
-              onClick={() => openDialog("cart")}
+              onClick={() => openDialog(DIALOG_KEYS.CART)}
               disabled={mounted && cartItemCount === 0}
             >
               <ShoppingCart className="size-5" />

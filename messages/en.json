@@ -395,6 +395,7 @@
     "temporarilyClosed": "Temporarily Closed",
     "temporarilyClosedDesc": "We're not accepting orders right now. Please check back later.",
     "noProducts": "No products found",
+    "clearFilters": "Clear filters",
     "orderAgain": "Order Again",
     "noOrdersYet": "Place your first order and it will show up here!",
     "addedToCart": "Added {count} items to cart",

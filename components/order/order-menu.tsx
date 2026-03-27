@@ -409,46 +409,48 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const tabsContainerRef = useRef<HTMLDivElement>(null);
 
-  const cart = useCartStore();
-  const itemCount = cart.itemCount();
-  const subtotal = cart.subtotal();
+  const cartItems = useCartStore((s) => s.items);
+  const itemCount = useCartStore((s) => s.itemCount());
+  const subtotal = useCartStore((s) => s.subtotal());
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const addItem = useCartStore((s) => s.addItem);
+  const setTenantSlug = useCartStore((s) => s.setTenantSlug);
 
-  // Quantity per productId (summed across all cart items for that product)
   const quantityByProduct = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const item of cart.items) {
+    for (const item of cartItems) {
       map[item.productId] = (map[item.productId] || 0) + item.quantity;
     }
     return map;
-  }, [cart.items]);
+  }, [cartItems]);
 
   const handleQuickRemove = useCallback(
     (product: Product) => (e: React.MouseEvent) => {
       e.stopPropagation();
-      const cartItems = cart.items.filter((i) => i.productId === product.id);
-      if (cartItems.length === 0) return;
-      const last = cartItems[cartItems.length - 1];
-      cart.updateQuantity(last.cartItemId, last.quantity - 1);
+      const items = cartItems.filter((i) => i.productId === product.id);
+      if (items.length === 0) return;
+      const last = items[items.length - 1];
+      updateQuantity(last.cartItemId, last.quantity - 1);
     },
-    [cart],
+    [cartItems, updateQuantity],
   );
 
   const handleIncrement = useCallback(
     (product: Product) => (e: React.MouseEvent) => {
       e.stopPropagation();
-      const cartItems = cart.items.filter((i) => i.productId === product.id);
-      if (cartItems.length === 0) return;
-      const last = cartItems[cartItems.length - 1];
-      cart.updateQuantity(last.cartItemId, last.quantity + 1);
+      const items = cartItems.filter((i) => i.productId === product.id);
+      if (items.length === 0) return;
+      const last = items[items.length - 1];
+      updateQuantity(last.cartItemId, last.quantity + 1);
     },
-    [cart],
+    [cartItems, updateQuantity],
   );
 
   const openProduct = useCallback(
     (product: Product) => {
-      const cartItems = cart.items.filter((i) => i.productId === product.id);
-      if (cartItems.length > 0) {
-        const last = cartItems[cartItems.length - 1];
+      const matching = cartItems.filter((i) => i.productId === product.id);
+      if (matching.length > 0) {
+        const last = matching[matching.length - 1];
         openDialog(PRODUCT_DETAIL_DIALOG, {
           product,
           editingCartItem: {
@@ -462,12 +464,12 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         openDialog(PRODUCT_DETAIL_DIALOG, { product });
       }
     },
-    [cart.items, openDialog],
+    [cartItems, openDialog],
   );
 
   const openCartItemEdit = useCallback(
     (product: Product, cartItemId: string) => {
-      const item = cart.items.find((i) => i.cartItemId === cartItemId);
+      const item = cartItems.find((i) => i.cartItemId === cartItemId);
       if (!item) return;
       openDialog(PRODUCT_DETAIL_DIALOG, {
         product,
@@ -479,22 +481,22 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         },
       });
     },
-    [cart.items, openDialog],
+    [cartItems, openDialog],
   );
 
   // Group cart items by productId for rendering variants
   const cartItemsByProduct = useMemo(() => {
-    const map: Record<string, typeof cart.items> = {};
-    for (const item of cart.items) {
+    const map: Record<string, typeof cartItems> = {};
+    for (const item of cartItems) {
       if (!map[item.productId]) map[item.productId] = [];
       map[item.productId].push(item);
     }
     return map;
-  }, [cart.items]);
+  }, [cartItems]);
 
   useEffect(() => {
-    cart.setTenantSlug(tenantSlug);
-  }, [cart, tenantSlug]);
+    setTenantSlug(tenantSlug);
+  }, [setTenantSlug, tenantSlug]);
 
   const { data, isLoading } = useQuery<MenuData>({
     queryKey: queryKeys.menu.all(tenantSlug),
@@ -616,7 +618,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           }
         }, 100);
       },
-      { rootMargin: "-20% 0px -70% 0px", threshold: 0 },
+      { rootMargin: "0px 0px -60% 0px", threshold: 0 },
     );
     sections.forEach((el) => observer.observe(el));
     return () => {
@@ -656,7 +658,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
           })),
       );
       const isBogo = hasActiveOffer(product);
-      cart.addItem({
+      addItem({
         productId: product.id,
         productName: product.name,
         productImage: product.image,
@@ -670,7 +672,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
         }),
       });
     },
-    [cart],
+    [addItem],
   );
 
   if (data?.tenant?.isPaused) {
@@ -1033,9 +1035,21 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
       {/* ═══ CONTENT ═══ */}
       <main className="max-w-2xl mx-auto">
         {filteredCategories.length === 0 && !isLoading ? (
-          <div className="flex flex-col items-center gap-2 py-16 text-center px-4">
+          <div className="flex flex-col items-center gap-3 py-16 text-center px-4">
             <Search className="size-10 text-muted-foreground/30" />
             <p className="text-muted-foreground">{t("noProducts")}</p>
+            {(search || activeFilters.size > 0) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setActiveFilters(new Set());
+                }}
+                className="text-sm font-medium px-4 py-2 rounded-full border border-border hover:bg-muted transition-colors duration-200 cursor-pointer mt-1"
+                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
+              >
+                {t("clearFilters")}
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -1122,14 +1136,14 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                                 }
                                 onIncrement={(e) => {
                                   e.stopPropagation();
-                                  cart.updateQuantity(
+                                  updateQuantity(
                                     ci.cartItemId,
                                     ci.quantity + 1,
                                   );
                                 }}
                                 onDecrement={(e) => {
                                   e.stopPropagation();
-                                  cart.updateQuantity(
+                                  updateQuantity(
                                     ci.cartItemId,
                                     ci.quantity - 1,
                                   );
@@ -1220,14 +1234,14 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
                               }
                               onIncrement={(e) => {
                                 e.stopPropagation();
-                                cart.updateQuantity(
+                                updateQuantity(
                                   ci.cartItemId,
                                   ci.quantity + 1,
                                 );
                               }}
                               onDecrement={(e) => {
                                 e.stopPropagation();
-                                cart.updateQuantity(
+                                updateQuantity(
                                   ci.cartItemId,
                                   ci.quantity - 1,
                                 );
