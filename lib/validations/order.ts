@@ -11,6 +11,7 @@ export const orderItemSchema = z.object({
   modifiers: z.array(orderItemModifierSchema).optional().default([]),
   notes: z.string().max(500).optional().default(""),
   isPreset: z.boolean().optional().default(false),
+  presetName: z.string().max(100).optional(),
 });
 
 export const createOrderSchema = z.object({

@@ -93,7 +93,7 @@ export const CartContent = () => {
                   {item.modifiers.length > 0 && (
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">
                       {item.isPreset
-                        ? tProduct("withEverything")
+                        ? (item.presetName || tProduct("withEverything"))
                         : t("addIngredients", { items: item.modifiers.map((m) => m.name).join(", ") })}
                     </p>
                   )}

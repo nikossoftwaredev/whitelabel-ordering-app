@@ -29,6 +29,8 @@ export async function getCachedMenu(tenantId: string, tenantSlug: string) {
           price: true,
           hasPreset: true,
           presetOptionIds: true,
+          presetName: true,
+          presetNameEl: true,
           isVegan: true,
           isVegetarian: true,
           isGlutenFree: true,

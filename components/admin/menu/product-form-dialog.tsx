@@ -51,6 +51,8 @@ interface Product {
   modifierGroups?: { modifierGroup: ModifierGroupRef; freeCount?: number }[];
   hasPreset?: boolean;
   presetOptionIds?: string[];
+  presetName?: string | null;
+  presetNameEl?: string | null;
   offerType?: string | null;
   offerPrice?: number | null;
   offerStart?: string | null;
@@ -101,6 +103,8 @@ export const ProductFormDialog = ({
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [hasPreset, setHasPreset] = useState(false);
   const [presetOptionIds, setPresetOptionIds] = useState<string[]>([]);
+  const [presetName, setPresetName] = useState("");
+  const [presetNameEl, setPresetNameEl] = useState("");
   const [freeCountByGroup, setFreeCountByGroup] = useState<Record<string, number>>({});
   const [offerEnabled, setOfferEnabled] = useState(false);
   const [offerPrice, setOfferPrice] = useState("");
@@ -135,6 +139,8 @@ export const ProductFormDialog = ({
       );
       setHasPreset(product.hasPreset ?? false);
       setPresetOptionIds(product.presetOptionIds ?? []);
+      setPresetName(product.presetName || "");
+      setPresetNameEl(product.presetNameEl || "");
       const fcMap: Record<string, number> = {};
       product.modifierGroups?.forEach((mg) => {
         if (mg.freeCount && mg.freeCount > 0) {
@@ -159,6 +165,8 @@ export const ProductFormDialog = ({
       setSelectedGroupIds([]);
       setHasPreset(false);
       setPresetOptionIds([]);
+      setPresetName("");
+      setPresetNameEl("");
       setFreeCountByGroup({});
       setOfferEnabled(false);
       setOfferPrice("");
@@ -191,6 +199,8 @@ export const ProductFormDialog = ({
           freeCountByGroup,
           hasPreset,
           presetOptionIds: hasPreset ? presetOptionIds : [],
+          presetName: hasPreset && presetName ? presetName : null,
+          presetNameEl: hasPreset && presetNameEl ? presetNameEl : null,
           offerType: offerEnabled ? OFFER_TYPE_BOGO : null,
           offerPrice: offerEnabled && offerPrice ? decimalToCents(offerPrice) : null,
           offerStart: offerEnabled && offerStart ? new Date(offerStart).toISOString() : null,
@@ -258,13 +268,15 @@ export const ProductFormDialog = ({
             <div className="space-y-2">
               <Label>Product Image</Label>
               <ImageUpload
-                value={imageUrl || undefined}
+                value={imageUrl}
                 onChange={(url) => {
                   if (url) sessionUploadedUrl.current = url;
                   setImageUrl(url || null);
                 }}
                 onRemove={() => { sessionUploadedUrl.current = null; }}
                 uploadUrl={`/api/admin/${tenantId}/upload`}
+                imageType="product"
+                aspectRatio={1}
               />
             </div>
 
@@ -477,7 +489,7 @@ export const ProductFormDialog = ({
                 </Label>
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <div>
-                    <span className="text-sm">Enable &quot;Απ&apos; όλα&quot; option</span>
+                    <span className="text-sm">Enable preset option</span>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Customers can choose &quot;With everything&quot; or customize ingredients
                     </p>
@@ -491,11 +503,31 @@ export const ProductFormDialog = ({
                   />
                 </div>
 
-                {/* Per-product preset option picker */}
+                {/* Per-product preset name and option picker */}
                 {hasPreset && (
                   <div className="space-y-3 pl-1">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="preset-name" className="text-xs">Preset Label (EN)</Label>
+                        <Input
+                          id="preset-name"
+                          value={presetName}
+                          onChange={(e) => setPresetName(e.target.value)}
+                          placeholder="With everything"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="preset-name-el" className="text-xs">Preset Label (EL)</Label>
+                        <Input
+                          id="preset-name-el"
+                          value={presetNameEl}
+                          onChange={(e) => setPresetNameEl(e.target.value)}
+                          placeholder="Απ' όλα"
+                        />
+                      </div>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Select which options are included in &quot;Απ&apos; όλα&quot; for this product:
+                      Leave empty to use defaults. Select which options are included for this product:
                     </p>
                     {modifierGroups
                       .filter((g) => selectedGroupIds.includes(g.id))

@@ -212,6 +212,7 @@ export const CheckoutForm = () => {
           })),
           notes: item.notes || undefined,
           isPreset: item.isPreset ?? false,
+          presetName: item.presetName || undefined,
         })),
         orderType: checkout.orderType,
         paymentMethod: checkout.paymentMethod,

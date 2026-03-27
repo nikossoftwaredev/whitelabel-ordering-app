@@ -61,10 +61,12 @@ export const UserAvatarMenu = ({
   const [isStandalone, setIsStandalone] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const user = session?.user;
 
   useEffect(() => {
+    setMounted(true);
     setIsStandalone(
       window.matchMedia("(display-mode: standalone)").matches ||
         (window.navigator as unknown as { standalone?: boolean }).standalone ===
@@ -103,6 +105,30 @@ export const UserAvatarMenu = ({
         onClick={onSignInClick}
       >
         <User className="size-5" />
+      </Button>
+    );
+  }
+
+  // Render a static avatar button during SSR to avoid Radix useId() hydration mismatch
+  if (!mounted) {
+    return (
+      <Button
+        variant="ghost"
+        className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5"
+      >
+        <Avatar className="size-8">
+          <AvatarImage src={user.image || ""} alt={user.name || "User"} />
+          <AvatarFallback
+            className="text-xs font-semibold"
+            style={{
+              backgroundColor:
+                "var(--brand-primary, hsl(var(--primary)))",
+              color: "white",
+            }}
+          >
+            {initials}
+          </AvatarFallback>
+        </Avatar>
       </Button>
     );
   }

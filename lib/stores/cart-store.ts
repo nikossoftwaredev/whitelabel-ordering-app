@@ -22,6 +22,7 @@ export interface CartItem {
   offerType?: string | null;
   offerPrice?: number | null;
   isPreset?: boolean;
+  presetName?: string;
 }
 
 interface CartStore {

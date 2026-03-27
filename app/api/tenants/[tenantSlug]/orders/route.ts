@@ -296,6 +296,7 @@ export async function POST(
             unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
             isPreset: item.isPreset,
+            presetName: item.presetName || null,
             modifiers: {
               create: item.modifiers.map((mod) => ({
                 modifierOptionId: mod.modifierOptionId,

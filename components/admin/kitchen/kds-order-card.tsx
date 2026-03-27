@@ -108,7 +108,7 @@ export function KdsOrderCard({ order, onAdvance, onClick, isPending }: KdsOrderC
                 <p className="font-semibold text-[15px] leading-tight">
                   {item.productName}
                 </p>
-                {item.isPreset && <PresetBadge />}
+                {item.isPreset && <PresetBadge label={item.presetName || undefined} />}
               </div>
               {item.modifiers.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-0.5">

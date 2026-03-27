@@ -36,6 +36,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
     offerEnd,
     hasPreset,
     presetOptionIds,
+    presetName,
+    presetNameEl,
     freeCountByGroup,
   } = body;
 
@@ -88,6 +90,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
       ...(allergens !== undefined && { allergens }),
       ...(hasPreset !== undefined && { hasPreset }),
       ...(presetOptionIds !== undefined && { presetOptionIds }),
+      ...(presetName !== undefined && { presetName: presetName || null }),
+      ...(presetNameEl !== undefined && { presetNameEl: presetNameEl || null }),
       ...(offerType !== undefined && { offerType: offerType || null }),
       ...(offerPrice !== undefined && { offerPrice: offerPrice ?? null }),
       ...(offerStart !== undefined && { offerStart: offerStart ? new Date(offerStart) : null }),
