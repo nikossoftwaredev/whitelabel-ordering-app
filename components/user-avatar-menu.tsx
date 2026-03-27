@@ -40,7 +40,7 @@ const LANGUAGES = [
 ] as const;
 
 interface UserAvatarMenuProps {
-  /** When true, shows "My Profile", "My Orders", and conditionally "Admin Panel" */
+  /** When true, shows "My Profile", "My Orders", and conditionally "My Stores" */
   showCustomerLinks?: boolean;
   /** Called when user is not signed in and clicks the avatar — lets parent open auth dialog */
   onSignInClick?: () => void;
