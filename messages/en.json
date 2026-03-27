@@ -345,6 +345,7 @@
     "searchPlaceholder": "Street, number, area",
     "searchAddress": "Search address...",
     "confirmAddress": "Confirm address",
+    "editAddress": "Edit address",
     "streetAddress": "Street Address",
     "streetPlaceholder": "e.g. Ermou 10, Athens",
     "city": "City",
