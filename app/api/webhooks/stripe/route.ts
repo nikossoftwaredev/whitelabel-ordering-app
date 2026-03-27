@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Mark as processed — 25h TTL covers Stripe's 24h retry window
-  await redis.set(idempotencyKey, "1", { ex: 90000 });
+  // Mark as processed — 72h TTL matches Stripe's retry window
+  await redis.set(idempotencyKey, "1", { ex: 259200 });
   return NextResponse.json({ received: true });
 }
