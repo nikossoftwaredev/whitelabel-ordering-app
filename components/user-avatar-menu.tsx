@@ -13,7 +13,7 @@ import {
 import { signOut, useSession } from "next-auth/react";
 import { useLocale } from "next-intl";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Link, usePathname, useRouter } from "@/lib/i18n/navigation";
+import { TenantSummary, TenantSwitcherItem } from "@/components/tenant-switcher-item";
 
 const LANGUAGES = [
   { code: "en", name: "English", flag: "🇬🇧" },
@@ -55,7 +56,8 @@ export const UserAvatarMenu = ({
   const router = useRouter();
   const pathname = usePathname();
 
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [tenants, setTenants] = useState<TenantSummary[] | null>(null);
+  const [tenantsLoading, setTenantsLoading] = useState(false);
   const [isStandalone, setIsStandalone] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -74,16 +76,15 @@ export const UserAvatarMenu = ({
     );
   }, []);
 
-  useEffect(() => {
-    if (!user || !showCustomerLinks) {
-      setIsAdmin(false);
-      return;
-    }
-    fetch("/api/user/role")
+  const fetchTenants = useCallback(() => {
+    if (!user || !showCustomerLinks || tenants !== null) return;
+    setTenantsLoading(true);
+    fetch("/api/user/tenants")
       .then((r) => r.json())
-      .then((data) => setIsAdmin(data.isAdmin))
-      .catch(() => setIsAdmin(false));
-  }, [user, showCustomerLinks]);
+      .then((data) => setTenants(Array.isArray(data) ? data : []))
+      .catch(() => setTenants([]))
+      .finally(() => setTenantsLoading(false));
+  }, [user, showCustomerLinks, tenants]);
 
   const initials =
     user?.name
@@ -108,7 +109,7 @@ export const UserAvatarMenu = ({
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu onOpenChange={(open) => { if (open) fetchTenants(); }}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
@@ -152,16 +153,24 @@ export const UserAvatarMenu = ({
                   My Orders
                 </Link>
               </DropdownMenuItem>
-              {isAdmin && (
+            </>
+          )}
+
+          {showCustomerLinks && (tenantsLoading || tenants === null || tenants.length > 0) && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-2 py-1">
+                My Stores
+              </DropdownMenuLabel>
+              {tenantsLoading || tenants === null ? (
                 <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/admin">
-                      <Settings className="mr-2 size-4" />
-                      Admin Panel
-                    </Link>
-                  </DropdownMenuItem>
+                  <div className="mx-2 my-1 h-8 rounded-md bg-muted animate-pulse" />
+                  <div className="mx-2 my-1 h-8 rounded-md bg-muted animate-pulse" />
                 </>
+              ) : (
+                tenants.map((tenant) => (
+                  <TenantSwitcherItem key={tenant.id} tenant={tenant} />
+                ))
               )}
             </>
           )}
