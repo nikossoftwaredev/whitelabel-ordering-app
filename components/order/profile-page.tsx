@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { MapPin, Trash2, User } from "lucide-react";
+import { Trash2, User } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getAddressLabelIcon } from "@/lib/address/label-icon";
 import { useAddressStore } from "@/lib/stores/address-store";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 
@@ -151,7 +152,7 @@ export function ProfilePage() {
                         onClick={() => setSelectedAddress(addr)}
                         className="flex-1 min-w-0 flex items-start gap-2.5 p-3 cursor-pointer text-left"
                       >
-                        <MapPin className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
+                        {getAddressLabelIcon(addr.label, "size-4 mt-0.5 shrink-0 text-muted-foreground")}
                         <div className="min-w-0 flex-1 overflow-hidden">
                           <p className="text-sm font-medium truncate">
                             {addr.street}

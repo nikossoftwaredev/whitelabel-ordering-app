@@ -26,6 +26,7 @@ import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { getAddressLabelIcon } from "@/lib/address/label-icon";
 import { type Address, useAddressStore } from "@/lib/stores/address-store";
 
 const AddressMap = dynamic(() =>
@@ -48,15 +49,6 @@ type ViewState = "list" | "search" | "form";
 const LABEL_OPTIONS = ["Home", "Work", "Other"] as const;
 type LabelOption = (typeof LABEL_OPTIONS)[number];
 
-const labelIcons: Record<string, React.ReactNode> = {
-  Home: <Home className="size-5" />,
-  Work: <Briefcase className="size-5" />,
-  Other: <MapPin className="size-5" />,
-};
-
-function getLabelIcon(label: string) {
-  return labelIcons[label] ?? <MapPin className="size-5" />;
-}
 
 const LABEL_TRANSLATION_KEYS: Record<string, string> = {
   Home: "home",
@@ -384,7 +376,7 @@ export function AddressManagerContent() {
                         {isSelected ? (
                           <Check className="size-4" />
                         ) : (
-                          <MapPin className="size-4 text-muted-foreground" />
+                          getAddressLabelIcon(addr.label, "size-4 text-muted-foreground")
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -690,7 +682,7 @@ export function AddressManagerContent() {
                 options={LABEL_OPTIONS.map((label) => ({
                   key: label,
                   label: t(LABEL_TRANSLATION_KEYS[label]),
-                  icon: getLabelIcon(label),
+                  icon: getAddressLabelIcon(label),
                 }))}
                 value={newLabel}
                 onChange={setNewLabel}

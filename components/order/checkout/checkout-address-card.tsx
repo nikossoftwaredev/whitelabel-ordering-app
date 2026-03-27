@@ -1,6 +1,8 @@
 "use client";
 
 import { MapPin, Store } from "lucide-react";
+
+import { getAddressLabelIcon } from "@/lib/address/label-icon";
 import { useTranslations } from "next-intl";
 
 import { useTenant } from "@/components/tenant-provider";
@@ -65,7 +67,10 @@ export function CheckoutAddressCard() {
               : "hsl(var(--destructive))",
           }}
         >
-          <MapPin className="size-5 text-white" />
+          {selectedAddress
+            ? getAddressLabelIcon(selectedAddress.label, "size-5 text-white")
+            : <MapPin className="size-5 text-white" />
+          }
         </div>
         <div className="min-w-0 flex-1">
           {selectedAddress ? (
