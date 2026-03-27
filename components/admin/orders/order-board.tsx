@@ -22,11 +22,13 @@ import {
   Clock,
   CreditCard,
   MapPin,
+  Printer,
+  PrinterCheck,
   Store,
   Truck,
   User,
 } from "lucide-react";
-import { useMemo,useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +66,9 @@ const BOARD_COLUMNS: OrderStatus[] = [
 ];
 
 const TERMINAL_STATUSES: OrderStatus[] = ["COMPLETED", "REJECTED", "CANCELLED"];
+
+const AUTOPRINT_KEY = "thermal_autoprint";
+const PRINTED_KEY = "printed_order_ids";
 
 /** Map status → Tailwind dot color class */
 const DOT_COLORS: Record<OrderStatus, string> = {
@@ -104,6 +109,7 @@ interface OrderBoardProps {
   onOrderClick: (order: Order) => void;
   formatPrice: (cents: number) => string;
   isPending: boolean;
+  onAutoPrint: (order: Order) => void;
 }
 
 // ── DraggableOrderCard ───────────────────────────────────────────────────────
@@ -291,12 +297,49 @@ export function OrderBoard({
   onOrderClick,
   formatPrice,
   isPending,
+  onAutoPrint,
 }: OrderBoardProps) {
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [pendingReject, setPendingReject] = useState<{
     orderId: string;
   } | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+
+  const [autoPrintEnabled, setAutoPrintEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(AUTOPRINT_KEY) === "true";
+  });
+
+  const printedIdsRef = useRef<Set<string>>(
+    new Set(
+      typeof window !== "undefined"
+        ? (JSON.parse(localStorage.getItem(PRINTED_KEY) ?? "[]") as string[])
+        : [],
+    ),
+  );
+
+  useEffect(() => {
+    if (!autoPrintEnabled) return;
+    const newOrders = orders.filter(
+      (o) => o.status === "NEW" && !printedIdsRef.current.has(o.id),
+    );
+    for (const order of newOrders) {
+      printedIdsRef.current.add(order.id);
+      localStorage.setItem(
+        PRINTED_KEY,
+        JSON.stringify([...printedIdsRef.current]),
+      );
+      onAutoPrint(order);
+    }
+  }, [orders, autoPrintEnabled, onAutoPrint]);
+
+  const toggleAutoPrint = () => {
+    setAutoPrintEnabled((prev) => {
+      const next = !prev;
+      localStorage.setItem(AUTOPRINT_KEY, String(next));
+      return next;
+    });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -395,6 +438,23 @@ export function OrderBoard({
 
   return (
     <>
+      {/* Auto-print toggle */}
+      <div className="flex items-center justify-end mb-3">
+        <Button
+          variant={autoPrintEnabled ? "default" : "outline"}
+          size="sm"
+          onClick={toggleAutoPrint}
+          className="gap-2"
+        >
+          {autoPrintEnabled ? (
+            <PrinterCheck className="size-4" />
+          ) : (
+            <Printer className="size-4" />
+          )}
+          Auto-print {autoPrintEnabled ? "ON" : "OFF"}
+        </Button>
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}

@@ -33,6 +33,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent,TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { usePrintOrder } from "@/hooks/use-print-order";
 import { timeAgo } from "@/lib/general/formatters";
 import { ACTIVE_ORDER_STATUSES,OrderStatus, orderStatusConfig } from "@/lib/general/status-config";
 import { queryKeys } from "@/lib/query/keys";
@@ -52,6 +53,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
   const queryClient = useQueryClient();
   const formatPrice = useFormatPrice();
   const tenant = useTenant();
+  const { printOrder } = usePrintOrder(tenant.name, tenant.currency);
   const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
@@ -838,6 +840,7 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
               onOrderClick={(order) => setDetailOrder(order)}
               formatPrice={formatPrice}
               isPending={updateStatus.isPending}
+              onAutoPrint={printOrder}
             />
           );
         })()
