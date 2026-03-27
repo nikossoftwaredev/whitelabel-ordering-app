@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 import type { ModifierGroupRef } from "@/types/admin-menu";
@@ -140,6 +141,54 @@ export const MenuManagement = ({
         queryKey: ["admin", "products", tenantId],
       });
       toast.success("Product deleted");
+    },
+  });
+
+  // Toggle product availability
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({
+      productId,
+      isActive,
+    }: {
+      productId: string;
+      isActive: boolean;
+    }) => {
+      const res = await fetch(`/api/admin/${tenantId}/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive }),
+      });
+      if (!res.ok) throw new Error("Failed to update availability");
+      return res.json();
+    },
+    onMutate: async ({ productId, isActive }) => {
+      await queryClient.cancelQueries({
+        queryKey: ["admin", "products", tenantId, selectedCategoryId],
+      });
+      const previous = queryClient.getQueryData<Product[]>([
+        "admin",
+        "products",
+        tenantId,
+        selectedCategoryId,
+      ]);
+      queryClient.setQueryData<Product[]>(
+        ["admin", "products", tenantId, selectedCategoryId],
+        (old) =>
+          old?.map((p) => (p.id === productId ? { ...p, isActive } : p)) ?? [],
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          ["admin", "products", tenantId, selectedCategoryId],
+          context.previous,
+        );
+      }
+      toast.error("Failed to update availability");
+    },
+    onSuccess: (_data, { isActive }) => {
+      toast.success(isActive ? "Product is now available" : "Product hidden from customers");
     },
   });
 
@@ -288,7 +337,7 @@ export const MenuManagement = ({
                 {products.map((product: Product) => (
                   <div
                     key={product.id}
-                    className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors duration-300"
+                    className={`flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors duration-300 ${!product.isActive ? "opacity-50" : ""}`}
                   >
                     {product.image ? (
                       <Image
@@ -308,11 +357,6 @@ export const MenuManagement = ({
                         <span className="font-medium text-sm truncate">
                           {product.name}
                         </span>
-                        {!product.isActive && (
-                          <Badge variant="secondary" className="text-xs">
-                            Hidden
-                          </Badge>
-                        )}
                         {product.isVegan && (
                           <Badge
                             variant="outline"
@@ -347,6 +391,16 @@ export const MenuManagement = ({
                     <span className="font-semibold text-sm tabular-nums">
                       {formatPrice(product.price)}
                     </span>
+                    <Switch
+                      checked={product.isActive}
+                      onCheckedChange={(checked) =>
+                        toggleActiveMutation.mutate({
+                          productId: product.id,
+                          isActive: checked,
+                        })
+                      }
+                      aria-label={product.isActive ? "Available" : "Unavailable"}
+                    />
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
