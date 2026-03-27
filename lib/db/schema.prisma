@@ -608,6 +608,7 @@ model Order {
   scheduledFor     DateTime? @map("scheduled_for")
   estimatedReadyAt DateTime? @map("estimated_ready_at")
   customerNote     String?   @map("customer_note")
+  tableNumber      String?   @map("table_number")
   rejectionReason  String?   @map("rejection_reason")
 
   // Denormalized customer info

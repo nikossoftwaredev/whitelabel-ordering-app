@@ -3,17 +3,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Loader2, QrCode, Save } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useCallback, useRef } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { TableQrGenerator } from "@/components/admin/settings/table-qr-generator";
+import { ImageUpload } from "@/components/image-upload";
+import { useTenant } from "@/components/tenant-provider";
 
 const QRCodeSVG = dynamic(() =>
   import("qrcode.react").then((m) => m.QRCodeSVG),
   { ssr: false, loading: () => <div className="size-48 animate-pulse bg-muted rounded" /> }
 );
-import { useCallback, useRef } from "react";
-import { useEffect,useState } from "react";
-import { toast } from "sonner";
-
-import { ImageUpload } from "@/components/image-upload";
-import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -672,6 +673,22 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Table QR Codes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <QrCode className="size-5" />
+            Table QR Codes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Generate QR codes for each table. Customers scan the code to go directly to the ordering page with their table pre-selected.
+          </p>
+          <TableQrGenerator />
         </CardContent>
       </Card>
 

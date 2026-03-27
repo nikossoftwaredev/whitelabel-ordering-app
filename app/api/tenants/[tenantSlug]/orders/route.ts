@@ -100,6 +100,7 @@ export async function POST(
     deliveryLat,
     deliveryLng,
     deliveryAddressDetails,
+    tableNumber,
   } = parsed.data;
 
   // Parse and validate scheduled time
@@ -285,6 +286,7 @@ export async function POST(
         tipAmount,
         total,
         customerNote,
+        tableNumber: tableNumber ?? null,
         customerName: customerName || session.user.name,
         customerPhone: customerPhone || null,
         customerEmail: customerEmail || session.user.email,

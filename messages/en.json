@@ -163,7 +163,8 @@
     "promoDiscount": "Promo discount",
     "groupDiscount": "Group discount",
     "expires": "Expires",
-    "totalSavings": "You save {amount} on this order!"
+    "totalSavings": "You save {amount} on this order!",
+    "table": "Table"
   },
   "OrderConfirmation": {
     "orderDeclined": "Order {number} Declined",

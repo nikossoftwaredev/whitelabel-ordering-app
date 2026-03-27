@@ -2,11 +2,17 @@ import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 
 import { OrderMenu } from "@/components/order/order-menu";
+import { TableInitializer } from "@/components/order/table-initializer";
 import { getRequestTenant } from "@/lib/tenant/resolve";
 import { BasePageProps } from "@/types/page-props";
 
-export default async function OrderPage({ params }: BasePageProps) {
+interface OrderPageProps extends BasePageProps {
+  searchParams: Promise<{ table?: string }>;
+}
+
+export default async function OrderPage({ params, searchParams }: OrderPageProps) {
   const { locale } = await params;
+  const { table } = await searchParams;
   setRequestLocale(locale);
 
   const tenant = await getRequestTenant();
@@ -16,10 +22,13 @@ export default async function OrderPage({ params }: BasePageProps) {
   }
 
   return (
-    <OrderMenu
-      tenantSlug={tenant.slug}
-      tenantName={tenant.name}
-      logo={tenant.config?.logo || null}
-    />
+    <>
+      <TableInitializer tableNumber={table ?? null} />
+      <OrderMenu
+        tenantSlug={tenant.slug}
+        tenantName={tenant.name}
+        logo={tenant.config?.logo || null}
+      />
+    </>
   );
 }

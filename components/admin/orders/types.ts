@@ -42,6 +42,7 @@ export interface Order {
   deliveryAddress: string | null;
   customerName: string | null;
   customerNote: string | null;
+  tableNumber: string | null;
   deliveryAddressDetails: Record<string, unknown> | null;
   items: OrderItem[];
   customer: OrderCustomer | null;

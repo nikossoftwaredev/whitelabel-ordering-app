@@ -83,6 +83,11 @@ export function KdsOrderCard({ order, onAdvance, onClick, isPending }: KdsOrderC
             <TypeIcon className="size-3" />
             {ORDER_TYPE_LABELS[order.orderType]}
           </Badge>
+          {order.tableNumber && (
+            <Badge variant="outline" className="text-xs gap-1 font-bold">
+              Table {order.tableNumber}
+            </Badge>
+          )}
         </div>
         <span className={`text-lg font-mono font-bold tabular-nums ${timerColor}`}>
           {timerDisplay}

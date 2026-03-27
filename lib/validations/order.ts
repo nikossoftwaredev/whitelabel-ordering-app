@@ -27,6 +27,7 @@ export const createOrderSchema = z.object({
   scheduledFor: z.string().datetime().optional(),
   promoCode: z.string().max(50).optional(),
   couponIds: z.array(z.string().cuid()).max(5).optional(),
+  tableNumber: z.string().optional().nullable(),
   deliveryLat: z.number().optional(),
   deliveryLng: z.number().optional(),
   deliveryAddressDetails: z.object({

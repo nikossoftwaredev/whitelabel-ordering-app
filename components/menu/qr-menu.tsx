@@ -9,6 +9,7 @@ import {
   WheatOff,
 } from "lucide-react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useMemo,useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +79,8 @@ const dietaryFilters = [
 
 export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
   const formatPrice = useFormatPrice();
+  const searchParams = useSearchParams();
+  const tableNumber = searchParams.get("table");
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
@@ -338,7 +341,9 @@ export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
             Scan the QR code or visit our website to place an order
           </p>
           <Button variant="outline" className="mt-3 cursor-pointer" asChild>
-            <a href={`/order`}>Order Online</a>
+            <a href={tableNumber ? `/order?table=${tableNumber}` : `/order`}>
+              {tableNumber ? `Order at Table ${tableNumber}` : "Order Online"}
+            </a>
           </Button>
         </div>
       </main>

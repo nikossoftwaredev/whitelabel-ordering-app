@@ -259,6 +259,7 @@ export const CheckoutForm = () => {
         couponIds: checkout.selectedCoupons.length > 0
           ? checkout.selectedCoupons.map((c) => c.id)
           : undefined,
+        tableNumber: checkout.tableNumber ?? undefined,
       };
 
       const res = await fetch(`/api/tenants/${tenant.slug}/orders`, {

@@ -199,6 +199,11 @@ function DraggableOrderCard({
             <TypeIcon className="mr-1 size-3" />
             {ORDER_TYPE_LABEL[order.orderType]}
           </Badge>
+          {order.tableNumber && (
+            <Badge variant="outline" className="text-xs shrink-0 font-bold">
+              T{order.tableNumber}
+            </Badge>
+          )}
         </div>
 
         {/* Row 3: item count + payment + total */}

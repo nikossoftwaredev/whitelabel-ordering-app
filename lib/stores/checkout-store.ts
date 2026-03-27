@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type OrderType = "PICKUP" | "DELIVERY";
+type OrderType = "PICKUP" | "DELIVERY" | "DINE_IN";
 type PaymentMethod = "CASH" | "STRIPE";
 type TipOption = "none" | "50" | "100" | "150" | "200" | "custom";
 
@@ -85,6 +85,10 @@ interface CheckoutStore {
   groupDiscount: GroupDiscountData | null;
   setGroupDiscount: (gd: GroupDiscountData | null) => void;
 
+  // Table number (for QR dine-in)
+  tableNumber: string | null;
+  setTableNumber: (tableNumber: string | null) => void;
+
   // Submission
   isSubmitting: boolean;
   setIsSubmitting: (val: boolean) => void;
@@ -124,6 +128,7 @@ const initialState = {
   promoError: "",
   selectedCoupons: [] as CouponData[],
   groupDiscount: null as GroupDiscountData | null,
+  tableNumber: null as string | null,
   isSubmitting: false,
   stripeClientSecret: null as string | null,
   pendingOrderId: null as string | null,
@@ -179,6 +184,8 @@ export const useCheckoutStore = create<CheckoutStore>((set, get) => ({
 
   setSelectedCoupons: (selectedCoupons) => set({ selectedCoupons }),
   setGroupDiscount: (groupDiscount) => set({ groupDiscount }),
+
+  setTableNumber: (tableNumber) => set({ tableNumber }),
 
   setIsSubmitting: (isSubmitting) => set({ isSubmitting }),
 

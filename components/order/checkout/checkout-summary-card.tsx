@@ -11,6 +11,7 @@ export function CheckoutSummaryCard() {
   const formatPrice = useFormatPrice();
   const subtotal = useCartStore((s) => s.subtotal());
   const orderType = useCheckoutStore((s) => s.orderType);
+  const tableNumber = useCheckoutStore((s) => s.tableNumber);
   const appliedPromo = useCheckoutStore((s) => s.appliedPromo);
   const selectedCoupons = useCheckoutStore((s) => s.selectedCoupons);
   const groupDiscount = useCheckoutStore((s) => s.groupDiscount);
@@ -78,6 +79,14 @@ export function CheckoutSummaryCard() {
             <span className="tabular-nums font-medium">
               {formatPrice(tipAmount)}
             </span>
+          </div>
+        )}
+
+        {/* Table number */}
+        {orderType === "DINE_IN" && tableNumber && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">{t("table")}</span>
+            <span className="tabular-nums font-medium">{tableNumber}</span>
           </div>
         )}
 

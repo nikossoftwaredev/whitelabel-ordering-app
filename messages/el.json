@@ -163,7 +163,8 @@
     "promoDiscount": "Έκπτωση προσφοράς",
     "groupDiscount": "Έκπτωση ομάδας",
     "expires": "Λήγει",
-    "totalSavings": "Εξοικονομείτε {amount} σε αυτή την παραγγελία!"
+    "totalSavings": "Εξοικονομείτε {amount} σε αυτή την παραγγελία!",
+    "table": "Τραπέζι"
   },
   "OrderConfirmation": {
     "orderDeclined": "Παραγγελία {number} Απορρίφθηκε",
