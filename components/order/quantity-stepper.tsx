@@ -111,6 +111,7 @@ export function QuantityStepper({
   }
 
   if (variant === "detail") {
+    const atMin = quantity <= 1;
     return (
       <div
         className={cn(
@@ -120,7 +121,8 @@ export function QuantityStepper({
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          className="size-11 flex items-center justify-center hover:bg-muted/80 transition-colors duration-200 cursor-pointer"
+          disabled={atMin}
+          className="size-11 flex items-center justify-center transition-colors duration-200 cursor-pointer hover:bg-muted/80 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
           onClick={onDecrement}
         >
