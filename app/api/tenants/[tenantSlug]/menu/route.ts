@@ -1,12 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getCachedMenu, getCachedPopularProducts } from "@/lib/cache/menu";
 import { getCachedTenantBySlug } from "@/lib/cache/tenant";
+import { apiLimiter } from "@/lib/security/rate-limit";
 
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ tenantSlug: string }> }
 ) {
+  const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? "anonymous";
+  const { success } = await apiLimiter.limit(ip);
+  if (!success) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
+
   const { tenantSlug } = await params;
   const tenant = await getCachedTenantBySlug(tenantSlug);
 

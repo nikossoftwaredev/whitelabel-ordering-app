@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
 import { validatePromoCode } from "@/lib/promo/validate";
+import { apiLimiter } from "@/lib/security/rate-limit";
 
 export async function POST(
   request: NextRequest,
@@ -14,6 +15,11 @@ export async function POST(
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { success } = await apiLimiter.limit(session.user.id);
+  if (!success) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
 
   const { code, subtotal } = await request.json();
