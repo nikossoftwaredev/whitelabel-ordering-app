@@ -290,161 +290,133 @@ export const ProductDetailContent = () => {
           </div>
         )}
 
-        {/* Muted background wraps all cards */}
-        <div className="bg-muted/40 space-y-2 p-3">
-
-          {/* ── Info card: name / description / price ── */}
-          <div className="bg-background rounded-xl px-4 py-4">
-            <h2 className="text-xl font-bold leading-tight text-foreground">{product.name}</h2>
-
-            {product.description && (
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{product.description}</p>
-            )}
-
-            {/* Dietary tags */}
-            {(product.isVegan || product.isVegetarian || product.isGlutenFree || product.isDairyFree || product.isSpicy || product.containsNuts) && (
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                {product.isVegan && <span className="bg-green-500/15 text-green-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("vegan")}</span>}
-                {product.isVegetarian && <span className="bg-green-500/15 text-green-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("vegetarian")}</span>}
-                {product.isGlutenFree && <span className="bg-amber-500/15 text-amber-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("glutenFree")}</span>}
-                {product.isDairyFree && <span className="bg-blue-500/15 text-blue-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("dairyFree")}</span>}
-                {product.isSpicy && <span className="bg-red-500/15 text-red-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("spicy")}</span>}
-                {product.containsNuts && <span className="bg-orange-500/15 text-orange-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("containsNuts")}</span>}
-              </div>
-            )}
-
-            {product.allergens && (
-              <p className="text-xs text-muted-foreground mt-2">{t("allergens", { list: product.allergens })}</p>
-            )}
-
-            {/* Price */}
-            <div className="flex items-center gap-2 mt-3">
-              {isBogoActive ? (
-                <>
-                  <ProductBadge variant="offer">1+1</ProductBadge>
-                  <span className="text-lg font-bold" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>
-                    {formatPrice(product.offerPrice!)}
-                  </span>
-                  <span className="text-sm text-muted-foreground line-through">{formatPrice(product.price * 2)}</span>
-                </>
-              ) : (
-                <span className="text-lg font-bold" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>
-                  {formatPrice(product.price)}
-                </span>
-              )}
+        {/* ── Info: name / description / price ── */}
+        <div className="px-5 pt-5 pb-5">
+          <h2 className="text-xl font-bold leading-tight text-foreground">{product.name}</h2>
+          {product.description && (
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{product.description}</p>
+          )}
+          {(product.isVegan || product.isVegetarian || product.isGlutenFree || product.isDairyFree || product.isSpicy || product.containsNuts) && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {product.isVegan && <span className="bg-green-500/15 text-green-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("vegan")}</span>}
+              {product.isVegetarian && <span className="bg-green-500/15 text-green-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("vegetarian")}</span>}
+              {product.isGlutenFree && <span className="bg-amber-500/15 text-amber-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("glutenFree")}</span>}
+              {product.isDairyFree && <span className="bg-blue-500/15 text-blue-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("dairyFree")}</span>}
+              {product.isSpicy && <span className="bg-red-500/15 text-red-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("spicy")}</span>}
+              {product.containsNuts && <span className="bg-orange-500/15 text-orange-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("containsNuts")}</span>}
             </div>
+          )}
+          {product.allergens && <p className="text-xs text-muted-foreground mt-2">{t("allergens", { list: product.allergens })}</p>}
+          <div className="flex items-center gap-2 mt-3">
+            {isBogoActive ? (
+              <>
+                <ProductBadge variant="offer">1+1</ProductBadge>
+                <span className="text-lg font-bold" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.offerPrice!)}</span>
+                <span className="text-sm text-muted-foreground line-through">{formatPrice(product.price * 2)}</span>
+              </>
+            ) : (
+              <span className="text-lg font-bold" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>{formatPrice(product.price)}</span>
+            )}
           </div>
+        </div>
 
-          {/* ── Preset toggle card ── */}
-          {showPresetToggle && (
-            <div className="bg-background rounded-xl px-4 py-4 space-y-2">
+        {/* ── Preset toggle ── */}
+        {showPresetToggle && (
+          <>
+            <div className="h-px bg-border mx-5" />
+            <div className="px-5 py-4 space-y-2">
               <button
-                className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-colors duration-200 cursor-pointer text-left ${
-                  presetMode === "preset"
-                    ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
-                    : "border-border hover:bg-muted"
-                }`}
+                className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-colors duration-200 cursor-pointer text-left ${presetMode === "preset" ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5" : "border-border hover:bg-muted"}`}
                 onClick={() => handlePresetModeChange("preset")}
               >
-                {presetMode === "preset" ? (
-                  <CircleCheck className="size-5 shrink-0 mt-0.5" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} />
-                ) : (
-                  <Circle className="size-5 shrink-0 mt-0.5 text-muted-foreground/50" />
-                )}
+                {presetMode === "preset" ? <CircleCheck className="size-5 shrink-0 mt-0.5" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} /> : <Circle className="size-5 shrink-0 mt-0.5 text-muted-foreground/50" />}
                 <div className="min-w-0">
                   <span className={`text-sm font-semibold ${presetMode === "preset" ? "text-foreground" : "text-muted-foreground"}`}>{resolvedPresetName}</span>
-                  {defaultOptionNames.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-0.5">({defaultOptionNames.join(", ")})</p>
-                  )}
+                  {defaultOptionNames.length > 0 && <p className="text-xs text-muted-foreground mt-0.5">({defaultOptionNames.join(", ")})</p>}
                 </div>
               </button>
               <button
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors duration-200 cursor-pointer text-left ${
-                  presetMode === "custom"
-                    ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
-                    : "border-border hover:bg-muted"
-                }`}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors duration-200 cursor-pointer text-left ${presetMode === "custom" ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5" : "border-border hover:bg-muted"}`}
                 onClick={() => handlePresetModeChange("custom")}
               >
-                {presetMode === "custom" ? (
-                  <CircleCheck className="size-5 shrink-0" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} />
-                ) : (
-                  <Circle className="size-5 shrink-0 text-muted-foreground/50" />
-                )}
+                {presetMode === "custom" ? <CircleCheck className="size-5 shrink-0" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} /> : <Circle className="size-5 shrink-0 text-muted-foreground/50" />}
                 <span className={`text-sm font-semibold ${presetMode === "custom" ? "text-foreground" : "text-muted-foreground"}`}>{t("chooseIngredients")}</span>
               </button>
             </div>
-          )}
+          </>
+        )}
 
-          {/* ── Modifier group cards ── */}
-          {product.modifierGroups.length > 0 && (!showPresetToggle || presetMode === "custom") &&
-            product.modifierGroups.map((group) => {
-              const selected = selectedModifiers.get(group.id) || new Set();
-              return (
-                <div key={group.id} className="bg-background rounded-xl overflow-hidden">
+        {/* ── Modifier groups ── */}
+        {product.modifierGroups.length > 0 && (!showPresetToggle || presetMode === "custom") &&
+          product.modifierGroups.map((group) => {
+            const selected = selectedModifiers.get(group.id) || new Set();
+            return (
+              <div key={group.id}>
+                <div className="h-px bg-border mx-5" />
+                <div className="px-5 pt-4 pb-4">
                   {/* Group header */}
-                  <div className="px-4 pt-4 pb-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-foreground">{group.name}</h3>
-                      {(group.freeCount ?? 0) > 0 && (
-                        <span
-                          className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full"
-                          style={{
-                            backgroundColor: "color-mix(in srgb, var(--brand-primary, hsl(var(--primary))) 15%, transparent)",
-                            color: "var(--brand-primary, hsl(var(--primary)))",
-                          }}
-                        >
-                          {t("freeIncluded", { count: group.freeCount! })}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {group.required ? getRequiredLabel(group.minSelect, t) : getOptionalLabel(group.maxSelect, t)}
-                    </p>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h3 className="text-sm font-bold text-foreground">{group.name}</h3>
+                    {(group.freeCount ?? 0) > 0 && (
+                      <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: "color-mix(in srgb, var(--brand-primary, hsl(var(--primary))) 15%, transparent)", color: "var(--brand-primary, hsl(var(--primary)))" }}>
+                        {t("freeIncluded", { count: group.freeCount! })}
+                      </span>
+                    )}
                   </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {group.required ? getRequiredLabel(group.minSelect, t) : getOptionalLabel(group.maxSelect, t)}
+                  </p>
 
-                  {/* Options */}
-                  {group.options.map((opt) => {
-                    const isSelected = selected.has(opt.id);
-                    return (
-                      <button
-                        key={opt.id}
-                        className="w-full flex items-center gap-3 px-4 py-3 border-t border-border cursor-pointer hover:bg-muted/50 transition-colors duration-200 text-left"
-                        onClick={() => toggleModifier(group.id, opt.id, group.maxSelect)}
-                      >
-                        {isSelected ? (
-                          <SquareCheck className="size-5 shrink-0" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} />
-                        ) : (
-                          <Square className="size-5 shrink-0 text-muted-foreground/40" />
-                        )}
-                        <span className={`flex-1 text-sm ${isSelected ? "font-medium text-foreground" : "text-foreground"}`}>{opt.name}</span>
-                        <span className="text-sm text-muted-foreground tabular-nums">
-                          {opt.priceAdjustment !== 0
-                            ? `${opt.priceAdjustment > 0 ? "+" : ""}${formatPrice(opt.priceAdjustment)}`
-                            : "0,00€"}
-                        </span>
-                      </button>
-                    );
-                  })}
+                  {/* 2-column grid of option pills */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {group.options.map((opt) => {
+                      const isSelected = selected.has(opt.id);
+                      return (
+                        <button
+                          key={opt.id}
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors duration-200 cursor-pointer text-left ${
+                            isSelected
+                              ? "border-(--brand-primary,hsl(var(--primary)))/60 bg-(--brand-primary,hsl(var(--primary)))/8"
+                              : "border-border hover:bg-muted"
+                          }`}
+                          onClick={() => toggleModifier(group.id, opt.id, group.maxSelect)}
+                        >
+                          {isSelected ? (
+                            <SquareCheck className="size-4 shrink-0" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} />
+                          ) : (
+                            <Square className="size-4 shrink-0 text-muted-foreground/40" />
+                          )}
+                          <span className="flex-1 text-sm font-medium text-foreground truncate">{opt.name}</span>
+                          {opt.priceAdjustment !== 0 && (
+                            <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                              {opt.priceAdjustment > 0 ? "+" : ""}{formatPrice(opt.priceAdjustment)}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              );
-            })
-          }
+              </div>
+            );
+          })
+        }
 
-          {/* ── Notes card — always visible ── */}
-          <div className="bg-background rounded-xl px-4 py-4">
-            <label className="text-sm font-bold text-foreground mb-2 block">{t("orderNote")}</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t("notePlaceholder")}
-              maxLength={200}
-              rows={3}
-              className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
-            />
-          </div>
-
+        {/* ── Notes — always visible ── */}
+        <div className="h-px bg-border mx-5" />
+        <div className="px-5 pt-4 pb-6">
+          <p className="text-sm font-bold text-foreground mb-2">{t("orderNote")}</p>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={t("notePlaceholder")}
+            maxLength={200}
+            rows={3}
+            className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+          />
         </div>
+
       </ScrollArea>
 
         {/* ── Bottom bar ── */}
