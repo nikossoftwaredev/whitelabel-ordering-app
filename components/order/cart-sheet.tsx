@@ -1,11 +1,10 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Home, ShoppingCart } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
-
-import { CONFIRM_DIALOG } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useFormatPrice } from "@/hooks/use-format-price";
@@ -78,9 +77,18 @@ export const CartContent = () => {
       ) : (
         <>
           <div className="overflow-y-auto flex-1 px-4 py-2">
+            <AnimatePresence initial={false}>
             {cart.items.map((item) => (
-              <div
+              <motion.div
                 key={item.cartItemId}
+                layout
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+              <div
                 className="flex gap-3 py-3 border-b border-border last:border-b-0"
               >
                 {/* Left: text info */}
@@ -126,15 +134,7 @@ export const CartContent = () => {
                     quantity={item.quantity}
                     onDecrement={() => {
                       if (item.quantity <= 1) {
-                        openDialog(
-                          CONFIRM_DIALOG,
-                          {
-                            title: t("removeTitle"),
-                            description: t("removeDescription", { item: item.productName }),
-                            actionLabel: t("remove"),
-                          },
-                          () => cart.removeItem(item.cartItemId),
-                        );
+                        cart.removeItem(item.cartItemId);
                       } else {
                         cart.updateQuantity(item.cartItemId, item.quantity - 1);
                       }
@@ -146,7 +146,9 @@ export const CartContent = () => {
                   />
                 </div>
               </div>
+              </motion.div>
             ))}
+            </AnimatePresence>
           </div>
 
           {/* Bottom section */}
