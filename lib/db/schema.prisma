@@ -629,6 +629,7 @@ model Order {
   promoUsage   PromoCodeUsage?
   coupons      Coupon[]
 
+  @@unique([tenantId, orderNumber])
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
   @@index([customerId])

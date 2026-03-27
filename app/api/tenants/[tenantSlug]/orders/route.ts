@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth/auth";
 import { validateCoupon } from "@/lib/coupons/validate";
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/email/send";
 import { orderEvents } from "@/lib/events/order-events";
@@ -255,11 +257,14 @@ export async function POST(
   totalDiscount = Math.min(totalDiscount, validation.subtotal);
   const total = Math.max(0, validation.subtotal - totalDiscount) + tipAmount;
 
-  // Generate order number
-  const orderNumber = await generateOrderNumber(tenant.id);
-
-  // Create order + track discounts in a single transaction
-  const order = await prisma.$transaction(async (tx) => {
+  // Generate order number + create in transaction, with retry on order number collision
+  let orderNumber = "";
+  let order: Prisma.OrderGetPayload<{ include: { items: { include: { modifiers: true } } } }>;
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    orderNumber = await generateOrderNumber(tenant.id);
+    try {
+      order = await prisma.$transaction(async (tx) => {
     // 1. Create order
     const newOrder = await tx.order.create({
       data: {
@@ -348,36 +353,46 @@ export async function POST(
     });
 
     return newOrder;
-  });
+      });
+      break;
+    } catch (err) {
+      const isPrismaUniqueViolation =
+        err instanceof Error &&
+        "code" in err &&
+        (err as { code: string }).code === "P2002";
+      if (isPrismaUniqueViolation && attempt < MAX_RETRIES - 1) continue;
+      throw err;
+    }
+  }
 
   // Broadcast new order to admin dashboard (must await to ensure delivery)
   await orderEvents.emitNewOrder({
     tenantId: tenant.id,
-    orderId: order.id,
-    orderNumber: order.orderNumber,
-    status: order.status,
-    total: order.total,
-    customerName: order.customerName,
+    orderId: order!.id,
+    orderNumber: order!.orderNumber,
+    status: order!.status,
+    total: order!.total,
+    customerName: order!.customerName,
   });
 
-  sendOrderConfirmation(order, tenant).catch(() => {});
+  sendOrderConfirmation(order!, tenant).catch(() => {});
 
   sendPushToAdmins(tenant.id, {
     title: `New Order #${orderNumber}`,
-    body: `${order.customerName} placed an order for ${tenant.currency} ${(total / 100).toFixed(2)}`,
+    body: `${order!.customerName} placed an order for ${tenant.currency} ${(total / 100).toFixed(2)}`,
     icon: "/api/pwa-icon?size=192",
     url: "/admin/orders",
   });
 
   return NextResponse.json(
     {
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      status: order.status,
-      paymentMethod: order.paymentMethod,
-      paymentStatus: order.paymentStatus,
-      total: order.total,
-      items: order.items,
+      orderId: order!.id,
+      orderNumber: order!.orderNumber,
+      status: order!.status,
+      paymentMethod: order!.paymentMethod,
+      paymentStatus: order!.paymentStatus,
+      total: order!.total,
+      items: order!.items,
     },
     { status: 201 }
   );
