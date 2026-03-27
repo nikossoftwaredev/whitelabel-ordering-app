@@ -21,7 +21,7 @@ export const PaymentModalContent = () => {
   };
 
   return (
-    <div className="flex flex-col overflow-y-auto flex-1">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Header */}
       <DialogHeader>
         <DialogTitle className="text-lg font-bold">

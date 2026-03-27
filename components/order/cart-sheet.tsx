@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useStoreStatus } from "@/hooks/use-store-status";
 import { Link } from "@/lib/i18n/navigation";
@@ -43,7 +44,7 @@ export const CartContent = () => {
   const addressStreet = selectedAddress?.street || null;
 
   return (
-    <div className="flex flex-col overflow-y-auto flex-1">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Header */}
       <DialogHeader>
         <DialogTitle className="text-lg font-bold">
@@ -76,7 +77,8 @@ export const CartContent = () => {
         </div>
       ) : (
         <>
-          <div className="overflow-y-auto flex-1 px-4 py-2">
+          <ScrollArea className="flex-1 min-h-0">
+          <div className="px-4 py-2">
             <AnimatePresence initial={false}>
             {cart.items.map((item) => (
               <motion.div
@@ -150,6 +152,7 @@ export const CartContent = () => {
             ))}
             </AnimatePresence>
           </div>
+          </ScrollArea>
 
           {/* Bottom section */}
           <div className="border-t border-border p-4 pb-6 sm:pb-4 space-y-4 shrink-0">

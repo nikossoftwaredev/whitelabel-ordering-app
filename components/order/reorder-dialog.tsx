@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useCartStore } from "@/lib/stores/cart-store";
 import {
@@ -85,7 +86,7 @@ export const ReorderContent = () => {
   };
 
   return (
-    <div className="flex flex-col overflow-y-auto flex-1">
+    <div className="flex flex-col flex-1 min-h-0">
 
       <DialogHeader>
         <DialogTitle className="text-lg font-bold flex items-center gap-2">
@@ -100,12 +101,9 @@ export const ReorderContent = () => {
           <p className="text-muted-foreground text-sm">{t("reorderEmpty")}</p>
         </div>
       ) : (
-        <div className="overflow-y-auto flex-1 px-4 py-2">
+        <ScrollArea className="flex-1 min-h-0"><div className="px-4 py-2">
           {items.map((entry, index) => (
-            <div
-              key={entry.item.id}
-              className="flex items-center gap-3 py-3 border-b border-border last:border-b-0"
-            >
+            <div key={entry.item.id} className="flex items-center gap-3 py-3 border-b border-border last:border-b-0">
 
               <div className="relative shrink-0 size-14 rounded-lg overflow-hidden bg-muted">
                 {entry.item.product?.image ? (
@@ -149,9 +147,8 @@ export const ReorderContent = () => {
               />
             </div>
           ))}
-        </div>
+        </div></ScrollArea>
       )}
-
 
       {items.length > 0 && (
         <div className="border-t border-border p-4 pb-6 sm:pb-4 space-y-3 shrink-0">

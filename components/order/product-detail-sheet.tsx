@@ -9,6 +9,7 @@ import { resolvePresetLabel } from "@/lib/orders/resolve-preset-label";
 import { ProductBadge } from "@/components/product-badge";
 import { Button } from "@/components/ui/button";
 import { DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { applyFreeCount } from "@/lib/orders/free-count";
 import { calcBogoTotal, hasActiveOffer } from "@/lib/orders/offers";
@@ -277,11 +278,11 @@ export const ProductDetailContent = () => {
   };
 
   return (
-    <div className="flex flex-col overflow-y-auto flex-1">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Hidden accessible title */}
       <DialogTitle className="sr-only">{product.name}</DialogTitle>
 
-      <div className="overflow-y-auto flex-1 scrollbar-hide">
+      <ScrollArea className="flex-1 min-h-0"><div>
           {/* Hero image */}
           <div className="relative">
             {product.image ? (
@@ -524,7 +525,7 @@ export const ProductDetailContent = () => {
               </div>
             )}
           </div>
-        </div>
+        </div></ScrollArea>
 
         {/* ── Bottom bar ── */}
         <div className="border-t border-border bg-background shrink-0">

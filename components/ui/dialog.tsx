@@ -4,7 +4,6 @@ import { ChevronLeft, XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import * as React from "react";
 
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function Dialog({
@@ -47,103 +46,49 @@ function DialogOverlay({
   );
 }
 
-const navBtnBase =
-  "absolute z-10 size-9 flex items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm hover:bg-muted transition-colors duration-200 cursor-pointer";
+// Theme-agnostic pill button — no border, foreground-tinted bg
+const navBtn =
+  "absolute z-10 size-9 flex items-center justify-center rounded-full bg-foreground/10 hover:bg-foreground/[0.16] text-foreground transition-colors duration-300 cursor-pointer";
 
-const backBtnClass = `${navBtnBase} top-3.5 left-3.5`;
-const closeBtnClass = `${navBtnBase} top-3.5 right-3.5`;
-
-function MobileBackButton({ onClick }: { onClick?: () => void }) {
+function CloseButton({ onClick }: { onClick?: () => void }) {
+  const cls = cn(navBtn, "top-3.5 right-3.5");
   if (onClick) {
     return (
-      <button onClick={onClick} className={cn(backBtnClass, "sm:hidden")}>
-        <ChevronLeft className="size-4" />
-        <span className="sr-only">Back</span>
+      <button onClick={onClick} className={cls}>
+        <XIcon className="size-4" />
+        <span className="sr-only">Close</span>
       </button>
     );
   }
   return (
     <DialogPrimitive.Close asChild data-slot="dialog-close">
-      <button className={cn(backBtnClass, "sm:hidden")}>
-        <ChevronLeft className="size-4" />
+      <button className={cls}>
+        <XIcon className="size-4" />
         <span className="sr-only">Close</span>
       </button>
     </DialogPrimitive.Close>
   );
 }
 
-function DesktopButtons({
-  onBack,
-  onCloseAll,
-}: {
-  onBack?: () => void;
-  onCloseAll?: () => void;
-}) {
+function BackButton({ onClick }: { onClick: () => void }) {
   return (
-    <>
-      {/* Back arrow — only when stacked */}
-      {onBack && (
-        <button onClick={onBack} className={cn(backBtnClass, "hidden sm:flex")}>
-          <ChevronLeft className="size-4" />
-          <span className="sr-only">Back</span>
-        </button>
-      )}
-      {/* X close — always on desktop */}
-      {onCloseAll && (
-        <button
-          onClick={onCloseAll}
-          className={cn(closeBtnClass, "hidden sm:flex")}
-        >
-          <XIcon className="size-4" />
-          <span className="sr-only">Close</span>
-        </button>
-      )}
-      {!onCloseAll && !onBack && (
-        <DialogPrimitive.Close asChild data-slot="dialog-close">
-          <button className={cn(closeBtnClass, "hidden sm:flex")}>
-            <XIcon className="size-4" />
-            <span className="sr-only">Close</span>
-          </button>
-        </DialogPrimitive.Close>
-      )}
-    </>
+    <button onClick={onClick} className={cn(navBtn, "top-3.5 left-3.5")}>
+      <ChevronLeft className="size-4.5" />
+      <span className="sr-only">Back</span>
+    </button>
   );
 }
 
-const variantClasses = {
-  responsive: [
-    // Mobile: full-screen
-    "inset-0 flex flex-col bg-background px-6 pb-6",
-    "pt-4",
-    "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-    // Desktop: centered, rounded, constrained
-    "sm:inset-auto sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]",
-    "sm:w-full sm:max-w-lg sm:h-[min(600px,85vh)] sm:rounded-2xl sm:shadow-xl sm:overflow-hidden",
-    "data-[state=closed]:sm:zoom-out-95 data-[state=open]:sm:zoom-in-95",
-  ],
-  compact: [
-    // Compact: centered, auto-height, small width (for confirms/alerts)
-    "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]",
-    "w-[calc(100%-2rem)] max-w-sm",
-    "rounded-lg border bg-background p-6 shadow-lg",
-    "data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-    "data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-  ],
-  default: [
-    // Default: always centered (legacy behavior)
-    "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-lg border bg-background p-6 shadow-lg",
-    "data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-    "sm:max-w-lg",
-  ],
-};
-
 /**
- * DialogContent — responsive by default:
- * - Mobile: full-screen, no rounded corners
- * - Desktop (sm+): centered, rounded, max-width constrained
+ * DialogContent — three variants:
  *
- * Use `variant="default"` for standard centered dialogs (old behavior).
- * Use `variant="compact"` for small auto-height dialogs (confirms/alerts).
+ * "responsive" (default): full-screen on mobile, centered+rounded on desktop.
+ *   - X always visible (top-right, both mobile & desktop).
+ *   - Back arrow (top-left) ONLY when onBack is provided (stacked state).
+ *
+ * "compact": auto-height centered dialog (confirm / alert). No nav buttons.
+ *
+ * "default": legacy centered dialog, kept for backward compat.
  */
 function DialogContent({
   className,
@@ -159,28 +104,54 @@ function DialogContent({
   onBack?: () => void;
   onCloseAll?: () => void;
 }) {
+  const isStacked = !!onBack;
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
-        data-stacked={onBack ? "" : undefined}
+        data-stacked={isStacked ? "" : undefined}
         className={cn(
-          "group",
-          "fixed z-50 outline-none duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in",
-          variantClasses[variant],
+          "group fixed z-50 outline-none duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in",
+
+          variant === "responsive" && [
+            // Mobile: full-screen sheet
+            "inset-0 flex flex-col bg-background",
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            // Desktop: centered card — wider + taller than before
+            "sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2",
+            "sm:w-full sm:max-w-xl sm:h-[min(700px,88vh)]",
+            "sm:rounded-2xl sm:shadow-2xl sm:overflow-hidden sm:flex sm:flex-col",
+            "data-[state=closed]:sm:zoom-out-95 data-[state=open]:sm:zoom-in-95",
+          ],
+
+          variant === "compact" && [
+            "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+            "w-[calc(100%-2rem)] max-w-sm",
+            "rounded-2xl border bg-background p-6 shadow-2xl",
+            "data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+            "data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+          ],
+
+          variant === "default" && [
+            "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+            "grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-xl border bg-background p-6 shadow-lg",
+            "data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+            "data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            "sm:max-w-lg",
+          ],
+
           className,
         )}
         {...props}
       >
+        {/* Navigation buttons for responsive variant */}
         {showCloseButton && variant === "responsive" && (
           <>
-            <MobileBackButton onClick={onBack ?? onCloseAll} />
-            <DesktopButtons onBack={onBack} onCloseAll={onCloseAll} />
+            <CloseButton onClick={onCloseAll} />
+            {isStacked && <BackButton onClick={onBack!} />}
           </>
-        )}
-        {showCloseButton && variant === "default" && (
-          <DesktopButtons onBack={onBack} onCloseAll={onCloseAll} />
         )}
         {children}
       </DialogPrimitive.Content>
@@ -188,6 +159,11 @@ function DialogContent({
   );
 }
 
+/**
+ * DialogHeader — sticky title bar.
+ * Padding accounts for nav buttons: X is always on the right (pr-14),
+ * back arrow only when stacked (group-data-[stacked]:pl-14).
+ */
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -195,12 +171,10 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
       className={cn(
         "flex flex-col gap-1 text-center sm:text-left shrink-0",
         "min-h-14 justify-center",
-        // Padding: clear back-btn (left) on mobile, clear X (right) on desktop
-        "pt-5 pb-4 pl-14 pr-6",
-        "sm:pl-6 sm:pr-14",
-        // When stacked on desktop, also clear back-btn on left
-        "group-data-stacked:sm:pl-14",
-        "shadow-[0_2px_4px_-1px_rgba(0,0,0,0.06)]",
+        // Right clears X button; left is normal unless stacked (back arrow)
+        "pt-5 pb-4 pl-6 pr-14",
+        "group-data-stacked:pl-14",
+        "shadow-[0_1px_0_0_hsl(var(--border))]",
         className,
       )}
       {...props}
@@ -213,9 +187,7 @@ function DialogFooter({
   showCloseButton = false,
   children,
   ...props
-}: React.ComponentProps<"div"> & {
-  showCloseButton?: boolean;
-}) {
+}: React.ComponentProps<"div"> & { showCloseButton?: boolean }) {
   return (
     <div
       data-slot="dialog-footer"
@@ -228,7 +200,9 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
-          <Button variant="outline">Close</Button>
+          <button className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors duration-300">
+            Close
+          </button>
         </DialogPrimitive.Close>
       )}
     </div>

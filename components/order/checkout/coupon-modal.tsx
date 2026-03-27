@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useCartStore } from "@/lib/stores/cart-store";
@@ -214,7 +215,7 @@ export const CouponModalContent = () => {
   };
 
   return (
-    <div className="flex flex-col overflow-y-auto flex-1">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Header */}
       <DialogHeader>
         <DialogTitle className="text-lg font-bold">
@@ -222,7 +223,7 @@ export const CouponModalContent = () => {
         </DialogTitle>
       </DialogHeader>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-5">
+      <ScrollArea className="flex-1 min-h-0"><div className="px-5 pb-4 space-y-5">
         {/* ═══ My Coupons ═══ */}
         {session?.user && (
           <div>
@@ -411,7 +412,7 @@ export const CouponModalContent = () => {
             </span>
           </div>
         )}
-      </div>
+      </div></ScrollArea>
 
       {/* Apply button */}
       <div className="px-5 py-4 border-t border-border shrink-0">

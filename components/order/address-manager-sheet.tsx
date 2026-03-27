@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getAddressLabelIcon } from "@/lib/address/label-icon";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { type Address, useAddressStore } from "@/lib/stores/address-store";
 import { selectDialogData, useDialogStore } from "@/lib/stores/dialog-store";
 import {
@@ -353,7 +354,7 @@ export function AddressManagerContent() {
             <DialogTitle className="text-lg font-bold">{t("chooseAddress")}</DialogTitle>
           </DialogHeader>
 
-          <div className="overflow-y-auto flex-1 px-3">
+          <ScrollArea className="flex-1 min-h-0"><div className="px-3">
             {addresses.length > 0 ? (
               <div>
                 {addresses.map((addr) => {
@@ -395,7 +396,7 @@ export function AddressManagerContent() {
                 <p className="text-sm text-muted-foreground leading-relaxed">{t("noAddressesDesc")}</p>
               </div>
             )}
-          </div>
+          </div></ScrollArea>
 
           <div className="px-6 py-5 shrink-0">
             <AddButton variant="brand" onClick={handleAddAddress} className="w-full h-12 rounded-xl font-semibold text-[15px]">
@@ -467,7 +468,7 @@ export function AddressManagerContent() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="overflow-y-auto flex-1 px-5 pb-6 space-y-5">
+          <ScrollArea className="flex-1 min-h-0"><div className="px-5 pb-6 space-y-5">
 
             {/* Section 1: Address details */}
             <SectionHeader
@@ -604,7 +605,7 @@ export function AddressManagerContent() {
                 {deleteMutation.isPending ? "Deleting…" : "Delete address"}
               </Button>
             )}
-          </div>
+          </div></ScrollArea>
         </>
       )}
     </div>
