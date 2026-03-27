@@ -202,6 +202,11 @@ html body[data-scroll-locked] {
 }
 
 /* ── Thermal Receipt Print Styles ─────────────────────────────────────────── */
+@page {
+  size: 80mm auto;
+  margin: 4mm;
+}
+
 @media print {
   /* Hide everything on the page */
   body > * {
@@ -211,9 +216,6 @@ html body[data-scroll-locked] {
   /* Show only the receipt */
   #thermal-receipt {
     display: block !important;
-    position: fixed;
-    top: 0;
-    left: 0;
     width: 80mm;
     margin: 0;
     padding: 0;
@@ -221,10 +223,5 @@ html body[data-scroll-locked] {
     font-size: 12px;
     color: #000;
     background: #fff;
-  }
-
-  @page {
-    size: 80mm auto;
-    margin: 4mm;
   }
 }
