@@ -1,6 +1,6 @@
 "use client";
 
-import { Circle, CircleCheck, MessageSquare, Square, SquareCheck, Store } from "lucide-react";
+import { Circle, CircleCheck, Square, SquareCheck, Store } from "lucide-react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -116,7 +116,6 @@ export const ProductDetailContent = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [presetMode, setPresetMode] = useState<"preset" | "custom">("preset");
   const [notes, setNotes] = useState("");
-  const [showNotes, setShowNotes] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -124,7 +123,6 @@ export const ProductDetailContent = () => {
         setIsEditing(true);
         setQuantity(editingCartItem.quantity);
         setNotes(editingCartItem.notes || "");
-        setShowNotes(!!editingCartItem.notes);
         // Restore preset mode when editing
         if (product.hasPreset && editingCartItem.isPreset) {
           setPresetMode("preset");
@@ -147,7 +145,6 @@ export const ProductDetailContent = () => {
         // Default to 2 for BOGO products so they get the deal
         setQuantity(hasActiveOffer(product) ? 2 : 1);
         setNotes("");
-        setShowNotes(false);
         setPresetMode("preset");
         setSelectedModifiers(buildDefaultModifiers(product.modifierGroups, product.presetOptionIds));
       }
@@ -273,7 +270,6 @@ export const ProductDetailContent = () => {
     setIsEditing(false);
     setQuantity(1);
     setNotes("");
-    setShowNotes(false);
     setSelectedModifiers(buildDefaultModifiers(product.modifierGroups, product.presetOptionIds));
   };
 
@@ -282,166 +278,114 @@ export const ProductDetailContent = () => {
       {/* Hidden accessible title */}
       <DialogTitle className="sr-only">{product.name}</DialogTitle>
 
-      <ScrollArea className="flex-1 min-h-0"><div>
-          {/* Hero image */}
-          <div className="relative">
-            {product.image ? (
-              <div className="relative w-full aspect-4/3 bg-muted overflow-hidden">
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 500px"
-                  className="object-cover"
-                />
-              </div>
-            ) : (
-              <div className="w-full aspect-4/3 bg-muted flex items-center justify-center">
-                <Store className="size-16 text-muted-foreground/30" />
-              </div>
-            )}
+      <ScrollArea className="flex-1 min-h-0">
+        {/* Hero image */}
+        {product.image ? (
+          <div className="relative w-full aspect-4/3 bg-muted overflow-hidden">
+            <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 500px" className="object-cover" />
           </div>
+        ) : (
+          <div className="w-full aspect-4/3 bg-muted flex items-center justify-center">
+            <Store className="size-16 text-muted-foreground/30" />
+          </div>
+        )}
 
-          {/* Product info */}
-          <div className="px-5 pt-5 pb-3">
-            <h2 className="text-2xl font-bold leading-tight text-foreground">
-              {product.name}
-            </h2>
+        {/* Muted background wraps all cards */}
+        <div className="bg-muted/40 space-y-2 p-3">
 
-            {/* Price */}
-            <div className="flex items-center gap-2 mt-2">
-              {isBogoActive ? (
-                <>
-                  <ProductBadge variant="offer">1+1</ProductBadge>
-                  <span
-                    className="text-lg font-bold"
-                    style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                  >
-                    {formatPrice(product.offerPrice!)}
-                  </span>
-                  <span className="text-sm text-muted-foreground line-through">
-                    {formatPrice(product.price * 2)}
-                  </span>
-                </>
-              ) : (
-                <span
-                  className="text-lg font-bold"
-                  style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                >
-                  {formatPrice(product.price)}
-                </span>
-              )}
-            </div>
+          {/* ── Info card: name / description / price ── */}
+          <div className="bg-background rounded-xl px-4 py-4">
+            <h2 className="text-xl font-bold leading-tight text-foreground">{product.name}</h2>
 
-            {/* Description */}
             {product.description && (
-              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                {product.description}
-              </p>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{product.description}</p>
             )}
 
             {/* Dietary tags */}
             {(product.isVegan || product.isVegetarian || product.isGlutenFree || product.isDairyFree || product.isSpicy || product.containsNuts) && (
               <div className="flex flex-wrap gap-1.5 mt-3">
-                {product.isVegan && (
-                  <span className="bg-green-500/15 text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("vegan")}</span>
-                )}
-                {product.isVegetarian && (
-                  <span className="bg-green-500/15 text-green-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("vegetarian")}</span>
-                )}
-                {product.isGlutenFree && (
-                  <span className="bg-amber-500/15 text-amber-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("glutenFree")}</span>
-                )}
-                {product.isDairyFree && (
-                  <span className="bg-blue-500/15 text-blue-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("dairyFree")}</span>
-                )}
-                {product.isSpicy && (
-                  <span className="bg-red-500/15 text-red-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("spicy")}</span>
-                )}
-                {product.containsNuts && (
-                  <span className="bg-orange-500/15 text-orange-400 text-xs font-medium px-2.5 py-1 rounded-full">{t("containsNuts")}</span>
-                )}
+                {product.isVegan && <span className="bg-green-500/15 text-green-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("vegan")}</span>}
+                {product.isVegetarian && <span className="bg-green-500/15 text-green-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("vegetarian")}</span>}
+                {product.isGlutenFree && <span className="bg-amber-500/15 text-amber-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("glutenFree")}</span>}
+                {product.isDairyFree && <span className="bg-blue-500/15 text-blue-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("dairyFree")}</span>}
+                {product.isSpicy && <span className="bg-red-500/15 text-red-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("spicy")}</span>}
+                {product.containsNuts && <span className="bg-orange-500/15 text-orange-500 text-xs font-medium px-2.5 py-1 rounded-full">{t("containsNuts")}</span>}
               </div>
             )}
 
             {product.allergens && (
-              <p className="text-xs text-muted-foreground mt-2">
-                {t("allergens", { list: product.allergens })}
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">{t("allergens", { list: product.allergens })}</p>
             )}
+
+            {/* Price */}
+            <div className="flex items-center gap-2 mt-3">
+              {isBogoActive ? (
+                <>
+                  <ProductBadge variant="offer">1+1</ProductBadge>
+                  <span className="text-lg font-bold" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>
+                    {formatPrice(product.offerPrice!)}
+                  </span>
+                  <span className="text-sm text-muted-foreground line-through">{formatPrice(product.price * 2)}</span>
+                </>
+              ) : (
+                <span className="text-lg font-bold" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}>
+                  {formatPrice(product.price)}
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Preset Toggle */}
+          {/* ── Preset toggle card ── */}
           {showPresetToggle && (
-            <div className="px-5 pb-2">
-              <div className="h-px bg-border mb-5" />
-              <div className="space-y-2">
-                {/* Απ' όλα option */}
-                <button
-                  className={`w-full flex items-start gap-3 p-3.5 rounded-xl border transition-colors duration-200 cursor-pointer text-left ${
-                    presetMode === "preset"
-                      ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
-                      : "border-border hover:bg-muted"
-                  }`}
-                  onClick={() => handlePresetModeChange("preset")}
-                >
-                  {presetMode === "preset" ? (
-                    <CircleCheck
-                      className="size-5 shrink-0 mt-0.5"
-                      style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                    />
-                  ) : (
-                    <Circle className="size-5 shrink-0 mt-0.5 text-muted-foreground/50" />
+            <div className="bg-background rounded-xl px-4 py-4 space-y-2">
+              <button
+                className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-colors duration-200 cursor-pointer text-left ${
+                  presetMode === "preset"
+                    ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
+                    : "border-border hover:bg-muted"
+                }`}
+                onClick={() => handlePresetModeChange("preset")}
+              >
+                {presetMode === "preset" ? (
+                  <CircleCheck className="size-5 shrink-0 mt-0.5" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} />
+                ) : (
+                  <Circle className="size-5 shrink-0 mt-0.5 text-muted-foreground/50" />
+                )}
+                <div className="min-w-0">
+                  <span className={`text-sm font-semibold ${presetMode === "preset" ? "text-foreground" : "text-muted-foreground"}`}>{resolvedPresetName}</span>
+                  {defaultOptionNames.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-0.5">({defaultOptionNames.join(", ")})</p>
                   )}
-                  <div className="min-w-0">
-                    <span className={`text-sm font-semibold ${presetMode === "preset" ? "text-foreground" : "text-muted-foreground"}`}>
-                      {resolvedPresetName}
-                    </span>
-                    {defaultOptionNames.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        ({defaultOptionNames.join(", ")})
-                      </p>
-                    )}
-                  </div>
-                </button>
-
-                {/* Επιλέξτε υλικά option */}
-                <button
-                  className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors duration-200 cursor-pointer text-left ${
-                    presetMode === "custom"
-                      ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
-                      : "border-border hover:bg-muted"
-                  }`}
-                  onClick={() => handlePresetModeChange("custom")}
-                >
-                  {presetMode === "custom" ? (
-                    <CircleCheck
-                      className="size-5 shrink-0"
-                      style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                    />
-                  ) : (
-                    <Circle className="size-5 shrink-0 text-muted-foreground/50" />
-                  )}
-                  <span className={`text-sm font-semibold ${presetMode === "custom" ? "text-foreground" : "text-muted-foreground"}`}>
-                    {t("chooseIngredients")}
-                  </span>
-                </button>
-              </div>
+                </div>
+              </button>
+              <button
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors duration-200 cursor-pointer text-left ${
+                  presetMode === "custom"
+                    ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
+                    : "border-border hover:bg-muted"
+                }`}
+                onClick={() => handlePresetModeChange("custom")}
+              >
+                {presetMode === "custom" ? (
+                  <CircleCheck className="size-5 shrink-0" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} />
+                ) : (
+                  <Circle className="size-5 shrink-0 text-muted-foreground/50" />
+                )}
+                <span className={`text-sm font-semibold ${presetMode === "custom" ? "text-foreground" : "text-muted-foreground"}`}>{t("chooseIngredients")}</span>
+              </button>
             </div>
           )}
 
-          {/* Modifier Groups */}
-          {product.modifierGroups.length > 0 && (!showPresetToggle || presetMode === "custom") && (
-            <div className="px-5 space-y-5 pb-6">
-              {!showPresetToggle && <div className="h-px bg-border" />}
-              {product.modifierGroups.map((group) => {
-                const selected = selectedModifiers.get(group.id) || new Set();
-                return (
-                  <div key={group.id}>
+          {/* ── Modifier group cards ── */}
+          {product.modifierGroups.length > 0 && (!showPresetToggle || presetMode === "custom") &&
+            product.modifierGroups.map((group) => {
+              const selected = selectedModifiers.get(group.id) || new Set();
+              return (
+                <div key={group.id} className="bg-background rounded-xl overflow-hidden">
+                  {/* Group header */}
+                  <div className="px-4 pt-4 pb-2">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-bold text-foreground">
-                        {group.name}
-                      </h3>
+                      <h3 className="text-sm font-bold text-foreground">{group.name}</h3>
                       {(group.freeCount ?? 0) > 0 && (
                         <span
                           className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full"
@@ -454,78 +398,54 @@ export const ProductDetailContent = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {group.required
-                        ? getRequiredLabel(group.minSelect, t)
-                        : getOptionalLabel(group.maxSelect, t)}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {group.required ? getRequiredLabel(group.minSelect, t) : getOptionalLabel(group.maxSelect, t)}
                     </p>
-
-                    <div className="mt-3 space-y-0">
-                      {group.options.map((opt) => {
-                        const isSelected = selected.has(opt.id);
-                        return (
-                          <button
-                            key={opt.id}
-                            className="w-full flex items-center gap-3 py-3.5 border-b border-border last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-200 text-left"
-                            onClick={() =>
-                              toggleModifier(group.id, opt.id, group.maxSelect)
-                            }
-                          >
-                            {isSelected ? (
-                              <SquareCheck
-                                className="size-5 shrink-0"
-                                style={{ color: "var(--brand-primary, hsl(var(--primary)))" }}
-                              />
-                            ) : (
-                              <Square className="size-5 shrink-0 text-muted-foreground/50" />
-                            )}
-
-                            <span className={`flex-1 text-sm ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
-                              {opt.name}
-                            </span>
-
-                            {opt.priceAdjustment > 0 && (
-                              <span className="text-sm text-muted-foreground">
-                                +{formatPrice(opt.priceAdjustment)}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
 
-          {/* Order notes */}
-          <div className="px-5 pb-5">
-            {!showNotes ? (
-              <button
-                onClick={() => setShowNotes(true)}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
-              >
-                <MessageSquare className="size-4" />
-                <span>{t("addNote")}</span>
-              </button>
-            ) : (
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">
-                  {t("orderNote")}
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={t("notePlaceholder")}
-                  maxLength={200}
-                  rows={2}
-                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
-                />
-              </div>
-            )}
+                  {/* Options */}
+                  {group.options.map((opt) => {
+                    const isSelected = selected.has(opt.id);
+                    return (
+                      <button
+                        key={opt.id}
+                        className="w-full flex items-center gap-3 px-4 py-3 border-t border-border cursor-pointer hover:bg-muted/50 transition-colors duration-200 text-left"
+                        onClick={() => toggleModifier(group.id, opt.id, group.maxSelect)}
+                      >
+                        {isSelected ? (
+                          <SquareCheck className="size-5 shrink-0" style={{ color: "var(--brand-primary, hsl(var(--primary)))" }} />
+                        ) : (
+                          <Square className="size-5 shrink-0 text-muted-foreground/40" />
+                        )}
+                        <span className={`flex-1 text-sm ${isSelected ? "font-medium text-foreground" : "text-foreground"}`}>{opt.name}</span>
+                        <span className="text-sm text-muted-foreground tabular-nums">
+                          {opt.priceAdjustment !== 0
+                            ? `${opt.priceAdjustment > 0 ? "+" : ""}${formatPrice(opt.priceAdjustment)}`
+                            : "0,00€"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })
+          }
+
+          {/* ── Notes card — always visible ── */}
+          <div className="bg-background rounded-xl px-4 py-4">
+            <label className="text-sm font-bold text-foreground mb-2 block">{t("orderNote")}</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={t("notePlaceholder")}
+              maxLength={200}
+              rows={3}
+              className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+            />
           </div>
-        </div></ScrollArea>
+
+        </div>
+      </ScrollArea>
 
         {/* ── Bottom bar ── */}
         <div className="border-t border-border bg-background shrink-0">
