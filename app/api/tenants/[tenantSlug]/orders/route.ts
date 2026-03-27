@@ -364,15 +364,14 @@ export async function POST(
     }
   }
 
-  // Broadcast new order to admin dashboard (must await to ensure delivery)
-  await orderEvents.emitNewOrder({
+  orderEvents.emitNewOrder({
     tenantId: tenant.id,
     orderId: order!.id,
     orderNumber: order!.orderNumber,
     status: order!.status,
     total: order!.total,
     customerName: order!.customerName,
-  });
+  }).catch((err) => console.error("[orderEvents] emitNewOrder failed:", err));
 
   sendOrderConfirmation(order!, tenant).catch(() => {});
 
@@ -381,7 +380,7 @@ export async function POST(
     body: `${order!.customerName} placed an order for ${tenant.currency} ${(total / 100).toFixed(2)}`,
     icon: "/api/pwa-icon?size=192",
     url: "/admin/orders",
-  });
+  }).catch((err) => console.error("[push] sendPushToAdmins failed:", err));
 
   return NextResponse.json(
     {
