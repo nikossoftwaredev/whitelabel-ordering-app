@@ -929,6 +929,8 @@ export function OrderManagement({ tenantId }: OrderManagementProps) {
         }}
         formatPrice={formatPrice}
         isPending={updateStatus.isPending}
+        storeName={tenant.name}
+        currency={tenant.currency}
       />
     </div>
   );

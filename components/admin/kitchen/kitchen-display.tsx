@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { OrderNotificationProvider } from "@/components/admin/order-notification-provider";
 import { OrderDetailSheet } from "@/components/admin/orders/order-detail-sheet";
 import type { Order, OrdersResponse } from "@/components/admin/orders/types";
+import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useSoundSettings } from "@/hooks/use-notification-sound";
@@ -33,6 +34,7 @@ const COLUMN_KEYS = ["new", "preparing", "ready"] as const;
 
 export function KitchenDisplay({ tenantId }: KitchenDisplayProps) {
   const t = useTranslations("Kitchen");
+  const tenant = useTenant();
   const queryClient = useQueryClient();
   const muted = useSoundSettings((s) => s.muted);
   const toggleMute = useSoundSettings((s) => s.toggleMute);
@@ -317,6 +319,8 @@ export function KitchenDisplay({ tenantId }: KitchenDisplayProps) {
         }}
         formatPrice={formatPrice}
         isPending={updateStatus.isPending}
+        storeName={tenant.name}
+        currency={tenant.currency}
       />
     </>
   );

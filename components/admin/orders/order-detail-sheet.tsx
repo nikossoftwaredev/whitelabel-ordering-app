@@ -10,6 +10,7 @@ import {
   CreditCard,
   MapPin,
   Phone,
+  Printer,
   RotateCcw,
   Truck,
   User,
@@ -30,6 +31,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { usePrintOrder } from "@/hooks/use-print-order";
 import { timeAgo } from "@/lib/general/formatters";
 import { orderStatusConfig } from "@/lib/general/status-config";
 
@@ -51,6 +53,8 @@ interface OrderDetailSheetProps {
   onRefund: (orderId: string, amount?: number, reason?: string) => void;
   formatPrice: (cents: number) => string;
   isPending: boolean;
+  storeName: string;
+  currency: string;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -68,7 +72,12 @@ export function OrderDetailSheet({
   onRefund,
   formatPrice,
   isPending,
+  storeName,
+  currency,
 }: OrderDetailSheetProps) {
+  // Print hook
+  const { printOrder, isPrinting } = usePrintOrder(storeName, currency);
+
   // Local state
   const [acceptingMode, setAcceptingMode] = useState(false);
   const [estimatedMinutes, setEstimatedMinutes] = useState(15);
@@ -135,6 +144,16 @@ export function OrderDetailSheet({
             <Badge variant="secondary" className={status.className}>
               {status.label}
             </Badge>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-auto h-7 w-7"
+              onClick={() => printOrder(order)}
+              disabled={isPrinting}
+              title="Print receipt"
+            >
+              <Printer className="size-4" />
+            </Button>
           </SheetTitle>
         </SheetHeader>
 
