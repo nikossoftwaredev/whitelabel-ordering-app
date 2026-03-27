@@ -112,6 +112,7 @@ export const DialogProvider = () => {
       <DialogContent
         className={isCompact ? undefined : "p-0"}
         variant={isCompact ? "compact" : "responsive"}
+        size={currentDialog === DIALOG_KEYS.PRODUCT_DETAIL ? "sm" : "md"}
         showCloseButton={!isCompact}
         onBack={stackDepth > 1 ? goBack : undefined}
         onCloseAll={closeAll}

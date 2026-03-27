@@ -95,16 +95,20 @@ function DialogContent({
   children,
   showCloseButton = true,
   variant = "responsive",
+  size = "md",
   onBack,
   onCloseAll,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
   variant?: "responsive" | "default" | "compact";
+  /** Desktop max-width: "sm" = 400px (portrait/product), "md" = 576px (default) */
+  size?: "sm" | "md";
   onBack?: () => void;
   onCloseAll?: () => void;
 }) {
   const isStacked = !!onBack;
+  const maxW = size === "sm" ? "sm:max-w-[400px]" : "sm:max-w-xl";
 
   return (
     <DialogPortal data-slot="dialog-portal">
@@ -119,9 +123,9 @@ function DialogContent({
             // Mobile: full-screen sheet
             "inset-0 flex flex-col bg-background",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            // Desktop: centered card — wider + taller than before
+            // Desktop: centered card
             "sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2",
-            "sm:w-full sm:max-w-xl sm:h-[min(700px,88vh)]",
+            `sm:w-full ${maxW} sm:h-[min(700px,88vh)]`,
             "sm:rounded-2xl sm:shadow-2xl sm:overflow-hidden sm:flex sm:flex-col",
             "data-[state=closed]:sm:zoom-out-95 data-[state=open]:sm:zoom-in-95",
           ],
