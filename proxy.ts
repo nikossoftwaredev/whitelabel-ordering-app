@@ -32,15 +32,9 @@ export default function middleware(request: NextRequest) {
 
   // For API routes, add CORS and security headers but skip i18n middleware
   if (pathname.startsWith("/api")) {
-    // Set NEXTAUTH_URL dynamically so auth callbacks use the correct subdomain
-    const realHost = request.headers.get("host") || "localhost:3000";
-    const protocol = realHost.includes("localhost") || realHost.includes("lvh.me")
-      ? "http"
-      : "https";
-    process.env.NEXTAUTH_URL = `${protocol}://${realHost}`;
-
     // Cookie-based tenant override for environments without wildcard subdomains
     const apiTenantCookie = request.cookies.get("__tenant")?.value;
+    const realHost = request.headers.get("host") || "localhost:3000";
     const tenantHost = apiTenantCookie ? `${apiTenantCookie}.app` : realHost;
 
     const response = NextResponse.next({
