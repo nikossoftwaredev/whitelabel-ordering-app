@@ -35,13 +35,15 @@ export const AdminSidebar = () => {
   const tenant = useTenant();
   const { data: session } = useSession();
   const [tenants, setTenants] = useState<TenantSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!session?.user) return;
     fetch("/api/user/tenants")
       .then((r) => r.json())
       .then((data) => setTenants(Array.isArray(data) ? data : []))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, [session?.user]);
 
   return (
@@ -139,8 +141,10 @@ export const AdminSidebar = () => {
                 <p className="px-2 py-1 text-xs font-medium text-muted-foreground mb-1">
                   My Stores
                 </p>
-                {tenants.length === 0 ? (
+                {isLoading ? (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">Loading…</div>
+                ) : tenants.length === 0 ? (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">No stores found.</div>
                 ) : (
                   tenants.map((t) => (
                     <TenantSwitcherItem key={t.id} tenant={t} isActive={t.id === tenant.id} />
@@ -152,7 +156,7 @@ export const AdminSidebar = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 size-7 shrink-0 z-10"
+              className="absolute right-1 top-1/2 -translate-y-1/2 size-7 shrink-0 z-10 group-data-[collapsible=icon]:hidden"
               asChild
             >
               <Link href="/order" target="_blank">
