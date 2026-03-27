@@ -262,7 +262,7 @@ export async function POST(
   let order: Prisma.OrderGetPayload<{ include: { items: { include: { modifiers: true } } } }>;
   const MAX_RETRIES = 3;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    orderNumber = await generateOrderNumber(tenant.id);
+    orderNumber = await generateOrderNumber(tenant.id, attempt);
     try {
       order = await prisma.$transaction(async (tx) => {
     // 1. Create order
@@ -357,9 +357,8 @@ export async function POST(
       break;
     } catch (err) {
       const isPrismaUniqueViolation =
-        err instanceof Error &&
-        "code" in err &&
-        (err as { code: string }).code === "P2002";
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002";
       if (isPrismaUniqueViolation && attempt < MAX_RETRIES - 1) continue;
       throw err;
     }
