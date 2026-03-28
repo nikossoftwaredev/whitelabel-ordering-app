@@ -18,7 +18,7 @@ import {
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { AddButton } from "@/components/add-button";
@@ -155,7 +155,6 @@ export function AddressManagerContent() {
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
 
   const [selectingPlace, setSelectingPlace] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setView(initialView);
@@ -206,17 +205,14 @@ export function AddressManagerContent() {
   }
 
 
-  // Debounced place search
+  // Debounced place search — useEffect cleanup handles the cancel naturally
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (query.length < 3) { setPredictions([]); return; }
-    
-    debounceRef.current = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       const results = await searchPlaces(query, "address");
       setPredictions(results);
-      
     }, 350);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => clearTimeout(timer);
   }, [query]);
 
   const handleSelectPrediction = async (prediction: PlacePrediction) => {

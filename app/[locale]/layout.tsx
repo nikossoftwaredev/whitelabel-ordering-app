@@ -13,7 +13,6 @@ import { DialogProvider } from "@/components/dialog-provider";
 import { Providers } from "@/components/providers";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { SwRegister } from "@/components/sw-register";
-import { ViewportHeightSync } from "@/components/viewport-height-sync";
 import { TenantProvider } from "@/components/tenant-provider";
 import { authOptions } from "@/lib/auth/auth";
 import { routing } from "@/lib/i18n/routing";
@@ -169,7 +168,6 @@ const LocaleLayout = async ({ children, params }: BaseLayoutProps) => {
       </head>
       <body className={`${roboto.variable} font-sans antialiased`}>
         <SwRegister />
-        <ViewportHeightSync />
         <Providers messages={messages} locale={locale} session={session}>
           <PwaInstallPrompt />
           {tenantContextValue ? (

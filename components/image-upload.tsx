@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Loader2, Upload, X } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Area } from "react-easy-crop";
 import Cropper from "react-easy-crop";
 
@@ -12,8 +12,6 @@ import { MAX_IMAGE_FILE_SIZE, type ImageType } from "@/lib/files/constants";
 import { cn } from "@/lib/general/utils";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 
-// Track which ImageUpload instance is currently active for paste
-let activeUploadId: string | null = null;
 
 /** Extract the cropped region from an image using canvas */
 async function getCroppedBlob(
@@ -91,7 +89,7 @@ export const ImageUpload = ({
   const [error, setError] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const instanceId = useId();
+  const isHoveredRef = useRef(false);
 
   // Crop state
   const [pendingImage, setPendingImage] = useState<string | null>(null);
@@ -176,13 +174,7 @@ export const ImageUpload = ({
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
-      if (
-        activeUploadId !== instanceId ||
-        disabled ||
-        isUploading ||
-        value ||
-        pendingImage
-      )
+      if (!isHoveredRef.current || disabled || isUploading || value || pendingImage)
         return;
 
       const items = e.clipboardData?.items;
@@ -200,24 +192,16 @@ export const ImageUpload = ({
 
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
-  }, [
-    instanceId,
-    disabled,
-    isUploading,
-    value,
-    pendingImage,
-    handleFileSelected,
-  ]);
+  }, [disabled, isUploading, value, pendingImage, handleFileSelected]);
 
   const handleMouseEnter = () => {
-    activeUploadId = instanceId;
+    isHoveredRef.current = true;
     setIsActive(true);
   };
 
   const handleMouseLeave = () => {
-    if (activeUploadId === instanceId) {
-      setIsActive(false);
-    }
+    isHoveredRef.current = false;
+    setIsActive(false);
   };
 
   const handleRemove = async () => {

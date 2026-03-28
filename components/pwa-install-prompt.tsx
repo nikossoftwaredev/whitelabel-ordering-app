@@ -15,6 +15,12 @@ declare global {
   interface Window {
     __pwaInstallPrompt?: BeforeInstallPromptEvent;
   }
+  interface Navigator {
+    /** iOS Safari standalone mode detection */
+    standalone?: boolean;
+    /** Chrome Android: detect if PWA is already installed */
+    getInstalledRelatedApps?(): Promise<unknown[]>;
+  }
 }
 
 interface TenantMeta {
@@ -33,7 +39,7 @@ export function PwaInstallPrompt() {
   useEffect(() => {
     const installed =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+      navigator.standalone === true;
 
     // If running inside the PWA, never show the prompt
     if (installed) return;
@@ -48,9 +54,8 @@ export function PwaInstallPrompt() {
 
     // Check if the PWA is installed (via getInstalledRelatedApps or display-mode media query listener)
     // On Android Chrome, navigator.getInstalledRelatedApps() can detect installed PWAs
-    if ("getInstalledRelatedApps" in navigator) {
-      (navigator as unknown as { getInstalledRelatedApps(): Promise<unknown[]> })
-        .getInstalledRelatedApps()
+    if (navigator.getInstalledRelatedApps) {
+      navigator.getInstalledRelatedApps()
         .then((apps) => {
           if (apps.length > 0) setIsInstalled(true);
         })

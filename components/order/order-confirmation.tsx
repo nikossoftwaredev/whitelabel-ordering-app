@@ -160,11 +160,14 @@ export const OrderConfirmation = () => {
       .catch(() => {});
   }, [orderId, tenant.slug]);
 
-  // Subscribe to Supabase Broadcast for live status updates
+  // Subscribe to Supabase Broadcast for live status updates.
+  // On reconnect (SUBSCRIBED fires again), fetch the latest state to catch
+  // any events missed while the connection was down — no polling needed.
   useEffect(() => {
     if (!orderId) return;
 
     const supabase = getSupabaseBrowserClient();
+    let everSubscribed = false;
 
     const channel = supabase
       .channel(`order:${orderId}`)
@@ -173,7 +176,22 @@ export const OrderConfirmation = () => {
         if (payload.estimatedReadyAt)
           setEstimatedReadyAt(payload.estimatedReadyAt as string);
       })
-      .subscribe();
+      .subscribe(async (realtimeStatus) => {
+        if (realtimeStatus !== "SUBSCRIBED") return;
+        if (everSubscribed) {
+          // Reconnected — refetch to catch any missed events
+          try {
+            const res = await fetch(`/api/tenants/${tenant.slug}/orders/active`);
+            const data = await res.json();
+            if (data.order) {
+              setStatus(data.order.status);
+              if (data.order.estimatedReadyAt)
+                setEstimatedReadyAt(data.order.estimatedReadyAt);
+            }
+          } catch {}
+        }
+        everSubscribed = true;
+      });
 
     channelRef.current = channel;
 
@@ -181,40 +199,6 @@ export const OrderConfirmation = () => {
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [orderId]);
-
-  // Polling fallback in case Supabase Realtime misses an event
-  const statusRef = useRef(status);
-  useEffect(() => {
-    statusRef.current = status;
-  }, [status]);
-
-  useEffect(() => {
-    if (!orderId || !tenant.slug) return;
-
-    const poll = setInterval(async () => {
-      const current = statusRef.current;
-      if (
-        current === "COMPLETED" ||
-        current === "REJECTED" ||
-        current === "CANCELLED"
-      )
-        return;
-
-      try {
-        const res = await fetch(`/api/tenants/${tenant.slug}/orders/active`);
-        const data = await res.json();
-        if (data.order && data.order.status !== statusRef.current) {
-          setStatus(data.order.status);
-          if (data.order.estimatedReadyAt)
-            setEstimatedReadyAt(data.order.estimatedReadyAt);
-        }
-      } catch {
-        // Silently ignore polling errors
-      }
-    }, 10_000);
-
-    return () => clearInterval(poll);
   }, [orderId, tenant.slug]);
 
   const isDelivery = orderType === "DELIVERY";

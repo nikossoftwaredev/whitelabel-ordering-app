@@ -166,21 +166,12 @@
 }
 
 /* ── Prevent layout shift when Radix dialogs open ──
-   Radix injects scroll-locking styles that hide the scrollbar and add
-   compensating margin/padding, causing the page to jump. Override all
-   of that so the scrollbar stays visible and the layout never moves. */
-html,
-html.with-scroll-bars-hidden {
+   scrollbar-gutter: stable always reserves space for the scrollbar gutter,
+   so Radix's scroll-lock compensation calculates 0px — no layout shift,
+   no !important fights needed. */
+html {
   scroll-behavior: smooth;
-  overflow-y: scroll !important;
-  padding-right: 0 !important;
-}
-
-html body[data-scroll-locked] {
-  margin-right: 0 !important;
-  padding-right: 0 !important;
-  margin-left: 0 !important;
-  padding-left: 0 !important;
+  scrollbar-gutter: stable;
 }
 
 /* Google Places autocomplete dropdown — must sit above Radix dialogs */
@@ -226,9 +217,9 @@ html body[data-scroll-locked] {
   }
 }
 
-/* Mobile-only: dialog height tracks visual viewport so keyboard shrinks it correctly */
+/* Mobile-only: dialog fills the dynamic viewport so it shrinks correctly when the keyboard opens */
 @media (max-width: 639px) {
   [data-slot='dialog-content'] {
-    height: var(--vvh, 100dvh);
+    height: 100dvh;
   }
 }

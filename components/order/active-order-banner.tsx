@@ -77,29 +77,49 @@ export function ActiveOrderBanner() {
       .catch(() => {});
   }, [session?.user?.id, tenant.slug]);
 
-  // Subscribe to Supabase Broadcast for live order updates
+  // Subscribe to Supabase Broadcast for live order updates.
+  // On reconnect (SUBSCRIBED fires again), fetch the latest state to catch
+  // any events missed while the connection was down — no polling needed.
   useEffect(() => {
     if (!order) return;
 
     const orderId = order.id;
     const supabase = getSupabaseBrowserClient();
+    let everSubscribed = false;
+
+    const applyStatus = (newStatus: string) => {
+      if (newStatus === "COMPLETED" || newStatus === "REJECTED") {
+        setVisible(false);
+        setTimeout(() => setOrder(null), 300);
+      } else {
+        setOrder((prev) =>
+          prev ? { ...prev, status: newStatus as ActiveOrderStatus } : prev,
+        );
+      }
+    };
 
     const channel = supabase
       .channel(`order:${orderId}`)
       .on("broadcast", { event: "status_change" }, ({ payload }) => {
-        const newStatus = payload.status as string;
-
-        if (newStatus === "COMPLETED" || newStatus === "REJECTED") {
-          setVisible(false);
-          setTimeout(() => setOrder(null), 300);
-          supabase.removeChannel(channel);
-        } else {
-          setOrder((prev) =>
-            prev ? { ...prev, status: newStatus as ActiveOrderStatus } : prev,
-          );
-        }
+        applyStatus(payload.status as string);
       })
-      .subscribe();
+      .subscribe(async (realtimeStatus) => {
+        if (realtimeStatus !== "SUBSCRIBED") return;
+        if (everSubscribed) {
+          // Reconnected — refetch to catch any missed events
+          try {
+            const res = await fetch(`/api/tenants/${tenant.slug}/orders/active`);
+            const data = await res.json();
+            if (data.order) {
+              applyStatus(data.order.status);
+            } else {
+              setVisible(false);
+              setTimeout(() => setOrder(null), 300);
+            }
+          } catch {}
+        }
+        everSubscribed = true;
+      });
 
     channelRef.current = channel;
 
@@ -107,43 +127,6 @@ export function ActiveOrderBanner() {
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [order?.id]);
-
-  // Polling fallback in case Supabase Realtime misses an event
-  const orderStatusRef = useRef(order?.status);
-  useEffect(() => {
-    orderStatusRef.current = order?.status;
-  }, [order?.status]);
-
-  useEffect(() => {
-    if (!order || !tenant.slug) return;
-
-    const poll = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/tenants/${tenant.slug}/orders/active`);
-        const data = await res.json();
-        if (data.order && data.order.status !== orderStatusRef.current) {
-          const newStatus = data.order.status as string;
-          if (newStatus === "COMPLETED" || newStatus === "REJECTED") {
-            setVisible(false);
-            setTimeout(() => setOrder(null), 300);
-          } else {
-            setOrder((prev) =>
-              prev
-                ? { ...prev, status: newStatus as ActiveOrderStatus }
-                : prev,
-            );
-          }
-        } else if (!data.order) {
-          setVisible(false);
-          setTimeout(() => setOrder(null), 300);
-        }
-      } catch {
-        // Silently ignore polling errors
-      }
-    }, 10_000);
-
-    return () => clearInterval(poll);
   }, [order?.id, tenant.slug]);
 
   if (!order) return null;

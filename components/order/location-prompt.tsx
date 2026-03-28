@@ -37,9 +37,14 @@ export function LocationPrompt({ onLocationSet }: LocationPromptProps) {
     const dismissed = localStorage.getItem(LOCATION_DISMISSED_KEY);
     const stored = localStorage.getItem(LOCATION_STORED_KEY);
     if (!dismissed && !stored) {
-      // Small delay so the page renders first
-      const timer = setTimeout(() => setOpen(true), 600);
-      return () => clearTimeout(timer);
+      // Double-rAF: fires after the browser has painted once, guaranteeing
+      // the page is visible before the sheet appears — no arbitrary delay.
+      let raf1: number;
+      let raf2: number;
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setOpen(true));
+      });
+      return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
     }
   }, [status]);
 
