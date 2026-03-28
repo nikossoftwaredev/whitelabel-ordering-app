@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -51,9 +52,13 @@ export const SignInForm = ({ callbackUrl = "/", embedded = false }: { callbackUr
     e.preventDefault();
     if (!email) return;
     setIsLoadingEmail(true);
-    await signIn("email", { email, callbackUrl, redirect: false });
+    const result = await signIn("email", { email, callbackUrl, redirect: false });
     setIsLoadingEmail(false);
-    setSent(true);
+    if (result?.error) {
+      toast.error(result.error);
+    } else {
+      setSent(true);
+    }
   };
 
   const googleButton = (

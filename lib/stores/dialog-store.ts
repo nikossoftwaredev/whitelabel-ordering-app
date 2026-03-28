@@ -33,6 +33,7 @@ export const useDialogStore = create<DialogStore>((set, get) => ({
   closeDialog: () => {
     set((state) => ({
       stack: state.stack.slice(0, -1),
+      localBackHandler: null,
     }));
   },
 

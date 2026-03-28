@@ -2,6 +2,7 @@
 
 import { LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { useLocale } from "next-intl";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ interface ProfileAvatarProps {
 }
 
 export const ProfileAvatar = ({ user }: ProfileAvatarProps) => {
+  const locale = useLocale();
   const initials = user.name
     ?.split(" ")
     .map((n) => n[0])
@@ -31,7 +33,7 @@ export const ProfileAvatar = ({ user }: ProfileAvatarProps) => {
     .slice(0, 2) || "U";
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: `${window.location.origin}/en/order` });
+    signOut({ callbackUrl: `${window.location.origin}/${locale}/order` });
   };
 
   return (

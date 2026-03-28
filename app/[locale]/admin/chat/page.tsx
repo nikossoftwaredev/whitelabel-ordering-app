@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 
 import { AdminChatInbox } from "@/components/admin/chat/chat-inbox";
@@ -8,9 +9,10 @@ export default async function AdminChatPage({ params }: BasePageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const tenant = await getRequestTenant();
+  if (!tenant) notFound();
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
-      <AdminChatInbox tenantId={tenant?.id || ""} />
+      <AdminChatInbox tenantId={tenant.id} />
     </div>
   );
 }

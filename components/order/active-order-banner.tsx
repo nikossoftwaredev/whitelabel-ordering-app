@@ -144,7 +144,7 @@ export function ActiveOrderBanner() {
     }, 10_000);
 
     return () => clearInterval(poll);
-  }, [order, tenant.slug]);
+  }, [order?.id, tenant.slug]);
 
   if (!order) return null;
 

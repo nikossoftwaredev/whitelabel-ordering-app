@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
-import { useAddressStore } from "@/lib/stores/address-store";
+import { type Address, useAddressStore } from "@/lib/stores/address-store";
 import { useCartStore } from "@/lib/stores/cart-store";
 
 export function AddressPreloader() {
@@ -26,8 +26,6 @@ export function AddressPreloader() {
     }
   }, [status, setAddresses, setSelectedAddress, setLoaded, clearCart]);
 
-  const selectedAddress = useAddressStore((s) => s.selectedAddress);
-
   // Load addresses when logged in
   useEffect(() => {
     if (!session?.user || isLoaded) return;
@@ -36,17 +34,15 @@ export function AddressPreloader() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data) return;
-        const addresses: import("@/lib/stores/address-store").Address[] = data.addresses ?? data;
+        const addresses: Address[] = data.addresses ?? data;
         setAddresses(addresses);
-        // Auto-select default (or first) address if none is currently selected
-        if (!selectedAddress && addresses.length > 0) {
-          const def = addresses.find((a) => a.isDefault) ?? addresses[0];
-          setSelectedAddress(def);
+        // Auto-select default (or first) address if none selected yet
+        if (!useAddressStore.getState().selectedAddress && addresses.length > 0) {
+          setSelectedAddress(addresses.find((a) => a.isDefault) ?? addresses[0]);
         }
       })
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user, tenant.slug, isLoaded]);
+  }, [session?.user, tenant.slug, isLoaded, setAddresses, setSelectedAddress]);
 
   return null;
 }

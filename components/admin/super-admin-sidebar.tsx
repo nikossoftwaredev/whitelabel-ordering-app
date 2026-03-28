@@ -2,6 +2,7 @@
 
 import { ChevronsUpDown, Home, LogOut, Shield } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import { useLocale } from "next-intl";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -32,6 +33,7 @@ export const SuperAdminSidebar = () => {
   const pathname = usePathname();
   const { setOpenMobile, isMobile } = useSidebar();
   const { data: session } = useSession();
+  const locale = useLocale();
 
   const userName = session?.user?.name || "Super Admin";
   const userEmail = session?.user?.email || "";
@@ -130,7 +132,7 @@ export const SuperAdminSidebar = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut({ callbackUrl: `${window.location.origin}/en/order` })}>
+                <DropdownMenuItem onClick={() => signOut({ callbackUrl: `${window.location.origin}/${locale}/order` })}>
                   <LogOut className="size-4" />
                   Sign out
                 </DropdownMenuItem>

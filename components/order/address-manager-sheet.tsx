@@ -100,6 +100,18 @@ function RadioOptions({ options, value, onChange }: {
   );
 }
 
+function AddressField({ label, value, onChange, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[13px] font-medium text-muted-foreground">{label}</label>
+      <Input value={value} onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder} className="h-12 rounded-xl text-[15px]" />
+    </div>
+  );
+}
+
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="pt-2 pb-1">
@@ -156,15 +168,12 @@ export function AddressManagerContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Register/unregister local back handler so dialog shell shows back arrow in form view
   useEffect(() => {
-    if (view === "form") {
-      setLocalBackHandler(() => handleBack);
-    } else {
-      setLocalBackHandler(null);
-    }
+    if (view === "form") setLocalBackHandler(handleBack);
+    else setLocalBackHandler(null);
     return () => setLocalBackHandler(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // handleBack is stable (plain function defined in render, but view dep covers it)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
   function resetForm() {
@@ -521,37 +530,17 @@ export function AddressManagerContent() {
 
             {/* ── HOUSE ── */}
             {locationType === "house" && <>
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground">Entrance / Staircase</label>
-                <Input value={entrance} onChange={(e) => setEntrance(e.target.value)}
-                  placeholder="e.g. A or 3" className="h-12 rounded-xl text-[15px]" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground">Name / Number on door</label>
-                <Input value={apartmentNumber} onChange={(e) => setApartmentNumber(e.target.value)}
-                  placeholder="e.g. 5 or your last name" className="h-12 rounded-xl text-[15px]" />
-              </div>
+              <AddressField label="Entrance / Staircase" value={entrance} onChange={setEntrance} placeholder="e.g. A or 3" />
+              <AddressField label="Name / Number on door" value={apartmentNumber} onChange={setApartmentNumber} placeholder="e.g. 5 or your last name" />
               <SectionHeader title="How do we get in?" subtitle="Help the courier find you faster." />
             </>}
 
             {/* ── APARTMENT ── */}
             {locationType === "apartment" && <>
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground">Entrance / Staircase</label>
-                <Input value={entrance} onChange={(e) => setEntrance(e.target.value)}
-                  placeholder="e.g. A or 3" className="h-12 rounded-xl text-[15px]" />
-              </div>
+              <AddressField label="Entrance / Staircase" value={entrance} onChange={setEntrance} placeholder="e.g. A or 3" />
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-muted-foreground">Floor</label>
-                  <Input value={floor} onChange={(e) => setFloor(e.target.value)}
-                    placeholder="e.g. 5" className="h-12 rounded-xl text-[15px]" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-muted-foreground">Apartment</label>
-                  <Input value={apartmentNumber} onChange={(e) => setApartmentNumber(e.target.value)}
-                    placeholder="e.g. 45" className="h-12 rounded-xl text-[15px]" />
-                </div>
+                <AddressField label="Floor" value={floor} onChange={setFloor} placeholder="e.g. 5" />
+                <AddressField label="Apartment" value={apartmentNumber} onChange={setApartmentNumber} placeholder="e.g. 45" />
               </div>
               <SectionHeader title="How do we get in?" subtitle="Help the courier find you faster." />
               <RadioOptions options={HOW_TO_GET_IN} value={deliverySpot} onChange={setDeliverySpot} />
@@ -559,27 +548,15 @@ export function AddressManagerContent() {
 
             {/* ── OFFICE ── */}
             {locationType === "office" && <>
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground">Building name</label>
-                <Input value={buildingName} onChange={(e) => setBuildingName(e.target.value)}
-                  placeholder="e.g. Yuho Tower" className="h-12 rounded-xl text-[15px]" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground">Entrance / Staircase</label>
-                <Input value={entrance} onChange={(e) => setEntrance(e.target.value)}
-                  placeholder="e.g. A or 3" className="h-12 rounded-xl text-[15px]" />
-              </div>
+              <AddressField label="Building name" value={buildingName} onChange={setBuildingName} placeholder="e.g. Yuho Tower" />
+              <AddressField label="Entrance / Staircase" value={entrance} onChange={setEntrance} placeholder="e.g. A or 3" />
               <SectionHeader title="Where should we leave the delivery?" subtitle="Help the courier find you faster." />
               <RadioOptions options={WHERE_TO_LEAVE} value={deliverySpot} onChange={setDeliverySpot} />
             </>}
 
             {/* ── HOTEL / OTHER ── */}
             {(locationType === "hotel" || locationType === "other") && (
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground">Address details</label>
-                <Input value={apartmentNumber} onChange={(e) => setApartmentNumber(e.target.value)}
-                  placeholder="e.g. Central park, Room 1301" className="h-12 rounded-xl text-[15px]" />
-              </div>
+              <AddressField label="Address details" value={apartmentNumber} onChange={setApartmentNumber} placeholder="e.g. Central park, Room 1301" />
             )}
 
             {/* Map — shown for all types when coords available */}
