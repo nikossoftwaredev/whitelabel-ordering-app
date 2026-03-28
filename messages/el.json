@@ -101,6 +101,8 @@
     "customTip": "Άλλο",
     "tipCustomPlaceholder": "Εισάγετε ποσό",
     "summary": "Σύνοψη",
+    "orderTotal": "Σύνολο πληρωμής",
+    "totalDiscount": "Συνολική έκπτωση",
     "itemSubtotal": "Υποσύνολο προϊόντων",
     "tipAmount": "Φιλοδώρημα",
     "deliveryFee": "Κόστος διανομής",

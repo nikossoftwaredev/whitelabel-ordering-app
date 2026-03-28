@@ -1,12 +1,19 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import {
+  ChevronRight,
+  FileText,
+  ShoppingBag,
+  Tag,
+  UtensilsCrossed,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useCheckoutStore } from "@/lib/stores/checkout-store";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -14,9 +21,18 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
+function IconCell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="size-8 rounded-lg bg-muted/60 flex items-center justify-center shrink-0">
+      {children}
+    </div>
+  );
+}
+
 export function CheckoutSummaryCard() {
   const t = useTranslations("Checkout");
   const formatPrice = useFormatPrice();
+  const items = useCartStore((s) => s.items);
   const subtotal = useCartStore((s) => s.subtotal());
   const orderType = useCheckoutStore((s) => s.orderType);
   const tableNumber = useCheckoutStore((s) => s.tableNumber);
@@ -36,10 +52,23 @@ export function CheckoutSummaryCard() {
 
   return (
     <>
-      {/* Collapsed total row */}
+      {/* Collapsed rows */}
       <div className="px-4 pb-2">
+        {/* Discount row — always visible when there's a discount */}
+        {totalDiscount > 0 && (
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-sm text-green-600 dark:text-green-400">
+              {t("totalDiscount")}
+            </span>
+            <span className="text-sm font-semibold tabular-nums text-green-600 dark:text-green-400">
+              -{formatPrice(totalDiscount)}
+            </span>
+          </div>
+        )}
+
+        {/* Total row */}
         <div className="flex items-center justify-between py-2">
-          <span className="text-base font-bold">{t("summary")}</span>
+          <span className="text-base font-bold">{t("orderTotal")}</span>
           <span className="text-base font-bold tabular-nums">
             {formatPrice(orderTotal)}
           </span>
@@ -56,80 +85,119 @@ export function CheckoutSummaryCard() {
         </button>
       </div>
 
-      {/* Bottom sheet breakdown */}
+      {/* Bottom sheet */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto pb-10">
+        <SheetContent
+          side="bottom"
+          className="rounded-t-2xl max-h-[85vh] overflow-y-auto pb-10"
+        >
           <SheetHeader>
             <SheetTitle>{t("orderAnalysis")}</SheetTitle>
           </SheetHeader>
 
-          <div className="space-y-3 pb-6">
-            {/* Subtotal */}
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t("itemSubtotal")}</span>
-              <span className="tabular-nums font-medium">{formatPrice(subtotal)}</span>
-            </div>
-
-            {/* Promo discount */}
-            {promoDiscount > 0 && (
-              <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-                <span>{t("promoDiscount")}</span>
-                <span className="tabular-nums font-medium">-{formatPrice(promoDiscount)}</span>
+          {/* Cart items */}
+          <div className="space-y-0 mb-4">
+            {items.map((item, index) => (
+              <div key={item.cartItemId}>
+                <div className="flex items-start gap-3 py-3">
+                  {/* Quantity badge */}
+                  <span className="size-6 rounded-md bg-muted flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                    {item.quantity}
+                  </span>
+                  {/* Name */}
+                  <span className="flex-1 text-sm font-medium leading-snug">
+                    {item.productName}
+                    {item.modifiers.length > 0 && (
+                      <span className="block text-xs text-muted-foreground font-normal mt-0.5">
+                        {item.modifiers.map((m) => m.name).join(", ")}
+                      </span>
+                    )}
+                  </span>
+                  {/* Price */}
+                  <span className="text-sm font-semibold tabular-nums shrink-0">
+                    {formatPrice(item.totalPrice)}
+                  </span>
+                </div>
+                {index < items.length - 1 && (
+                  <Separator className="opacity-40" />
+                )}
               </div>
-            )}
+            ))}
+          </div>
 
-            {/* Coupon discount */}
-            {couponDiscount > 0 && (
-              <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-                <span>
-                  {t("couponDiscount")}
-                  {selectedCoupons.length > 0
-                    ? ` (${selectedCoupons.map((c) => c.code).join(", ")})`
-                    : ""}
-                </span>
-                <span className="tabular-nums font-medium">-{formatPrice(couponDiscount)}</span>
-              </div>
-            )}
+          <Separator className="mb-4" />
 
-            {/* Group discount */}
-            {groupDiscountAmount > 0 && (
-              <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-                <span>
-                  {t("groupDiscount")}
-                  {groupDiscount?.groupName ? ` (${groupDiscount.groupName})` : ""}
+          {/* Fee rows with icons */}
+          <div className="space-y-2.5 pb-4">
+            {/* Delivery fee */}
+            {orderType === "DELIVERY" && (
+              <div className="flex items-center gap-3">
+                <IconCell>
+                  <ShoppingBag className="size-4 text-muted-foreground" />
+                </IconCell>
+                <span className="flex-1 text-sm text-muted-foreground">
+                  {t("deliveryFee")}
                 </span>
-                <span className="tabular-nums font-medium">-{formatPrice(groupDiscountAmount)}</span>
+                <span className="text-sm font-medium tabular-nums text-muted-foreground">
+                  {t("tbd")}
+                </span>
               </div>
             )}
 
             {/* Tip */}
             {tipAmount > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t("tipAmount")}</span>
-                <span className="tabular-nums font-medium">{formatPrice(tipAmount)}</span>
+              <div className="flex items-center gap-3">
+                <IconCell>
+                  <UtensilsCrossed className="size-4 text-muted-foreground" />
+                </IconCell>
+                <span className="flex-1 text-sm text-muted-foreground">
+                  {t("tipAmount")}
+                </span>
+                <span className="text-sm font-medium tabular-nums">
+                  {formatPrice(tipAmount)}
+                </span>
               </div>
             )}
 
             {/* Table */}
             {orderType === "DINE_IN" && tableNumber && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t("table")}</span>
-                <span className="tabular-nums font-medium">{tableNumber}</span>
+              <div className="flex items-center gap-3">
+                <IconCell>
+                  <UtensilsCrossed className="size-4 text-muted-foreground" />
+                </IconCell>
+                <span className="flex-1 text-sm text-muted-foreground">
+                  {t("table")}
+                </span>
+                <span className="text-sm font-medium tabular-nums">
+                  {tableNumber}
+                </span>
               </div>
             )}
 
-            {/* Delivery fee */}
-            {orderType === "DELIVERY" && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t("deliveryFee")}</span>
-                <span className="tabular-nums font-medium text-muted-foreground">{t("tbd")}</span>
+            {/* Total discount — aggregated, always shown if > 0 */}
+            {totalDiscount > 0 && (
+              <div className="flex items-center gap-3">
+                <IconCell>
+                  <Tag className="size-4 text-green-600 dark:text-green-400" />
+                </IconCell>
+                <span className="flex-1 text-sm text-green-600 dark:text-green-400">
+                  {t("totalDiscount")}
+                </span>
+                <span className="text-sm font-semibold tabular-nums text-green-600 dark:text-green-400">
+                  -{formatPrice(totalDiscount)}
+                </span>
               </div>
             )}
 
-            {/* Divider + Total */}
-            <div className="border-t border-border/50 pt-3 flex justify-between">
-              <span className="text-base font-bold">{t("summary")}</span>
-              <span className="text-base font-bold tabular-nums">{formatPrice(orderTotal)}</span>
+            {/* Total */}
+            <div className="flex items-center gap-3 pt-1">
+              <IconCell>
+                <FileText className="size-4 text-muted-foreground" />
+              </IconCell>
+              <span className="flex-1 text-base font-bold">{t("orderTotal")}</span>
+              <span className="text-base font-bold tabular-nums">
+                {formatPrice(orderTotal)}
+              </span>
             </div>
           </div>
         </SheetContent>

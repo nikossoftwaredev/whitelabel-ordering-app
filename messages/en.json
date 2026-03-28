@@ -101,6 +101,8 @@
     "customTip": "Custom",
     "tipCustomPlaceholder": "Enter amount",
     "summary": "Summary",
+    "orderTotal": "Payment total",
+    "totalDiscount": "Total discount",
     "itemSubtotal": "Item subtotal",
     "tipAmount": "Tip",
     "deliveryFee": "Delivery fee",
