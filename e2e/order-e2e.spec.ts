@@ -307,6 +307,76 @@ test.describe("Order E2E: place and accept", () => {
     await prisma.order.delete({ where: { id: orderId } });
   });
 
+  test("order numbers are unique across multiple sequential orders (regression: daily counter reset)", async ({
+    page,
+  }) => {
+    // Regression test for: generateOrderNumber used a daily count, so the first
+    // order of each new day always generated the same number (e.g. #A001),
+    // causing a P2002 unique constraint violation on (tenant_id, order_number).
+    // Fix: count all-time orders per tenant so the counter never resets.
+
+    await page.context().addCookies([
+      {
+        name: "next-auth.session-token",
+        value: customerToken,
+        domain: `${TENANT_SLUG}.lvh.me`,
+        path: "/",
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax",
+      },
+    ]);
+
+    await suppressPwaPromptGlobally(page);
+    await page.goto("/en/order");
+    await dismissLocationPrompt(page);
+
+    const orderPayload = {
+      items: [{ productId: product.id, quantity: 1, modifiers: [], notes: "" }],
+      orderType: "PICKUP",
+      customerName: "E2E Customer",
+      customerPhone: "6990000000",
+      paymentMethod: "CASH",
+      tipAmount: 0,
+    };
+
+    // Place two orders back-to-back — both must succeed with unique order numbers
+    const res1 = await page.request.post(
+      `${BASE}/api/tenants/${TENANT_SLUG}/orders`,
+      { data: orderPayload },
+    );
+    if ([400, 403, 503].includes(res1.status())) {
+      const body = await res1.json();
+      if (body.error?.includes("closed") || body.error?.includes("paused")) {
+        test.skip(true, `Store unavailable: ${body.error}`);
+        return;
+      }
+    }
+    expect(res1.status()).toBe(201);
+    const data1 = await res1.json();
+    expect(data1.orderNumber).toBeTruthy();
+
+    const res2 = await page.request.post(
+      `${BASE}/api/tenants/${TENANT_SLUG}/orders`,
+      { data: orderPayload },
+    );
+    expect(res2.status()).toBe(201);
+    const data2 = await res2.json();
+    expect(data2.orderNumber).toBeTruthy();
+
+    // The two order numbers must be different
+    expect(data1.orderNumber).not.toBe(data2.orderNumber);
+
+    // Clean up both test orders
+    for (const orderId of [data1.orderId, data2.orderId]) {
+      await prisma.orderItemModifier.deleteMany({
+        where: { orderItem: { orderId } },
+      });
+      await prisma.orderItem.deleteMany({ where: { orderId } });
+      await prisma.order.delete({ where: { id: orderId } });
+    }
+  });
+
   // UI test is desktop-only — mobile PWA overlay and viewport constraints make it flaky
   test("customer adds item via UI and reaches checkout", async ({
     page,

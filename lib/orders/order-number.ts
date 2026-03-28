@@ -1,29 +1,16 @@
 import { prisma } from "@/lib/db";
 
 export async function generateOrderNumber(tenantId: string, attempt = 0): Promise<string> {
-  const today = new Date();
-
-  // Count today's orders for this tenant
-  const startOfDay = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
-  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-
+  // Count ALL orders for this tenant (not just today's).
+  // Using a daily count caused P2002 collisions: the first order of every new day
+  // would generate #A001, colliding with the first order from any previous day.
   const count = await prisma.order.count({
-    where: {
-      tenantId,
-      createdAt: {
-        gte: startOfDay,
-        lt: endOfDay,
-      },
-    },
+    where: { tenantId },
   });
 
   const effectiveCount = count + attempt;
-  const letter = String.fromCharCode(65 + (effectiveCount % 26)); // A-Z
-  const num = String(Math.floor(effectiveCount / 26) * 26 + effectiveCount + 1).padStart(3, "0");
+  const letter = String.fromCharCode(65 + (effectiveCount % 26)); // A-Z cycling
+  const num = String(effectiveCount + 1).padStart(3, "0");
 
   return `#${letter}${num}`;
 }
