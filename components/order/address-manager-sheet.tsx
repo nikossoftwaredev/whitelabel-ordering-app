@@ -76,6 +76,7 @@ export function AddressManagerContent() {
   const t = useTranslations("Address");
   const openDialog = useDialogStore((s) => s.openDialog);
   const closeAll = useDialogStore((s) => s.closeAll);
+  const setLocalBackHandler = useDialogStore((s) => s.setLocalBackHandler);
   const dialogData = useDialogStore(selectDialogData) as
     | { initialView?: ViewState }
     | null
@@ -114,6 +115,17 @@ export function AddressManagerContent() {
     resetForm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Register/unregister local back handler so dialog shell shows back arrow in form view
+  useEffect(() => {
+    if (view === "form") {
+      setLocalBackHandler(() => handleBack);
+    } else {
+      setLocalBackHandler(null);
+    }
+    return () => setLocalBackHandler(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   function resetForm() {
     setEditingAddress(null);

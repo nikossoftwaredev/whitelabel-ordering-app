@@ -8,14 +8,18 @@ interface DialogEntry {
 
 interface DialogStore {
   stack: DialogEntry[];
+  localBackHandler: (() => void) | null;
   openDialog: (key: string, data?: unknown, onSuccess?: () => void) => void;
   closeDialog: () => void;
   goBack: () => void;
   closeAll: () => void;
+  setLocalBackHandler: (handler: (() => void) | null) => void;
 }
 
 export const useDialogStore = create<DialogStore>((set, get) => ({
   stack: [],
+  localBackHandler: null,
+  setLocalBackHandler: (handler) => set({ localBackHandler: handler }),
 
   openDialog: (key, data, onSuccess) => {
     set((state) => ({
@@ -40,7 +44,7 @@ export const useDialogStore = create<DialogStore>((set, get) => ({
 
   closeAll: () => {
     const depth = get().stack.length;
-    set({ stack: [] });
+    set({ stack: [], localBackHandler: null });
     if (typeof window !== "undefined" && depth > 0) {
       history.go(-depth);
     }

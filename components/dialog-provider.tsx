@@ -89,6 +89,7 @@ export const DialogProvider = () => {
   const goBack = useDialogStore((s) => s.goBack);
   const closeAll = useDialogStore((s) => s.closeAll);
   const closeDialog = useDialogStore((s) => s.closeDialog);
+  const localBackHandler = useDialogStore((s) => s.localBackHandler);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -118,7 +119,7 @@ export const DialogProvider = () => {
         variant={isCompact ? "compact" : "responsive"}
         size={currentDialog === DIALOG_KEYS.PRODUCT_DETAIL ? "sm" : "md"}
         showCloseButton={!isCompact}
-        onBack={stackDepth > 1 ? goBack : undefined}
+        onBack={localBackHandler ?? (stackDepth > 1 ? goBack : undefined)}
         onCloseAll={closeAll}
       >
         <Suspense fallback={<DialogFallback />}>
