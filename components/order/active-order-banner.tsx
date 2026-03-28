@@ -8,18 +8,21 @@ import {
   Clock,
   HandPlatter,
   Loader2,
+  MessageCircle,
   X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
+import { DIALOG_KEYS } from "@/components/dialog-provider";
 import { useTenant } from "@/components/tenant-provider";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import type { OrderStatus } from "@/lib/general/status-config";
 import { cn } from "@/lib/general/utils";
 import { Link } from "@/lib/i18n/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useDialogStore } from "@/lib/stores/dialog-store";
 
 type ActiveOrderStatus = Extract<
   OrderStatus,
@@ -54,6 +57,7 @@ export function ActiveOrderBanner() {
   const { data: session } = useSession();
   const tenant = useTenant();
   const formatPrice = useFormatPrice();
+  const openDialog = useDialogStore((s) => s.openDialog);
   const [order, setOrder] = useState<ActiveOrder | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const [visible, setVisible] = useState(false);
@@ -206,6 +210,19 @@ export function ActiveOrderBanner() {
 
       {/* Arrow */}
       <ChevronRight className="size-4 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform duration-200" />
+
+      {/* Chat */}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openDialog(DIALOG_KEYS.CHAT, { orderId: order.id, orderNumber: order.orderNumber });
+        }}
+        className="shrink-0 size-8 rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 flex items-center justify-center transition-colors duration-300"
+        aria-label="Chat with store"
+      >
+        <MessageCircle className="size-4 text-foreground" />
+      </button>
 
       {/* Dismiss */}
       <button
