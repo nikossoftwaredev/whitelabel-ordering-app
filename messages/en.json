@@ -465,5 +465,10 @@
     "storeLocation": "Store Location",
     "storeLatitude": "Store Latitude",
     "storeLongitude": "Store Longitude"
+  },
+  "Chat": {
+    "history": "My Chats",
+    "closed": "Closed",
+    "title": "Chat"
   }
 }

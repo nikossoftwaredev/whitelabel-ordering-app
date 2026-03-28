@@ -465,5 +465,10 @@
     "storeLocation": "Τοποθεσία Καταστήματος",
     "storeLatitude": "Γεωγραφικό Πλάτος Καταστήματος",
     "storeLongitude": "Γεωγραφικό Μήκος Καταστήματος"
+  },
+  "Chat": {
+    "history": "Τα Chats μου",
+    "closed": "Κλειστό",
+    "title": "Chat"
   }
 }

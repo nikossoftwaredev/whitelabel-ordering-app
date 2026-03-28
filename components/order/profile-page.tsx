@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { Trash2, User } from "lucide-react";
+import { MessageCircle, Trash2, User } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -19,10 +19,21 @@ import { Label } from "@/components/ui/label";
 import { getAddressLabelIcon } from "@/lib/address/label-icon";
 import { useAddressStore } from "@/lib/stores/address-store";
 import { useDialogStore } from "@/lib/stores/dialog-store";
+import { cn } from "@/lib/general/utils";
+
+interface ChatSummary {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  status: "OPEN" | "CLOSED";
+  lastMessage: string | null;
+  updatedAt: string;
+}
 
 export function ProfilePage() {
   const t = useTranslations("Profile");
   const tAddr = useTranslations("Address");
+  const tChat = useTranslations("Chat");
   const { data: session, update } = useSession();
   const tenant = useTenant();
   const openDialog = useDialogStore((s) => s.openDialog);
@@ -48,6 +59,7 @@ export function ProfilePage() {
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [chats, setChats] = useState<ChatSummary[]>([]);
 
   useEffect(() => {
     fetch("/api/user/profile")
@@ -59,6 +71,14 @@ export function ProfilePage() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch(`/api/tenants/${tenant.slug}/chat`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setChats(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, [session?.user, tenant.slug]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -215,6 +235,46 @@ export function ProfilePage() {
             </Button>
           </CardContent>
         </Card>
+
+        {chats.length > 0 && (
+          <Card className="mt-4">
+            <CardContent className="p-0">
+              <div className="px-4 pt-4 pb-2">
+                <h3 className="text-sm font-semibold">{tChat("history")}</h3>
+              </div>
+              {chats.map((chat, i) => (
+                <button
+                  key={chat.id}
+                  onClick={() =>
+                    openDialog(DIALOG_KEYS.CHAT, {
+                      orderId: chat.orderId,
+                      orderNumber: chat.orderNumber,
+                    })
+                  }
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors duration-300",
+                    i < chats.length - 1 && "border-b border-border",
+                  )}
+                >
+                  <MessageCircle className="size-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{chat.orderNumber}</p>
+                    {chat.lastMessage && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {chat.lastMessage}
+                      </p>
+                    )}
+                  </div>
+                  {chat.status === "CLOSED" && (
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {tChat("closed")}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
