@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useTenant } from "@/components/tenant-provider";
 import { useAddressStore } from "@/lib/stores/address-store";
 import { useCheckoutStore } from "@/lib/stores/checkout-store";
+import { DIALOG_KEYS } from "@/components/dialog-provider";
 import { useDialogStore } from "@/lib/stores/dialog-store";
 
 const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -56,7 +57,7 @@ export function CheckoutAddressCard() {
     <div className="px-4 pb-4">
       <button
         type="button"
-        onClick={() => openDialog("address-manager")}
+        onClick={() => openDialog(DIALOG_KEYS.ADDRESS_MANAGER)}
         className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-300 text-left ${
           selectedAddress
             ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5"
@@ -67,7 +68,7 @@ export function CheckoutAddressCard() {
         {hasCoords ? (
           <Image
             src={staticMapUrl(selectedAddress!.lat!, selectedAddress!.lng!)}
-            alt="map"
+            alt={t("deliveryAddress")}
             width={72}
             height={72}
             unoptimized
