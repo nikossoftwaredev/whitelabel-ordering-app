@@ -278,7 +278,7 @@ export const ProductDetailContent = () => {
       {/* Hidden accessible title */}
       <DialogTitle className="sr-only">{product.name}</DialogTitle>
 
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea className="flex-1 min-h-0" viewportClassName="!overflow-y-scroll">
         {/* Hero image */}
         {product.image ? (
           <div className="relative w-full aspect-4/3 bg-muted overflow-hidden">

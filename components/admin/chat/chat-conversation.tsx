@@ -100,7 +100,7 @@ export function AdminChatConversation({
         </div>
       </div>
 
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea className="flex-1 min-h-0" viewportClassName="!overflow-y-scroll">
         <div className="px-4 py-3 space-y-3">
           {messages.map((msg) => (
             <MessageBubble key={msg.id} msg={msg} ownSender="STORE" />

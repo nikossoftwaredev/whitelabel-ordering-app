@@ -242,7 +242,7 @@ export const ProductFormDialog = ({
             {isEditing ? "Edit Product" : "New Product"}
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 overflow-hidden">
+        <ScrollArea className="flex-1 overflow-hidden" viewportClassName="!overflow-y-scroll">
           <form onSubmit={handleSubmit} className="space-y-4 px-6 pt-4 pb-6">
             {/* Category */}
             <div className="space-y-2">

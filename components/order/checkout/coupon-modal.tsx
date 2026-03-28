@@ -223,7 +223,7 @@ export const CouponModalContent = () => {
         </DialogTitle>
       </DialogHeader>
 
-      <ScrollArea className="flex-1 min-h-0"><div className="px-5 pb-4 space-y-5">
+      <ScrollArea className="flex-1 min-h-0" viewportClassName="!overflow-y-scroll"><div className="px-5 pb-4 space-y-5">
         {/* ═══ My Coupons ═══ */}
         {session?.user && (
           <div>

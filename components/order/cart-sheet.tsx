@@ -77,7 +77,7 @@ export const CartContent = () => {
         </div>
       ) : (
         <>
-          <ScrollArea className="flex-1 min-h-0">
+          <ScrollArea className="flex-1 min-h-0" viewportClassName="!overflow-y-scroll">
           <div className="px-4 py-2">
             <AnimatePresence initial={false}>
             {cart.items.map((item) => (

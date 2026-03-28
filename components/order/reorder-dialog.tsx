@@ -101,7 +101,7 @@ export const ReorderContent = () => {
           <p className="text-muted-foreground text-sm">{t("reorderEmpty")}</p>
         </div>
       ) : (
-        <ScrollArea className="flex-1 min-h-0"><div className="px-4 py-2">
+        <ScrollArea className="flex-1 min-h-0" viewportClassName="!overflow-y-scroll"><div className="px-4 py-2">
           {items.map((entry, index) => (
             <div key={entry.item.id} className="flex items-center gap-3 py-3 border-b border-border last:border-b-0">
 

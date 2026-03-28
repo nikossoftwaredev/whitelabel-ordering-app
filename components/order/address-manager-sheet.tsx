@@ -385,7 +385,7 @@ export function AddressManagerContent() {
             <DialogTitle className="text-lg font-bold">{t("chooseAddress")}</DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0"><div className="px-3">
+          <ScrollArea className="flex-1 min-h-0" viewportClassName="!overflow-y-scroll"><div className="px-3">
             {addresses.length > 0 ? (
               <div>
                 {addresses.map((addr) => {
@@ -446,7 +446,7 @@ export function AddressManagerContent() {
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0"><div className="px-5 pb-6 space-y-5">
+          <ScrollArea className="flex-1 min-h-0" viewportClassName="!overflow-y-scroll"><div className="px-5 pb-6 space-y-5">
 
             {/* Search bar with inline detect-location button */}
             {!editingAddress && (
@@ -591,7 +591,7 @@ export function AddressManagerContent() {
                 icon={<Trash2 className="size-4" />}
                 className="w-full h-11 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10"
               >
-                {deleteMutation.isPending ? "Deleting…" : "Delete address"}
+                {deleteMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : "Delete address"}
               </Button>
             )}
           </div></ScrollArea>

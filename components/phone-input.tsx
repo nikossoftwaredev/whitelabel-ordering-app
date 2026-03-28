@@ -165,7 +165,7 @@ export const PhoneInput = ({
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
-          <ScrollArea className="h-64">
+          <ScrollArea className="h-64" viewportClassName="!overflow-y-scroll">
             <div className="p-1">
               {filteredCountries.length === 0 ? (
                 <p className="py-4 text-center text-sm text-muted-foreground">No country found</p>

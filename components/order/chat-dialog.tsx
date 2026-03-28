@@ -76,7 +76,7 @@ export function ChatDialogContent() {
         </DialogTitle>
       </DialogHeader>
 
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea className="flex-1 min-h-0" viewportClassName="!overflow-y-scroll">
         <div className="px-4 py-3 space-y-3">
           {!conversation && (
             <div className="flex items-center justify-center py-10">
