@@ -170,7 +170,7 @@
     "orderAnalysis": "Order analysis",
     "allergenInfo": "Allergen information",
     "allergenNotice": "Our products may contain allergens. For a full list please contact the store.",
-    "legalText": "By placing your order you accept our {termsLink} and {privacyLink}.",
+    "legalText": "By placing your order you accept our <termsLink>Terms of Service</termsLink> and <privacyLink>Privacy Policy</privacyLink>.",
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy"
   },

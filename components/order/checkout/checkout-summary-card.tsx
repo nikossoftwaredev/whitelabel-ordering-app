@@ -66,23 +66,29 @@ export function CheckoutSummaryCard() {
           </div>
         )}
 
-        {/* Total row */}
-        <div className="flex items-center justify-between py-2">
-          <span className="text-base font-bold">{t("orderTotal")}</span>
-          <span className="text-base font-bold tabular-nums">
-            {formatPrice(orderTotal)}
-          </span>
+        {/* Total row with icon */}
+        <div className="flex items-center gap-3 py-1">
+          <IconCell>
+            <FileText className="size-4 text-muted-foreground" />
+          </IconCell>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <span className="text-base font-bold">{t("orderTotal")}</span>
+              <span className="text-base font-bold tabular-nums">
+                {formatPrice(orderTotal)}
+              </span>
+            </div>
+            {/* Analysis trigger */}
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 mt-0.5"
+            >
+              {t("orderAnalysis")}
+              <ChevronRight className="size-3.5" />
+            </button>
+          </div>
         </div>
-
-        {/* Analysis trigger */}
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
-        >
-          {t("orderAnalysis")}
-          <ChevronRight className="size-3.5" />
-        </button>
       </div>
 
       {/* Bottom sheet */}
