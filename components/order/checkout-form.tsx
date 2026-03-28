@@ -1,14 +1,19 @@
 "use client";
 
-import { ArrowLeft, Loader2, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Info, Loader2, ShoppingBag } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { SignInForm } from "@/components/auth/signin-form";
 import { PhoneInput } from "@/components/phone-input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { useOrderTotal } from "@/hooks/use-order-total";
 import { calculateBestGroupDiscount } from "@/lib/groups/discount";
 import { Link, useRouter } from "@/lib/i18n/navigation";
 import { useAddressStore } from "@/lib/stores/address-store";
@@ -33,7 +39,6 @@ import { CheckoutCouponCard } from "./checkout/checkout-coupon-card";
 import { CheckoutItemsList } from "./checkout/checkout-items-list";
 import { CheckoutOrderTypeToggle } from "./checkout/checkout-order-type-toggle";
 import { CheckoutPaymentCard } from "./checkout/checkout-payment-card";
-import { CheckoutPersonalDetails } from "./checkout/checkout-personal-details";
 import { CheckoutScheduleCard } from "./checkout/checkout-schedule-card";
 import { CheckoutSubmitButton } from "./checkout/checkout-submit-button";
 import { CheckoutSummaryCard } from "./checkout/checkout-summary-card";
@@ -45,6 +50,10 @@ const StripePayment = dynamic(
     ssr: false,
     loading: () => <div className="h-12 animate-pulse bg-muted rounded-2xl" />,
   },
+);
+
+const legalLink = (chunks: ReactNode) => (
+  <a href="#" className="font-semibold text-foreground underline-offset-2 hover:underline">{chunks}</a>
 );
 
 export const CheckoutForm = () => {
@@ -331,14 +340,10 @@ export const CheckoutForm = () => {
     );
   }
 
+  const { orderTotal } = useOrderTotal();
+
   const isBlocked = !session || (session && !checkout.profileChecked);
   const isNotLoggedIn = !session;
-  const tipAmount = checkout.computeTip();
-  const promoDiscount = checkout.appliedPromo?.discount ?? 0;
-  const couponDiscount = checkout.selectedCoupons.reduce((sum, c) => sum + c.discount, 0);
-  const groupDiscountAmount = checkout.groupDiscount?.discount ?? 0;
-  const totalDiscount = promoDiscount + couponDiscount + groupDiscountAmount;
-  const orderTotal = Math.max(0, subtotal - totalDiscount) + tipAmount;
 
   return (
     <div
@@ -363,9 +368,6 @@ export const CheckoutForm = () => {
         {/* Order Items */}
         <CheckoutItemsList />
 
-        {/* Personal Details (compact one-liner, expands inline) */}
-        <CheckoutPersonalDetails />
-
         {/* Comment Row */}
         <CheckoutCommentRow />
 
@@ -374,6 +376,28 @@ export const CheckoutForm = () => {
 
         {/* Summary Card */}
         <CheckoutSummaryCard />
+
+        {/* Legal text — after order totals, inside scrollable content */}
+        <div className="flex items-start gap-2 px-4 pt-2 pb-1">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="shrink-0 mt-0.5 text-muted-foreground hover:text-foreground transition-colors duration-200"
+                aria-label={t("allergenInfo")}
+              >
+                <Info className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="top" className="max-w-xs text-xs text-muted-foreground">
+              <p className="font-semibold text-foreground mb-1">{t("allergenInfo")}</p>
+              <p>{t("allergenNotice")}</p>
+            </PopoverContent>
+          </Popover>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            {t.rich("legalText", { termsLink: legalLink, privacyLink: legalLink })}
+          </p>
+        </div>
       </form>
 
       {/* Fixed Submit Button */}

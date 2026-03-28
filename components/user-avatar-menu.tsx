@@ -1,11 +1,13 @@
 "use client";
 
 import {
+  ChevronsUpDown,
   Download,
   Globe,
   LogOut,
   Moon,
   Settings,
+  ShieldCheck,
   ShoppingBag,
   Sun,
   User,
@@ -17,6 +19,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { SidebarMenuButton } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,11 +47,14 @@ interface UserAvatarMenuProps {
   showCustomerLinks?: boolean;
   /** Called when user is not signed in and clicks the avatar — lets parent open auth dialog */
   onSignInClick?: () => void;
+  /** "sidebar" renders an expanded SidebarMenuButton trigger (name + email + chevron) */
+  variant?: "sidebar";
 }
 
 export const UserAvatarMenu = ({
   showCustomerLinks = false,
   onSignInClick,
+  variant,
 }: UserAvatarMenuProps) => {
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
@@ -69,8 +75,7 @@ export const UserAvatarMenu = ({
     setMounted(true);
     setIsStandalone(
       window.matchMedia("(display-mode: standalone)").matches ||
-        (window.navigator as unknown as { standalone?: boolean }).standalone ===
-          true
+        navigator.standalone === true
     );
     setIsMobile(
       /android|iphone|ipad|ipod|mobile|tablet/i.test(navigator.userAgent) ||
@@ -96,6 +101,18 @@ export const UserAvatarMenu = ({
       .toUpperCase()
       .slice(0, 2) || "U";
 
+  const avatarEl = (
+    <Avatar className="size-8">
+      <AvatarImage src={user?.image || ""} alt={user?.name || "User"} />
+      <AvatarFallback
+        className="text-xs font-semibold"
+        style={{ backgroundColor: "var(--brand-primary, hsl(var(--primary)))", color: "white" }}
+      >
+        {initials}
+      </AvatarFallback>
+    </Avatar>
+  );
+
   if (!user) {
     return (
       <Button
@@ -109,26 +126,11 @@ export const UserAvatarMenu = ({
     );
   }
 
-  // Render a static avatar button during SSR to avoid Radix useId() hydration mismatch
+  // Static button during SSR — avoids Radix useId() hydration mismatch
   if (!mounted) {
     return (
-      <Button
-        variant="ghost"
-        className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5"
-      >
-        <Avatar className="size-8">
-          <AvatarImage src={user.image || ""} alt={user.name || "User"} />
-          <AvatarFallback
-            className="text-xs font-semibold"
-            style={{
-              backgroundColor:
-                "var(--brand-primary, hsl(var(--primary)))",
-              color: "white",
-            }}
-          >
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+      <Button variant="ghost" className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5">
+        {avatarEl}
       </Button>
     );
   }
@@ -137,33 +139,45 @@ export const UserAvatarMenu = ({
     <>
       <DropdownMenu onOpenChange={(open) => { if (open) fetchTenants(); }}>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5 cursor-pointer"
-          >
-            <Avatar className="size-8">
-              <AvatarImage src={user.image || ""} alt={user.name || "User"} />
-              <AvatarFallback
-                className="text-xs font-semibold"
-                style={{
-                  backgroundColor:
-                    "var(--brand-primary, hsl(var(--primary)))",
-                  color: "white",
-                }}
-              >
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </Button>
+          {variant === "sidebar" ? (
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
+            >
+              <Avatar className="size-8 rounded-lg">
+                <AvatarImage src={user.image || ""} alt={user.name || "User"} />
+                <AvatarFallback className="rounded-lg text-xs font-semibold bg-primary text-primary-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">{user.name}</span>
+                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+              </div>
+              <ChevronsUpDown className="ms-auto size-4" />
+            </SidebarMenuButton>
+          ) : (
+            <Button variant="ghost" className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5 cursor-pointer">
+              {avatarEl}
+            </Button>
+          )}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col gap-0.5">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
+        <DropdownMenuContent
+          align="end"
+          className="w-56"
+          side={variant === "sidebar" ? (isMobile ? "bottom" : "right") : undefined}
+        >
+          {variant !== "sidebar" && (
+            <>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+            </>
+          )}
 
           {showCustomerLinks && (
             <>
@@ -179,28 +193,18 @@ export const UserAvatarMenu = ({
                   My Orders
                 </Link>
               </DropdownMenuItem>
-            </>
-          )}
-
-          {showCustomerLinks && (tenantsLoading || tenants === null || tenants.length > 0) && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-2 py-1">
-                My Stores
-              </DropdownMenuLabel>
-              {tenantsLoading || tenants === null ? (
-                <>
-                  <div className="mx-2 my-1 h-8 rounded-md bg-muted animate-pulse" />
-                  <div className="mx-2 my-1 h-8 rounded-md bg-muted animate-pulse" />
-                </>
-              ) : (
-                tenants.map((tenant) => (
-                  <TenantSwitcherItem key={tenant.id} tenant={tenant} />
-                ))
+              {tenants !== null && tenants.some((t) => t.role === "SUPER_ADMIN") && (
+                <DropdownMenuItem asChild className="cursor-pointer text-violet-600 dark:text-violet-400 focus:text-violet-600 dark:focus:text-violet-400">
+                  <Link href="/admin/super">
+                    <ShieldCheck className="mr-2 size-4" />
+                    Super Admin
+                  </Link>
+                </DropdownMenuItem>
               )}
             </>
           )}
 
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setSettingsOpen(true)}
             className="cursor-pointer"
@@ -224,6 +228,18 @@ export const UserAvatarMenu = ({
               <Download className="mr-2 size-4" />
               Download App
             </DropdownMenuItem>
+          )}
+
+          {showCustomerLinks && tenants !== null && tenants.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-2 py-1">
+                My Stores
+              </DropdownMenuLabel>
+              {tenants.map((tenant) => (
+                <TenantSwitcherItem key={tenant.id} tenant={tenant} />
+              ))}
+            </>
           )}
 
           <DropdownMenuSeparator />

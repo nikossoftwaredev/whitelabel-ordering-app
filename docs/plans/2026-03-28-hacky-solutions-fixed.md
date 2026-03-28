@@ -344,7 +344,7 @@ navigator.getInstalledRelatedApps?.()
 | # | File | What was hacky | Fix applied | Lines removed |
 |---|------|---------------|-------------|---------------|
 | 1 | `components/viewport-height-sync.tsx` | JS-based viewport height sync via `visualViewport` events | Deleted — use `100dvh` CSS unit | −31 |
-| 2 | `app/[locale]/globals.css` | `!important` fighting Radix scroll-lock | `scrollbar-gutter: stable` | −10 |
+| 2 | `app/[locale]/globals.css` | `!important` fighting Radix scroll-lock | **Reverted** — `scrollbar-gutter: stable` doesn't work here (applies to `html`, Radix compensates on `body`). The `!important` overrides are the correct solution. | 0 |
 | 3 | `components/order/order-confirmation.tsx` | 10s polling + `statusRef` sync pattern | Realtime reconnect refetch | −30 |
 | 4 | `components/order/active-order-banner.tsx` | Same 10s polling + `orderStatusRef` | Realtime reconnect refetch | −28 |
 | 5 | `components/order/address-manager-sheet.tsx` | Redundant `debounceRef` manual cancel | `useEffect` cleanup handles it | −5 |

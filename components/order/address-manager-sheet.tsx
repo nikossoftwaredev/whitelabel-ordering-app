@@ -5,7 +5,6 @@ import {
   BedDouble,
   Briefcase,
   Building2,
-  Check,
   Crosshair,
   Home,
   Loader2,
@@ -22,6 +21,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { AddButton } from "@/components/add-button";
+import { DIALOG_KEYS } from "@/components/dialog-provider";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -37,6 +37,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { getAddressLabelIcon } from "@/lib/address/label-icon";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { type Address, useAddressStore } from "@/lib/stores/address-store";
 import { selectDialogData, useDialogStore } from "@/lib/stores/dialog-store";
 import {
@@ -51,7 +52,6 @@ const AddressMap = dynamic(
   { ssr: false, loading: () => <div className="h-48 animate-pulse bg-muted rounded-xl" /> }
 );
 
-export const ADDRESS_MANAGER_DIALOG = "address-manager";
 
 type ViewState = "list" | "form";
 
@@ -367,7 +367,7 @@ export function AddressManagerContent() {
   );
 
   const handleAddAddress = useCallback(() => {
-    if (!session) { openDialog("auth"); } else { setView("form"); }
+    if (!session) { openDialog(DIALOG_KEYS.AUTH); } else { setView("form"); }
   }, [session, openDialog]);
 
   const handleBack = () => {
@@ -399,23 +399,28 @@ export function AddressManagerContent() {
                       tabIndex={0}
                       onClick={() => handleSelectAddress(addr)}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelectAddress(addr); } }}
-                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl my-1 transition-all duration-300 cursor-pointer text-left ${isSelected ? "bg-primary/10" : "hover:bg-muted/50"}`}
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl my-1 transition-all duration-300 cursor-pointer text-left border-2 ${isSelected ? "border-(--brand-primary,hsl(var(--primary))) bg-(--brand-primary,hsl(var(--primary)))/5" : "border-transparent hover:bg-muted/50"}`}
                     >
-                      <div className={`size-9 rounded-full flex items-center justify-center shrink-0 ${isSelected ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                        {isSelected ? <Check className="size-4" /> : getAddressLabelIcon(addr.label, "size-4 text-muted-foreground")}
+                      <div className="size-9 rounded-full flex items-center justify-center shrink-0 bg-muted">
+                        {getAddressLabelIcon(addr.label, "size-4 text-muted-foreground")}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-[15px] text-foreground leading-tight">{addr.label || addr.street}</p>
                         <p className="text-[13px] text-muted-foreground mt-0.5 truncate">{addr.street}</p>
                         {addr.city && <p className="text-[12px] text-muted-foreground/70 truncate">{addr.city}</p>}
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleEditAddress(addr); }}
-                        className="size-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-300 cursor-pointer shrink-0"
-                        aria-label="Edit address"
-                      >
-                        <Pencil className="size-3.5 text-muted-foreground" />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEditAddress(addr); }}
+                            className="size-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors duration-300 cursor-pointer shrink-0"
+                            aria-label="Edit address"
+                          >
+                            <Pencil className="size-3.5 text-muted-foreground" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>{t("editAddress")}</TooltipContent>
+                      </Tooltip>
                     </div>
                   );
                 })}

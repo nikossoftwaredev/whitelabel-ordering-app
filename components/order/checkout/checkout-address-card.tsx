@@ -9,18 +9,7 @@ import { useAddressStore } from "@/lib/stores/address-store";
 import { useCheckoutStore } from "@/lib/stores/checkout-store";
 import { DIALOG_KEYS } from "@/components/dialog-provider";
 import { useDialogStore } from "@/lib/stores/dialog-store";
-
-const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-
-function staticMapUrl(lat: number, lng: number) {
-  const center = `${lat},${lng}`;
-  return (
-    `https://maps.googleapis.com/maps/api/staticmap` +
-    `?center=${center}&zoom=15&size=144x144&scale=2` +
-    `&markers=color:red|${center}` +
-    `&key=${MAPS_KEY}`
-  );
-}
+import { buildAddressThumbnailUrl } from "@/lib/maps/static-map";
 
 export function CheckoutAddressCard() {
   const t = useTranslations("Checkout");
@@ -67,7 +56,7 @@ export function CheckoutAddressCard() {
         {/* Map thumbnail */}
         {hasCoords ? (
           <Image
-            src={staticMapUrl(selectedAddress!.lat!, selectedAddress!.lng!)}
+            src={buildAddressThumbnailUrl(selectedAddress!.lat!, selectedAddress!.lng!)}
             alt={t("deliveryAddress")}
             width={72}
             height={72}

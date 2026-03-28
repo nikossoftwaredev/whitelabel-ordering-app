@@ -10,7 +10,8 @@ export async function generateOrderNumber(tenantId: string, attempt = 0): Promis
 
   const effectiveCount = count + attempt;
   const letter = String.fromCharCode(65 + (effectiveCount % 26)); // A-Z cycling
-  const num = String(effectiveCount + 1).padStart(3, "0");
+  // Use modulo so the numeric part stays 3 digits as order volume grows
+  const num = String((effectiveCount % 1000) + 1).padStart(3, "0");
 
   return `#${letter}${num}`;
 }

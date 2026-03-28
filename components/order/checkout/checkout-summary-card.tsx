@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { useOrderTotal } from "@/hooks/use-order-total";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useCheckoutStore } from "@/lib/stores/checkout-store";
 import { Separator } from "@/components/ui/separator";
@@ -33,28 +34,15 @@ export function CheckoutSummaryCard() {
   const t = useTranslations("Checkout");
   const formatPrice = useFormatPrice();
   const items = useCartStore((s) => s.items);
-  const subtotal = useCartStore((s) => s.subtotal());
   const orderType = useCheckoutStore((s) => s.orderType);
   const tableNumber = useCheckoutStore((s) => s.tableNumber);
-  const appliedPromo = useCheckoutStore((s) => s.appliedPromo);
-  const selectedCoupons = useCheckoutStore((s) => s.selectedCoupons);
-  const groupDiscount = useCheckoutStore((s) => s.groupDiscount);
-  const computeTip = useCheckoutStore((s) => s.computeTip);
+  const { tipAmount, totalDiscount, orderTotal } = useOrderTotal();
 
   const [open, setOpen] = useState(false);
 
-  const tipAmount = computeTip();
-  const promoDiscount = appliedPromo?.discount ?? 0;
-  const couponDiscount = selectedCoupons.reduce((sum, c) => sum + c.discount, 0);
-  const groupDiscountAmount = groupDiscount?.discount ?? 0;
-  const totalDiscount = promoDiscount + couponDiscount + groupDiscountAmount;
-  const orderTotal = Math.max(0, subtotal - totalDiscount) + tipAmount;
-
   return (
     <>
-      {/* Collapsed rows */}
       <div className="px-4 pb-2">
-        {/* Discount row — always visible when there's a discount */}
         {totalDiscount > 0 && (
           <div className="flex items-center justify-between py-1.5">
             <span className="text-sm text-green-600 dark:text-green-400">
@@ -66,7 +54,6 @@ export function CheckoutSummaryCard() {
           </div>
         )}
 
-        {/* Total row with icon */}
         <div className="flex items-center gap-3 py-1">
           <IconCell>
             <FileText className="size-4 text-muted-foreground" />
@@ -78,7 +65,6 @@ export function CheckoutSummaryCard() {
                 {formatPrice(orderTotal)}
               </span>
             </div>
-            {/* Analysis trigger */}
             <button
               type="button"
               onClick={() => setOpen(true)}
@@ -91,7 +77,6 @@ export function CheckoutSummaryCard() {
         </div>
       </div>
 
-      {/* Bottom sheet */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="bottom"
@@ -101,16 +86,13 @@ export function CheckoutSummaryCard() {
             <SheetTitle>{t("orderAnalysis")}</SheetTitle>
           </SheetHeader>
 
-          {/* Cart items */}
           <div className="space-y-0 mb-4">
             {items.map((item, index) => (
               <div key={item.cartItemId}>
                 <div className="flex items-start gap-3 py-3">
-                  {/* Quantity badge */}
                   <span className="size-6 rounded-md bg-muted flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                     {item.quantity}
                   </span>
-                  {/* Name */}
                   <span className="flex-1 text-sm font-medium leading-snug">
                     {item.productName}
                     {item.modifiers.length > 0 && (
@@ -119,7 +101,6 @@ export function CheckoutSummaryCard() {
                       </span>
                     )}
                   </span>
-                  {/* Price */}
                   <span className="text-sm font-semibold tabular-nums shrink-0">
                     {formatPrice(item.totalPrice)}
                   </span>
@@ -133,9 +114,7 @@ export function CheckoutSummaryCard() {
 
           <Separator className="mb-4" />
 
-          {/* Fee rows with icons */}
           <div className="space-y-2.5 pb-4">
-            {/* Delivery fee */}
             {orderType === "DELIVERY" && (
               <div className="flex items-center gap-3">
                 <IconCell>
@@ -150,7 +129,6 @@ export function CheckoutSummaryCard() {
               </div>
             )}
 
-            {/* Tip */}
             {tipAmount > 0 && (
               <div className="flex items-center gap-3">
                 <IconCell>
@@ -165,7 +143,6 @@ export function CheckoutSummaryCard() {
               </div>
             )}
 
-            {/* Table */}
             {orderType === "DINE_IN" && tableNumber && (
               <div className="flex items-center gap-3">
                 <IconCell>
@@ -180,7 +157,7 @@ export function CheckoutSummaryCard() {
               </div>
             )}
 
-            {/* Total discount — aggregated, always shown if > 0 */}
+            {/* Aggregated — shown instead of per-source discount rows */}
             {totalDiscount > 0 && (
               <div className="flex items-center gap-3">
                 <IconCell>
@@ -195,7 +172,6 @@ export function CheckoutSummaryCard() {
               </div>
             )}
 
-            {/* Total */}
             <div className="flex items-center gap-3 pt-1">
               <IconCell>
                 <FileText className="size-4 text-muted-foreground" />
