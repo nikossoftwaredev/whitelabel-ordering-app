@@ -195,6 +195,8 @@
     "stepReady": "Ready",
     "stepDelivering": "Delivering",
     "cancelOrder": "Cancel Order",
+    "changeAddress": "Change",
+    "deliveryAddress": "Delivery address",
     "cancelConfirm": "Are you sure you want to cancel this order?",
     "cancelSuccess": "Order cancelled successfully.",
     "cancelError": "Failed to cancel order. Please try again.",

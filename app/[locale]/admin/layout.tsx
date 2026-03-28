@@ -32,10 +32,12 @@ const AdminLayout = async ({ children, params }: BaseLayoutProps) => {
     );
   }
 
-  const superAdmin = await isSuperAdmin(session.user.id);
-
   const tenant = await getRequestTenant();
   const tenantId = tenant?.id || "";
+
+  // Show SuperAdminSidebar only on the main domain (no tenant subdomain).
+  // On a tenant subdomain, even a super admin should see that store's AdminSidebar.
+  const superAdmin = !tenant && (await isSuperAdmin(session.user.id));
 
   return (
     <SidebarProvider>

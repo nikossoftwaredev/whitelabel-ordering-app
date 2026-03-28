@@ -19,6 +19,8 @@ interface TenantContextValue {
   deliveryFee: number;
   freeDeliveryThreshold: number;
   minOrderAmount: number;
+  storeLat: number | null;
+  storeLng: number | null;
 }
 
 const TenantContext = createContext<TenantContextValue | null>(null);

@@ -10,7 +10,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { UserAvatarMenu } from "@/components/user-avatar-menu";
 import { useSoundSettings } from "@/hooks/use-notification-sound";
 import { usePushSubscription } from "@/hooks/use-push-subscription";
 
@@ -79,7 +78,6 @@ export const AdminHeader = () => {
           </Tooltip>
         )}
 
-        <UserAvatarMenu />
       </div>
     </header>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChevronsUpDown,
   Download,
   Globe,
   LogOut,
@@ -18,6 +19,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { SidebarMenuButton } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,11 +47,14 @@ interface UserAvatarMenuProps {
   showCustomerLinks?: boolean;
   /** Called when user is not signed in and clicks the avatar — lets parent open auth dialog */
   onSignInClick?: () => void;
+  /** "sidebar" renders an expanded SidebarMenuButton trigger (name + email + chevron) */
+  variant?: "sidebar";
 }
 
 export const UserAvatarMenu = ({
   showCustomerLinks = false,
   onSignInClick,
+  variant,
 }: UserAvatarMenuProps) => {
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
@@ -70,8 +75,7 @@ export const UserAvatarMenu = ({
     setMounted(true);
     setIsStandalone(
       window.matchMedia("(display-mode: standalone)").matches ||
-        (window.navigator as unknown as { standalone?: boolean }).standalone ===
-          true
+        navigator.standalone === true
     );
     setIsMobile(
       /android|iphone|ipad|ipod|mobile|tablet/i.test(navigator.userAgent) ||
@@ -135,18 +139,45 @@ export const UserAvatarMenu = ({
     <>
       <DropdownMenu onOpenChange={(open) => { if (open) fetchTenants(); }}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5 cursor-pointer">
-            {avatarEl}
-          </Button>
+          {variant === "sidebar" ? (
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
+            >
+              <Avatar className="size-8 rounded-lg">
+                <AvatarImage src={user.image || ""} alt={user.name || "User"} />
+                <AvatarFallback className="rounded-lg text-xs font-semibold bg-primary text-primary-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">{user.name}</span>
+                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+              </div>
+              <ChevronsUpDown className="ms-auto size-4" />
+            </SidebarMenuButton>
+          ) : (
+            <Button variant="ghost" className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5 cursor-pointer">
+              {avatarEl}
+            </Button>
+          )}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col gap-0.5">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
+        <DropdownMenuContent
+          align="end"
+          className="w-56"
+          side={variant === "sidebar" ? (isMobile ? "bottom" : "right") : undefined}
+        >
+          {variant !== "sidebar" && (
+            <>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+            </>
+          )}
 
           {showCustomerLinks && (
             <>

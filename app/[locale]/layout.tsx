@@ -145,6 +145,8 @@ const LocaleLayout = async ({ children, params }: BaseLayoutProps) => {
         deliveryFee: tenant.deliveryFee,
         freeDeliveryThreshold: tenant.freeDeliveryThreshold,
         minOrderAmount: tenant.minOrderAmount,
+        storeLat: tenant.storeLat ?? null,
+        storeLng: tenant.storeLng ?? null,
       }
     : null;
 

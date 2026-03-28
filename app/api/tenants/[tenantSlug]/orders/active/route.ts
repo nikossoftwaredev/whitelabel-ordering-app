@@ -46,6 +46,8 @@ export async function GET(
       estimatedReadyAt: true,
       orderType: true,
       scheduledFor: true,
+      deliveryAddress: true,
+      deliveryAddressDetails: true,
     },
     orderBy: { createdAt: "desc" },
   });

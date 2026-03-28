@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
 import { TenantSummary, TenantSwitcherItem } from "@/components/tenant-switcher-item";
+import { UserAvatarMenu } from "@/components/user-avatar-menu";
 import {
   Popover,
   PopoverContent,
@@ -163,6 +164,9 @@ export const AdminSidebar = () => {
                 </div>
               </PopoverContent>
             </Popover>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <UserAvatarMenu showCustomerLinks variant="sidebar" />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
