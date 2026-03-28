@@ -57,6 +57,7 @@ model Tenant {
   coupons        Coupon[]
   customerGroups CustomerGroup[]
   pushSubscriptions  PushSubscription[]
+  chats              ChatConversation[]
 
   @@index([slug])
   @@index([domain])
@@ -240,6 +241,7 @@ model Customer {
   promoUsages       PromoCodeUsage[]
   coupons           Coupon[]
   groupMemberships  CustomerGroupMember[]
+  chats             ChatConversation[]
 
   @@unique([tenantId, userId])
   @@map("customers")
@@ -634,6 +636,7 @@ model Order {
   invoice    Invoice?
   promoUsage   PromoCodeUsage?
   coupons      Coupon[]
+  chat         ChatConversation?
 
   @@unique([tenantId, orderNumber])
   @@index([tenantId, status])
@@ -738,4 +741,50 @@ model InvoiceSequence {
 
   @@unique([tenantId, series])
   @@map("invoice_sequences")
+}
+
+// ─── LIVE CHAT ────────────────────────────────────────────────
+
+model ChatConversation {
+  id         String                 @id @default(cuid())
+  tenantId   String                 @map("tenant_id")
+  orderId    String                 @unique @map("order_id")
+  customerId String?                @map("customer_id")
+  status     ChatConversationStatus @default(OPEN)
+  closedAt   DateTime?              @map("closed_at")
+  createdAt  DateTime               @default(now()) @map("created_at")
+  updatedAt  DateTime               @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  messages ChatMessage[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String     @id @default(cuid())
+  conversationId String     @map("conversation_id")
+  senderType     ChatSender @map("sender_type")
+  content        String
+  createdAt      DateTime   @default(now()) @map("created_at")
+  readAt         DateTime?  @map("read_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("chat_messages")
+}
+
+enum ChatConversationStatus {
+  OPEN
+  CLOSED
+}
+
+enum ChatSender {
+  CUSTOMER
+  STORE
 }
