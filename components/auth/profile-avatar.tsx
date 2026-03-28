@@ -31,7 +31,7 @@ export const ProfileAvatar = ({ user }: ProfileAvatarProps) => {
     .slice(0, 2) || "U";
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: "/" });
+    signOut({ callbackUrl: `${window.location.origin}/en/order` });
   };
 
   return (

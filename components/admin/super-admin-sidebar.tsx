@@ -130,7 +130,7 @@ export const SuperAdminSidebar = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
+                <DropdownMenuItem onClick={() => signOut({ callbackUrl: `${window.location.origin}/en/order` })}>
                   <LogOut className="size-4" />
                   Sign out
                 </DropdownMenuItem>

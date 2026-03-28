@@ -228,7 +228,7 @@ export const UserAvatarMenu = ({
 
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => signOut({ callbackUrl: "/order" })}
+            onClick={() => signOut({ callbackUrl: `${window.location.origin}/en/order` })}
             className="cursor-pointer text-destructive focus:text-destructive"
           >
             <LogOut className="mr-2 size-4" />
