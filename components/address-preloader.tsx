@@ -26,6 +26,8 @@ export function AddressPreloader() {
     }
   }, [status, setAddresses, setSelectedAddress, setLoaded, clearCart]);
 
+  const selectedAddress = useAddressStore((s) => s.selectedAddress);
+
   // Load addresses when logged in
   useEffect(() => {
     if (!session?.user || isLoaded) return;
@@ -33,10 +35,18 @@ export function AddressPreloader() {
     fetch(`/api/tenants/${tenant.slug}/addresses`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data) setAddresses(data.addresses ?? data);
+        if (!data) return;
+        const addresses: import("@/lib/stores/address-store").Address[] = data.addresses ?? data;
+        setAddresses(addresses);
+        // Auto-select default (or first) address if none is currently selected
+        if (!selectedAddress && addresses.length > 0) {
+          const def = addresses.find((a) => a.isDefault) ?? addresses[0];
+          setSelectedAddress(def);
+        }
       })
       .catch(() => {});
-  }, [session?.user, tenant.slug, setAddresses, isLoaded]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user, tenant.slug, isLoaded]);
 
   return null;
 }

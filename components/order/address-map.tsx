@@ -1,6 +1,7 @@
 "use client";
 
-import { AdvancedMarker,APIProvider, Map } from "@vis.gl/react-google-maps";
+import { AdvancedMarker, APIProvider, Map } from "@vis.gl/react-google-maps";
+import { useTheme } from "next-themes";
 import { useCallback, useState } from "react";
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!;
@@ -13,6 +14,7 @@ interface AddressMapProps {
 
 export function AddressMap({ lat, lng, onPositionChange }: AddressMapProps) {
   const [markerPosition, setMarkerPosition] = useState({ lat, lng });
+  const { resolvedTheme } = useTheme();
 
   const handleDragEnd = useCallback(
     (e: google.maps.MapMouseEvent) => {
@@ -34,6 +36,7 @@ export function AddressMap({ lat, lng, onPositionChange }: AddressMapProps) {
         defaultZoom={17}
         gestureHandling="greedy"
         disableDefaultUI
+        colorScheme={resolvedTheme === "dark" ? "DARK" : "LIGHT"}
         className="h-[200px] w-full rounded-xl"
       >
         <AdvancedMarker

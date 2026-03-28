@@ -53,7 +53,7 @@ const AddressMap = dynamic(
 
 export const ADDRESS_MANAGER_DIALOG = "address-manager";
 
-type ViewState = "list" | "search" | "form";
+type ViewState = "list" | "form";
 
 const LABEL_OPTIONS = ["Home", "Work", "Other"] as const;
 type LabelOption = (typeof LABEL_OPTIONS)[number];
@@ -333,12 +333,11 @@ export function AddressManagerContent() {
   );
 
   const handleAddAddress = useCallback(() => {
-    if (!session) { openDialog("auth"); } else { setView("search"); }
+    if (!session) { openDialog("auth"); } else { setView("form"); }
   }, [session, openDialog]);
 
   const handleBack = () => {
-    if (view === "form") { resetForm(); setView(editingAddress ? "list" : "search"); }
-    else if (view === "search") setView("list");
+    if (view === "form") { resetForm(); setView("list"); }
   };
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -406,69 +405,63 @@ export function AddressManagerContent() {
         </>
       )}
 
-      {/* ── SEARCH VIEW ── */}
-      {view === "search" && (
-        <>
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">{t("addNewAddressTitle")}</DialogTitle>
-          </DialogHeader>
-
-          <div className="px-6 pt-4 pb-1">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t("searchPlaceholder")}
-                className="w-full h-12 pl-10 pr-4 rounded-xl bg-muted/50 border border-border text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-(--brand-primary,hsl(var(--ring))) transition-all duration-300"
-                onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { e.preventDefault(); setNewStreet(query.trim()); setView("form"); } }}
-              />
-              {searching && <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground animate-spin" />}
-            </div>
-          </div>
-
-          {predictions.length > 0 && (
-            <div className="px-6 pb-2 max-h-48 overflow-y-auto">
-              {selectingPlace ? (
-                <div className="flex items-center justify-center py-3">
-                  <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : predictions.map((p) => (
-                <button key={p.place_id} onClick={() => handleSelectPrediction(p)}
-                  className="w-full flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/50 transition-colors duration-300 cursor-pointer text-left">
-                  <MapPin className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{p.structured_formatting.main_text}</p>
-                    <p className="text-xs text-muted-foreground truncate">{p.structured_formatting.secondary_text}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {locationError && <p className="text-xs text-destructive text-center px-6">{locationError}</p>}
-
-          <div className="px-6 pb-6 pt-3">
-            <Button variant="brand" onClick={handleUseCurrentLocation} disabled={locating}
-              icon={<Crosshair className={`size-5 ${locating ? "animate-pulse" : ""}`} />}
-              className="w-full h-12 rounded-xl font-semibold text-[15px]">
-              {locating ? t("locating") : t("detectLocation")}
-            </Button>
-          </div>
-        </>
-      )}
-
       {/* ── FORM VIEW ── */}
       {view === "form" && (
         <>
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">
-              {editingAddress ? t("editAddress") : t("confirmAddress")}
+              {editingAddress ? t("editAddress") : t("addNewAddressTitle")}
             </DialogTitle>
           </DialogHeader>
 
           <ScrollArea className="flex-1 min-h-0"><div className="px-5 pb-6 space-y-5">
+
+            {/* Search bar with inline detect-location button */}
+            {!editingAddress && (
+              <div className="space-y-1">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={t("searchPlaceholder")}
+                    className="w-full h-11 pl-10 pr-10 rounded-xl bg-muted/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-(--brand-primary,hsl(var(--ring))) transition-all duration-300"
+                    onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { e.preventDefault(); setNewStreet(query.trim()); } }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    disabled={locating}
+                    title={t("detectLocation")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200 cursor-pointer disabled:opacity-50"
+                  >
+                    {locating
+                      ? <Loader2 className="size-3.5 animate-spin" />
+                      : <Crosshair className="size-3.5" />}
+                  </button>
+                </div>
+                {locationError && <p className="text-xs text-destructive">{locationError}</p>}
+                {predictions.length > 0 && (
+                  <div className="rounded-xl border border-border overflow-hidden">
+                    {selectingPlace ? (
+                      <div className="flex items-center justify-center py-3">
+                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : predictions.map((p, i) => (
+                      <button key={p.place_id} onClick={() => handleSelectPrediction(p)}
+                        className={`w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors duration-200 cursor-pointer text-left ${i < predictions.length - 1 ? "border-b border-border" : ""}`}>
+                        <MapPin className="size-3.5 shrink-0 mt-0.5 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{p.structured_formatting.main_text}</p>
+                          <p className="text-xs text-muted-foreground truncate">{p.structured_formatting.secondary_text}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Section 1: Address details */}
             <SectionHeader
