@@ -25,7 +25,7 @@ import { BaseLayoutProps } from "@/types/page-props";
 const roboto = Roboto({
   variable: "--font-roboto",
   subsets: ["latin", "greek"],
-  weight: ["400", "500", "700"],
+  weight: ["300", "400", "500", "700", "900"],
   display: "swap",
 });
 

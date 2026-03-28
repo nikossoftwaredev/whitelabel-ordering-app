@@ -172,11 +172,10 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-header"
       className={cn(
-        "flex flex-col gap-1 text-center sm:text-left shrink-0",
+        "flex flex-col gap-1 text-center shrink-0",
         "min-h-14 justify-center",
-        // Right clears X button; left is normal unless stacked (back arrow)
-        "pt-5 pb-4 pl-6 pr-14",
-        "group-data-stacked:pl-14",
+        // Symmetric padding — both sides clear nav buttons so title stays truly centered
+        "pt-5 pb-4 px-14",
         "shadow-[0_1px_0_0_hsl(var(--border))]",
         className,
       )}
