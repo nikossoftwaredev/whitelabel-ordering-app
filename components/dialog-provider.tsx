@@ -114,7 +114,7 @@ export const DialogProvider = () => {
       }}
     >
       <DialogContent
-        className={isCompact ? undefined : "p-0"}
+        className={isCompact ? undefined : currentDialog === DIALOG_KEYS.AUTH ? "p-0 sm:h-auto" : "p-0"}
         variant={isCompact ? "compact" : "responsive"}
         size={currentDialog === DIALOG_KEYS.PRODUCT_DETAIL ? "sm" : "md"}
         showCloseButton={!isCompact}
