@@ -1,6 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
+import { type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,12 @@ interface CheckoutSubmitButtonProps {
   orderTotal: number;
 }
 
+const legalLink = (chunks: ReactNode) => (
+  <a href="#" className="font-semibold text-foreground underline-offset-2 hover:underline">
+    {chunks}
+  </a>
+);
+
 export function CheckoutSubmitButton({ orderTotal }: CheckoutSubmitButtonProps) {
   const t = useTranslations("Checkout");
   const formatPrice = useFormatPrice();
@@ -27,7 +34,6 @@ export function CheckoutSubmitButton({ orderTotal }: CheckoutSubmitButtonProps) 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t border-border">
       <div className="max-w-2xl mx-auto px-4 pt-3 pb-4 space-y-3">
-        {/* Legal band */}
         <div className="flex items-start gap-2">
           <Popover>
             <PopoverTrigger asChild>
@@ -46,28 +52,10 @@ export function CheckoutSubmitButton({ orderTotal }: CheckoutSubmitButtonProps) 
           </Popover>
 
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            {t.rich("legalText", {
-              termsLink: (chunks) => (
-                <a
-                  href="#"
-                  className="font-semibold text-foreground underline-offset-2 hover:underline"
-                >
-                  {chunks}
-                </a>
-              ),
-              privacyLink: (chunks) => (
-                <a
-                  href="#"
-                  className="font-semibold text-foreground underline-offset-2 hover:underline"
-                >
-                  {chunks}
-                </a>
-              ),
-            })}
+            {t.rich("legalText", { termsLink: legalLink, privacyLink: legalLink })}
           </p>
         </div>
 
-        {/* Submit button */}
         <Button
           variant="brand"
           type="submit"

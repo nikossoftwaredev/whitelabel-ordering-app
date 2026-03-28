@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFormatPrice } from "@/hooks/use-format-price";
+import { useOrderTotal } from "@/hooks/use-order-total";
 import { calculateBestGroupDiscount } from "@/lib/groups/discount";
 import { Link, useRouter } from "@/lib/i18n/navigation";
 import { useAddressStore } from "@/lib/stores/address-store";
@@ -333,12 +334,7 @@ export const CheckoutForm = () => {
 
   const isBlocked = !session || (session && !checkout.profileChecked);
   const isNotLoggedIn = !session;
-  const tipAmount = checkout.computeTip();
-  const promoDiscount = checkout.appliedPromo?.discount ?? 0;
-  const couponDiscount = checkout.selectedCoupons.reduce((sum, c) => sum + c.discount, 0);
-  const groupDiscountAmount = checkout.groupDiscount?.discount ?? 0;
-  const totalDiscount = promoDiscount + couponDiscount + groupDiscountAmount;
-  const orderTotal = Math.max(0, subtotal - totalDiscount) + tipAmount;
+  const { orderTotal } = useOrderTotal();
 
   return (
     <div

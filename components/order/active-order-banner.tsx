@@ -201,7 +201,7 @@ export function ActiveOrderBanner() {
           e.stopPropagation();
           openDialog(DIALOG_KEYS.CHAT, { orderId: order.id, orderNumber: order.orderNumber });
         }}
-        className="shrink-0 size-8 rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 flex items-center justify-center transition-colors duration-300"
+        className="shrink-0 size-8 rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 flex items-center justify-center transition-colors duration-300 cursor-pointer"
         aria-label="Chat with store"
       >
         <MessageCircle className="size-4 text-foreground" />
@@ -215,7 +215,7 @@ export function ActiveOrderBanner() {
           setVisible(false);
           setTimeout(() => setOrder(null), 300);
         }}
-        className="shrink-0 size-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200"
+        className="shrink-0 size-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200 cursor-pointer"
       >
         <X className="size-3.5" />
       </button>

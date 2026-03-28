@@ -10,6 +10,7 @@ export interface TenantSummary {
   name: string;
   slug: string;
   logo: string | null;
+  primaryColor: string | null;
   domain: string | null;
   role: string;
 }
@@ -39,7 +40,10 @@ export const TenantSwitcherItem = ({
       className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors duration-300 cursor-pointer text-left"
     >
       {/* Logo or initial fallback */}
-      <div className="flex size-7 shrink-0 items-center justify-center rounded-md overflow-hidden bg-muted">
+      <div
+        className="flex size-7 shrink-0 items-center justify-center rounded-md overflow-hidden"
+        style={{ backgroundColor: tenant.primaryColor ?? "hsl(var(--primary))" }}
+      >
         {tenant.logo ? (
           <img
             src={tenant.logo}
@@ -47,9 +51,7 @@ export const TenantSwitcherItem = ({
             className="size-full object-contain p-0.5"
           />
         ) : (
-          <span
-            className="text-xs font-bold text-white flex items-center justify-center size-full bg-primary"
-          >
+          <span className="text-xs font-bold text-white">
             {tenant.name.charAt(0).toUpperCase()}
           </span>
         )}

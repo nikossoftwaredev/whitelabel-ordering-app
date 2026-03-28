@@ -35,7 +35,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMenuQuery } from "@/hooks/use-menu-query";
 import { useFormatPrice } from "@/hooks/use-format-price";
-import { cn } from "@/lib/general/utils";
 import { useRouter } from "@/lib/i18n/navigation";
 import { applyFreeCount } from "@/lib/orders/free-count";
 import { hasActiveOffer } from "@/lib/orders/offers";
@@ -92,22 +91,17 @@ function ProductCard({
 
   return (
     <div
-      className={cn(
-        "relative flex gap-3 py-3 cursor-pointer group active:scale-[0.99] transition-all duration-200",
-        isInCart && "pl-4",
-      )}
+      className="relative flex gap-3 py-3 pl-4 cursor-pointer group active:scale-[0.99] transition-all duration-200"
       onClick={onDetail}
     >
-      {/* Left accent bar */}
-      {isInCart && (
-        <div
-          className="absolute left-0 top-4 bottom-4 w-0.75 rounded-full"
-          style={{
-            backgroundColor: "var(--brand-primary, hsl(var(--primary)))",
-            boxShadow: "0 0 8px 1px var(--brand-primary, hsl(var(--primary)))",
-          }}
-        />
-      )}
+      {/* Left accent bar — always present to prevent layout shift, visible only when in cart */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-0.75 rounded-full transition-opacity duration-300"
+        style={{
+          backgroundColor: "var(--brand-primary, hsl(var(--primary)))",
+          opacity: isInCart ? 1 : 0,
+        }}
+      />
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <h3 className="font-semibold text-[15px] leading-tight line-clamp-2">
           {product.name}

@@ -19,7 +19,7 @@ export async function GET() {
           name: true,
           slug: true,
           domain: true,
-          config: { select: { logo: true } },
+          config: { select: { logo: true, primaryColor: true } },
         },
       },
     },
@@ -31,6 +31,7 @@ export async function GET() {
     name: r.tenant.name,
     slug: r.tenant.slug,
     logo: r.tenant.config?.logo ?? null,
+    primaryColor: r.tenant.config?.primaryColor ?? null,
     domain: r.tenant.domain ?? null,
     role: r.role,
   }));

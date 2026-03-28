@@ -166,12 +166,25 @@
 }
 
 /* ── Prevent layout shift when Radix dialogs open ──
-   scrollbar-gutter: stable always reserves space for the scrollbar gutter,
-   so Radix's scroll-lock compensation calculates 0px — no layout shift,
-   no !important fights needed. */
-html {
+   react-remove-scroll (used by Radix) locks body scroll and adds a
+   compensating margin-right equal to the scrollbar width. We fight that
+   by forcing the scrollbar to always be visible on html — so the measured
+   width is 0 and no compensation is added. The !important is required
+   because react-remove-scroll adds html.with-scroll-bars-hidden which
+   would otherwise win. scrollbar-gutter: stable does NOT fix this because
+   it applies to html while the compensation is set on body. */
+html,
+html.with-scroll-bars-hidden {
   scroll-behavior: smooth;
-  scrollbar-gutter: stable;
+  overflow-y: scroll !important;
+  padding-right: 0 !important;
+}
+
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
 }
 
 /* Google Places autocomplete dropdown — must sit above Radix dialogs */

@@ -6,6 +6,7 @@ import {
   LogOut,
   Moon,
   Settings,
+  ShieldCheck,
   ShoppingBag,
   Sun,
   User,
@@ -96,6 +97,18 @@ export const UserAvatarMenu = ({
       .toUpperCase()
       .slice(0, 2) || "U";
 
+  const avatarEl = (
+    <Avatar className="size-8">
+      <AvatarImage src={user?.image || ""} alt={user?.name || "User"} />
+      <AvatarFallback
+        className="text-xs font-semibold"
+        style={{ backgroundColor: "var(--brand-primary, hsl(var(--primary)))", color: "white" }}
+      >
+        {initials}
+      </AvatarFallback>
+    </Avatar>
+  );
+
   if (!user) {
     return (
       <Button
@@ -109,26 +122,11 @@ export const UserAvatarMenu = ({
     );
   }
 
-  // Render a static avatar button during SSR to avoid Radix useId() hydration mismatch
+  // Static button during SSR — avoids Radix useId() hydration mismatch
   if (!mounted) {
     return (
-      <Button
-        variant="ghost"
-        className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5"
-      >
-        <Avatar className="size-8">
-          <AvatarImage src={user.image || ""} alt={user.name || "User"} />
-          <AvatarFallback
-            className="text-xs font-semibold"
-            style={{
-              backgroundColor:
-                "var(--brand-primary, hsl(var(--primary)))",
-              color: "white",
-            }}
-          >
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+      <Button variant="ghost" className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5">
+        {avatarEl}
       </Button>
     );
   }
@@ -137,23 +135,8 @@ export const UserAvatarMenu = ({
     <>
       <DropdownMenu onOpenChange={(open) => { if (open) fetchTenants(); }}>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5 cursor-pointer"
-          >
-            <Avatar className="size-8">
-              <AvatarImage src={user.image || ""} alt={user.name || "User"} />
-              <AvatarFallback
-                className="text-xs font-semibold"
-                style={{
-                  backgroundColor:
-                    "var(--brand-primary, hsl(var(--primary)))",
-                  color: "white",
-                }}
-              >
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+          <Button variant="ghost" className="flex items-center gap-1 rounded-full hover:bg-muted/50 h-auto p-0.5 cursor-pointer">
+            {avatarEl}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
@@ -179,28 +162,18 @@ export const UserAvatarMenu = ({
                   My Orders
                 </Link>
               </DropdownMenuItem>
-            </>
-          )}
-
-          {showCustomerLinks && (tenantsLoading || tenants === null || tenants.length > 0) && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-2 py-1">
-                My Stores
-              </DropdownMenuLabel>
-              {tenantsLoading || tenants === null ? (
-                <>
-                  <div className="mx-2 my-1 h-8 rounded-md bg-muted animate-pulse" />
-                  <div className="mx-2 my-1 h-8 rounded-md bg-muted animate-pulse" />
-                </>
-              ) : (
-                tenants.map((tenant) => (
-                  <TenantSwitcherItem key={tenant.id} tenant={tenant} />
-                ))
+              {tenants !== null && tenants.some((t) => t.role === "SUPER_ADMIN") && (
+                <DropdownMenuItem asChild className="cursor-pointer text-violet-600 dark:text-violet-400 focus:text-violet-600 dark:focus:text-violet-400">
+                  <Link href="/admin/super">
+                    <ShieldCheck className="mr-2 size-4" />
+                    Super Admin
+                  </Link>
+                </DropdownMenuItem>
               )}
             </>
           )}
 
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setSettingsOpen(true)}
             className="cursor-pointer"
@@ -224,6 +197,18 @@ export const UserAvatarMenu = ({
               <Download className="mr-2 size-4" />
               Download App
             </DropdownMenuItem>
+          )}
+
+          {showCustomerLinks && tenants !== null && tenants.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-2 py-1">
+                My Stores
+              </DropdownMenuLabel>
+              {tenants.map((tenant) => (
+                <TenantSwitcherItem key={tenant.id} tenant={tenant} />
+              ))}
+            </>
           )}
 
           <DropdownMenuSeparator />
