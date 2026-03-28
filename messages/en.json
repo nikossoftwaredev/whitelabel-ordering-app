@@ -467,8 +467,12 @@
     "storeLongitude": "Store Longitude"
   },
   "Chat": {
+    "title": "Chat",
+    "empty": "No messages yet. Send a message to the store.",
+    "closed": "This chat has been closed",
+    "placeholder": "Type a message…",
     "history": "My Chats",
-    "closed": "Closed",
-    "title": "Chat"
+    "openChat": "Chat with store",
+    "closeChat": "Close chat"
   }
 }
