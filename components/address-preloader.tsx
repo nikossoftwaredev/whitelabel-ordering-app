@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 import { useTenant } from "@/components/tenant-provider";
 import { useAddressStore } from "@/lib/stores/address-store";
+import { useCartStore } from "@/lib/stores/cart-store";
 
 export function AddressPreloader() {
   const { data: session, status } = useSession();
@@ -13,15 +14,17 @@ export function AddressPreloader() {
   const setSelectedAddress = useAddressStore((s) => s.setSelectedAddress);
   const setLoaded = useAddressStore((s) => s.setLoaded);
   const isLoaded = useAddressStore((s) => s.isLoaded);
+  const clearCart = useCartStore((s) => s.clearCart);
 
-  // Clear address data when logged out
+  // Clear session-specific data when logged out
   useEffect(() => {
     if (status === "unauthenticated") {
       setAddresses([]);
       setSelectedAddress(null);
       setLoaded(false);
+      clearCart();
     }
-  }, [status, setAddresses, setSelectedAddress, setLoaded]);
+  }, [status, setAddresses, setSelectedAddress, setLoaded, clearCart]);
 
   // Load addresses when logged in
   useEffect(() => {
