@@ -2,6 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import {
+  BedDouble,
   Briefcase,
   Building2,
   Check,
@@ -32,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { getAddressLabelIcon } from "@/lib/address/label-icon";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -62,6 +64,41 @@ const LABEL_TRANSLATION_KEYS: Record<string, string> = {
   Other: "other",
 };
 
+
+const HOW_TO_GET_IN = [
+  { value: "doorbell", label: "Doorbell / Intercom" },
+  { value: "door_code", label: "Door code" },
+  { value: "door_open", label: "Door is open" },
+  { value: "other", label: "Other (tell us how)" },
+];
+
+const WHERE_TO_LEAVE = [
+  { value: "to_office", label: "To the office" },
+  { value: "to_reception", label: "To reception" },
+];
+
+function RadioOptions({ options, value, onChange }: {
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border overflow-hidden">
+      <RadioGroup value={value} onValueChange={onChange}>
+        {options.map((opt, i) => (
+          <label
+            key={opt.value}
+            htmlFor={`spot-${opt.value}`}
+            className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/40 transition-colors duration-300 ${i < options.length - 1 ? "border-b border-border" : ""}`}
+          >
+            <RadioGroupItem id={`spot-${opt.value}`} value={opt.value} />
+            <span className="text-[15px] text-foreground">{opt.label}</span>
+          </label>
+        ))}
+      </RadioGroup>
+    </div>
+  );
+}
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
@@ -100,7 +137,10 @@ export function AddressManagerContent() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationType, setLocationType] = useState<string>("house");
   const [entrance, setEntrance] = useState<string>("");
+  const [floor, setFloor] = useState<string>("");
   const [apartmentNumber, setApartmentNumber] = useState<string>("");
+  const [buildingName, setBuildingName] = useState<string>("");
+  const [deliverySpot, setDeliverySpot] = useState<string>("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
   // Search state
@@ -139,7 +179,10 @@ export function AddressManagerContent() {
     setPredictions([]);
     setLocationType("house");
     setEntrance("");
+    setFloor("");
     setApartmentNumber("");
+    setBuildingName("");
+    setDeliverySpot("");
     setDeliveryInstructions("");
   }
 
@@ -151,7 +194,10 @@ export function AddressManagerContent() {
     setNewLng(addr.lng);
     setLocationType(addr.locationType ?? "house");
     setEntrance(addr.entrance ?? "");
+    setFloor(addr.floor ?? "");
     setApartmentNumber(addr.apartmentNumber ?? "");
+    setBuildingName(addr.companyName ?? "");
+    setDeliverySpot(addr.accessDetails ?? "");
     setDeliveryInstructions(addr.deliveryInstructions ?? "");
   }
 
@@ -282,11 +328,11 @@ export function AddressManagerContent() {
     lat: newLat,
     lng: newLng,
     locationType: locationType || null,
-    floor: null,
+    floor: floor.trim() || null,
     apartmentNumber: apartmentNumber.trim() || null,
-    companyName: null,
+    companyName: buildingName.trim() || null,
     entrance: entrance || null,
-    accessDetails: null,
+    accessDetails: deliverySpot || null,
     deliveryInstructions: deliveryInstructions.trim() || null,
   });
 
@@ -449,7 +495,7 @@ export function AddressManagerContent() {
             {/* Location type */}
             <div className="space-y-1.5">
               <label className="text-[13px] font-medium text-muted-foreground">{t("locationType")}</label>
-              <Select value={locationType} onValueChange={setLocationType}>
+              <Select value={locationType} onValueChange={(v) => { setLocationType(v); setDeliverySpot(""); }}>
                 <SelectTrigger className="h-12 rounded-xl text-[15px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -463,6 +509,9 @@ export function AddressManagerContent() {
                   <SelectItem value="office">
                     <div className="flex items-center gap-2"><Briefcase className="size-4" />{t("office")}</div>
                   </SelectItem>
+                  <SelectItem value="hotel">
+                    <div className="flex items-center gap-2"><BedDouble className="size-4" />Hotel</div>
+                  </SelectItem>
                   <SelectItem value="other">
                     <div className="flex items-center gap-2"><MapPin className="size-4" />{t("otherType")}</div>
                   </SelectItem>
@@ -470,27 +519,70 @@ export function AddressManagerContent() {
               </Select>
             </div>
 
-            {/* Entrance / Staircase */}
-            <div className="space-y-1.5">
-              <label className="text-[13px] font-medium text-muted-foreground">Entrance / Staircase</label>
-              <Input value={entrance} onChange={(e) => setEntrance(e.target.value)}
-                placeholder="e.g. A or 3" className="h-12 rounded-xl text-[15px]" />
-            </div>
+            {/* ── HOUSE ── */}
+            {locationType === "house" && <>
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium text-muted-foreground">Entrance / Staircase</label>
+                <Input value={entrance} onChange={(e) => setEntrance(e.target.value)}
+                  placeholder="e.g. A or 3" className="h-12 rounded-xl text-[15px]" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium text-muted-foreground">Name / Number on door</label>
+                <Input value={apartmentNumber} onChange={(e) => setApartmentNumber(e.target.value)}
+                  placeholder="e.g. 5 or your last name" className="h-12 rounded-xl text-[15px]" />
+              </div>
+              <SectionHeader title="How do we get in?" subtitle="Help the courier find you faster." />
+            </>}
 
-            {/* Name / Number on door */}
-            <div className="space-y-1.5">
-              <label className="text-[13px] font-medium text-muted-foreground">Name / Number on door</label>
-              <Input value={apartmentNumber} onChange={(e) => setApartmentNumber(e.target.value)}
-                placeholder="e.g. 5 or your last name" className="h-12 rounded-xl text-[15px]" />
-            </div>
+            {/* ── APARTMENT ── */}
+            {locationType === "apartment" && <>
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium text-muted-foreground">Entrance / Staircase</label>
+                <Input value={entrance} onChange={(e) => setEntrance(e.target.value)}
+                  placeholder="e.g. A or 3" className="h-12 rounded-xl text-[15px]" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium text-muted-foreground">Floor</label>
+                  <Input value={floor} onChange={(e) => setFloor(e.target.value)}
+                    placeholder="e.g. 5" className="h-12 rounded-xl text-[15px]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium text-muted-foreground">Apartment</label>
+                  <Input value={apartmentNumber} onChange={(e) => setApartmentNumber(e.target.value)}
+                    placeholder="e.g. 45" className="h-12 rounded-xl text-[15px]" />
+                </div>
+              </div>
+              <SectionHeader title="How do we get in?" subtitle="Help the courier find you faster." />
+              <RadioOptions options={HOW_TO_GET_IN} value={deliverySpot} onChange={setDeliverySpot} />
+            </>}
 
-            {/* How do we get in */}
-            <SectionHeader
-              title="How do we get in?"
-              subtitle="Help the courier find you faster."
-            />
+            {/* ── OFFICE ── */}
+            {locationType === "office" && <>
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium text-muted-foreground">Building name</label>
+                <Input value={buildingName} onChange={(e) => setBuildingName(e.target.value)}
+                  placeholder="e.g. Yuho Tower" className="h-12 rounded-xl text-[15px]" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium text-muted-foreground">Entrance / Staircase</label>
+                <Input value={entrance} onChange={(e) => setEntrance(e.target.value)}
+                  placeholder="e.g. A or 3" className="h-12 rounded-xl text-[15px]" />
+              </div>
+              <SectionHeader title="Where should we leave the delivery?" subtitle="Help the courier find you faster." />
+              <RadioOptions options={WHERE_TO_LEAVE} value={deliverySpot} onChange={setDeliverySpot} />
+            </>}
 
-            {/* Map */}
+            {/* ── HOTEL / OTHER ── */}
+            {(locationType === "hotel" || locationType === "other") && (
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium text-muted-foreground">Address details</label>
+                <Input value={apartmentNumber} onChange={(e) => setApartmentNumber(e.target.value)}
+                  placeholder="e.g. Central park, Room 1301" className="h-12 rounded-xl text-[15px]" />
+              </div>
+            )}
+
+            {/* Map — shown for all types when coords available */}
             {newLat != null && newLng != null && (
               <div className="space-y-1">
                 <AddressMap lat={newLat} lng={newLng} onPositionChange={handlePinMove} />
