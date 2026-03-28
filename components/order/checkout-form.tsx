@@ -340,9 +340,10 @@ export const CheckoutForm = () => {
     );
   }
 
+  const { orderTotal } = useOrderTotal();
+
   const isBlocked = !session || (session && !checkout.profileChecked);
   const isNotLoggedIn = !session;
-  const { orderTotal } = useOrderTotal();
 
   return (
     <div
