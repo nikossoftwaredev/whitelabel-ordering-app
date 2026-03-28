@@ -41,6 +41,9 @@ const PaymentModalContent = lazy(() =>
 const ReorderContent = lazy(() =>
   import("@/components/order/reorder-dialog").then((m) => ({ default: m.ReorderContent }))
 );
+const ChatDialogContent = lazy(() =>
+  import("@/components/order/chat-dialog").then((m) => ({ default: m.ChatDialogContent }))
+);
 
 export const DIALOG_KEYS = {
   CONFIRM: "confirm",
@@ -52,6 +55,7 @@ export const DIALOG_KEYS = {
   COUPON_MODAL: "coupon-modal",
   PAYMENT_MODAL: "payment-modal",
   REORDER: "reorder",
+  CHAT: "chat",
 } as const;
 
 /** Dialogs that use the compact variant (auto-height, no close button) */
@@ -127,6 +131,7 @@ export const DialogProvider = () => {
           {currentDialog === DIALOG_KEYS.COUPON_MODAL && <CouponModalContent />}
           {currentDialog === DIALOG_KEYS.PAYMENT_MODAL && <PaymentModalContent />}
           {currentDialog === DIALOG_KEYS.REORDER && <ReorderContent />}
+          {currentDialog === DIALOG_KEYS.CHAT && <ChatDialogContent />}
         </Suspense>
       </DialogContent>
     </Dialog>
