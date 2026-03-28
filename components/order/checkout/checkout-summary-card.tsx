@@ -58,8 +58,8 @@ export function CheckoutSummaryCard() {
 
       {/* Bottom sheet breakdown */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto pb-safe">
-          <SheetHeader className="pb-4">
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto pb-10">
+          <SheetHeader>
             <SheetTitle>{t("orderAnalysis")}</SheetTitle>
           </SheetHeader>
 

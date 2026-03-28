@@ -225,3 +225,10 @@ html body[data-scroll-locked] {
     background: #fff;
   }
 }
+
+/* Mobile-only: dialog height tracks visual viewport so keyboard shrinks it correctly */
+@media (max-width: 639px) {
+  [data-slot='dialog-content'] {
+    height: var(--vvh, 100dvh);
+  }
+}

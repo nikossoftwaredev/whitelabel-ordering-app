@@ -237,8 +237,18 @@ export function AddressManagerContent() {
     setPredictions([]);
   };
 
-  const handleUseCurrentLocation = useCallback(() => {
+  const handleUseCurrentLocation = useCallback(async () => {
     if (!navigator.geolocation) { setLocationError(t("geolocationNotSupported")); return; }
+
+    // Check permission state first so we never silently fail
+    if (navigator.permissions) {
+      const { state } = await navigator.permissions.query({ name: "geolocation" });
+      if (state === "denied") {
+        setLocationError(t("locationDeniedSettings"));
+        return;
+      }
+    }
+
     setLocating(true);
     setLocationError(null);
     navigator.geolocation.getCurrentPosition(
@@ -269,7 +279,7 @@ export function AddressManagerContent() {
       (error) => {
         setLocating(false);
         switch (error.code) {
-          case error.PERMISSION_DENIED: setLocationError(t("locationDenied")); break;
+          case error.PERMISSION_DENIED: setLocationError(t("locationDeniedSettings")); break;
           case error.POSITION_UNAVAILABLE: setLocationError(t("locationUnavailable")); break;
           default: setLocationError(t("locationError"));
         }

@@ -119,8 +119,8 @@ function DialogContent({
           "group fixed z-50 outline-none duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in",
 
           variant === "responsive" && [
-            // Mobile: full-screen sheet
-            "inset-0 flex flex-col bg-background",
+            // Mobile: full-screen sheet, height tracks visual viewport so keyboard shrinks it
+            "top-0 inset-x-0 flex flex-col bg-background",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             // Desktop: centered card
             "sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2",
