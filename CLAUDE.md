@@ -78,6 +78,10 @@ npx shadcn@latest add <component>  # Add new shadcn/ui components
 - Use `SocialIcon` (`components/social-icon.tsx`) for social media link icons with platform-specific colors
 - **Business constants** — All hardcoded business data (phone, email, URLs, social links) lives in `lib/general/constants.ts`. Never scatter magic strings across components.
 
+#### Loading States
+
+- **Every route group has a `loading.tsx`** — Use the reusable `LoadingScreen` component (`components/loading-screen.tsx`) which matches the app theme. When adding a new route group or page directory, always create a `loading.tsx` that imports and renders `<LoadingScreen />`.
+
 #### Landing Page Patterns
 
 - **Server/client split** — Sections needing i18n + interactivity use a server wrapper (`getTranslations`) rendering a client child (`useTranslations` + `useState`). Example: `gallery-section.tsx` → `gallery-grid.tsx`.
