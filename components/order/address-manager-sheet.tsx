@@ -58,11 +58,6 @@ type ViewState = "list" | "form";
 const LABEL_OPTIONS = ["Home", "Work", "Other"] as const;
 type LabelOption = (typeof LABEL_OPTIONS)[number];
 
-const LABEL_TRANSLATION_KEYS: Record<string, string> = {
-  Home: "home",
-  Work: "work",
-  Other: "other",
-};
 
 
 const HOW_TO_GET_IN = [
@@ -158,7 +153,7 @@ export function AddressManagerContent() {
   // Search state
   const [query, setQuery] = useState("");
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
-  const [searching, setSearching] = useState(false);
+
   const [selectingPlace, setSelectingPlace] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -214,12 +209,12 @@ export function AddressManagerContent() {
   // Debounced place search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (query.length < 3) { setPredictions([]); setSearching(false); return; }
-    setSearching(true);
+    if (query.length < 3) { setPredictions([]); return; }
+    
     debounceRef.current = setTimeout(async () => {
       const results = await searchPlaces(query, "address");
       setPredictions(results);
-      setSearching(false);
+      
     }, 350);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query]);
@@ -374,6 +369,7 @@ export function AddressManagerContent() {
   };
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
+  const saveLabel = editingAddress ? "Save changes" : t("saveAddress");
 
   return (
     <div className="flex flex-col overflow-y-auto flex-1">
@@ -579,7 +575,7 @@ export function AddressManagerContent() {
             <Button variant="brand" onClick={handleSave} disabled={!newStreet.trim()}
               loading={isSaving}
               className="w-full h-12 rounded-xl font-semibold text-[15px]">
-              {isSaving ? t("saving") : editingAddress ? "Save changes" : t("saveAddress")}
+              {isSaving ? t("saving") : saveLabel}
             </Button>
 
             {/* Delete button — only when editing */}

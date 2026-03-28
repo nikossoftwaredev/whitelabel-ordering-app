@@ -104,6 +104,7 @@ export const DialogProvider = () => {
   }, [closeDialog]);
 
   const isCompact = COMPACT_DIALOGS.has(currentDialog!);
+  const contentClassName = currentDialog === DIALOG_KEYS.AUTH ? "p-0 sm:h-auto" : "p-0";
 
   if (!currentDialog) return null;
 
@@ -115,7 +116,7 @@ export const DialogProvider = () => {
       }}
     >
       <DialogContent
-        className={isCompact ? undefined : currentDialog === DIALOG_KEYS.AUTH ? "p-0 sm:h-auto" : "p-0"}
+        className={isCompact ? undefined : contentClassName}
         variant={isCompact ? "compact" : "responsive"}
         size={currentDialog === DIALOG_KEYS.PRODUCT_DETAIL ? "sm" : "md"}
         showCloseButton={!isCompact}

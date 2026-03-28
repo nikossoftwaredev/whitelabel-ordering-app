@@ -140,11 +140,13 @@ export const AdminSidebar = () => {
                 <p className="px-2 py-1 text-xs font-medium text-muted-foreground mb-1">
                   My Stores
                 </p>
-                {isLoading ? (
+                {isLoading && (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">Loading…</div>
-                ) : tenants.length === 0 ? (
+                )}
+                {!isLoading && tenants.length === 0 && (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">No stores found.</div>
-                ) : (
+                )}
+                {!isLoading && tenants.length > 0 && (
                   tenants.map((t) => (
                     <TenantSwitcherItem key={t.id} tenant={t} isActive={t.id === tenant.id} />
                   ))
