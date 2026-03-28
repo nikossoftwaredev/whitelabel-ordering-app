@@ -52,6 +52,24 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "database",
   },
+  // In dev, share cookies across all *.lvh.me subdomains so the OAuth state
+  // cookie set on figata-cafe.lvh.me is readable on the lvh.me callback URL.
+  ...(process.env.NODE_ENV === "development" && {
+    cookies: {
+      state: {
+        name: "next-auth.state",
+        options: { httpOnly: true, sameSite: "lax" as const, path: "/", domain: ".lvh.me", secure: false, maxAge: 900 },
+      },
+      pkceCodeVerifier: {
+        name: "next-auth.pkce.code_verifier",
+        options: { httpOnly: true, sameSite: "lax" as const, path: "/", domain: ".lvh.me", secure: false, maxAge: 900 },
+      },
+      sessionToken: {
+        name: "next-auth.session-token",
+        options: { httpOnly: true, sameSite: "lax" as const, path: "/", domain: ".lvh.me", secure: false },
+      },
+    },
+  }),
   callbacks: {
     async session({ session, user }) {
       if (session.user) {
