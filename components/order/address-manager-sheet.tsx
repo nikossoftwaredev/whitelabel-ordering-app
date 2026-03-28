@@ -496,7 +496,7 @@ export function AddressManagerContent() {
             <div className="space-y-1.5">
               <label className="text-[13px] font-medium text-muted-foreground">{t("locationType")}</label>
               <Select value={locationType} onValueChange={(v) => { setLocationType(v); setDeliverySpot(""); }}>
-                <SelectTrigger className="h-12 rounded-xl text-[15px]">
+                <SelectTrigger className="w-full h-12 rounded-xl text-[15px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
