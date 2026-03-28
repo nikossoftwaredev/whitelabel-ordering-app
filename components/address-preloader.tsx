@@ -24,7 +24,7 @@ export function AddressPreloader() {
       setLoaded(false);
       clearCart();
     }
-  }, [status, setAddresses, setSelectedAddress, setLoaded, clearCart]);
+  }, [status]);
 
   // Load addresses when logged in
   useEffect(() => {

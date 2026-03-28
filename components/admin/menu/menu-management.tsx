@@ -9,7 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { AddButton } from "@/components/add-button";
@@ -193,9 +193,11 @@ export const MenuManagement = ({
   });
 
   // Auto-select first category
-  if (categories.length > 0 && !selectedCategoryId) {
-    setSelectedCategoryId(categories[0].id);
-  }
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategoryId) {
+      setSelectedCategoryId(categories[0].id);
+    }
+  }, [categories, selectedCategoryId]);
 
   return (
     <div className="space-y-6">

@@ -50,16 +50,6 @@ export const CustomerHeader = () => {
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-
-    const onScroll = () => {
-      setScrolled(window.scrollY > 60);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   let addressDisplay = t("addAddress");
   if (selectedAddress) {
     addressDisplay = selectedAddress.street.length > 22
@@ -77,6 +67,16 @@ export const CustomerHeader = () => {
   const subtleTextClass = solid ? "text-muted-foreground" : "text-white/60";
   const hoverBgClass = solid ? "hover:bg-muted" : "hover:bg-white/10";
   const iconDimClass = solid ? "text-muted-foreground" : "text-white/50";
+
+  useEffect(() => {
+    setMounted(true);
+
+    const onScroll = () => {
+      setScrolled(window.scrollY > 60);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <>
