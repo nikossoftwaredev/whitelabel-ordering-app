@@ -57,17 +57,17 @@
 
 ---
 
-### 13. Live Chat Support — NOT STARTED
+### 13. Live Chat Support — DONE
 
-- [ ] Schema: `ChatConversation` + `ChatMessage` models
-- [ ] Customer UI: Chat button on order page, opens chat sheet/dialog
-- [ ] Customer: Send messages, see store replies in real-time
-- [ ] Admin UI: Chat inbox showing all active conversations
-- [ ] Admin: Multi-chat support (switch between conversations)
-- [ ] Admin: Mark conversations as resolved/closed
-- [ ] Real-time: SSE or polling for new messages (both sides)
-- [ ] Notifications: Browser notification sound + unread count badge
-- [ ] i18n: Translate chat labels (EN + EL)
+- [x] Schema: `ChatConversation` + `ChatMessage` models
+- [x] Customer UI: Chat button on order page, opens chat sheet/dialog
+- [x] Customer: Send messages, see store replies in real-time
+- [x] Admin UI: Chat inbox showing all active conversations
+- [x] Admin: Multi-chat support (switch between conversations)
+- [x] Admin: Mark conversations as resolved/closed
+- [x] Real-time: SSE or polling for new messages (both sides)
+- [x] Notifications: Browser notification sound + unread count badge
+- [x] i18n: Translate chat labels (EN + EL)
 
 ---
 
@@ -240,7 +240,7 @@
 | #      | Feature                                   | Complexity | Status          |
 | ------ | ----------------------------------------- | ---------- | --------------- |
 | 19     | Reorder Card → Cart Selector Refactor     | Medium     | **Done**        |
-| **13** | **Live Chat Support**                     | **Large**  | **Not started** |
+| **13** | **Live Chat Support**                     | **Large**  | **Done**        |
 | 5      | Address Overhaul (map + details)          | Large      | **Done**        |
 | 11     | Push Notifications                        | Medium     | **Done**        |
 | 14     | Extract Reusable Components               | Small      | **Done**        |
