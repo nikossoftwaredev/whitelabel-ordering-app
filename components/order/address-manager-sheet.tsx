@@ -171,7 +171,8 @@ export function AddressManagerContent() {
     } else {
       setNewStreet(prediction.description);
     }
-    setView("form");
+    setQuery("");
+    setPredictions([]);
   };
 
   const handleUseCurrentLocation = useCallback(() => {
@@ -195,12 +196,10 @@ export function AddressManagerContent() {
           setNewCity(data.address?.city || data.address?.town || data.address?.village || "");
           setNewLat(latitude);
           setNewLng(longitude);
-          setView("form");
         } catch {
           setNewStreet(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
           setNewLat(latitude);
           setNewLng(longitude);
-          setView("form");
         } finally {
           setLocating(false);
         }
