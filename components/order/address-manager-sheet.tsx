@@ -21,12 +21,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AddButton } from "@/components/add-button";
-import { PillSelector } from "@/components/pill-selector";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -64,27 +62,6 @@ const LABEL_TRANSLATION_KEYS: Record<string, string> = {
   Other: "other",
 };
 
-const DELIVERY_SPOT_OPTIONS: Record<string, { value: string; label: string }[]> = {
-  house: [
-    { value: "at_door", label: "At the door" },
-    { value: "at_entrance", label: "At the entrance" },
-    { value: "leave_outside", label: "Leave it outside" },
-  ],
-  apartment: [
-    { value: "at_door", label: "At the door" },
-    { value: "at_entrance", label: "At the entrance" },
-    { value: "leave_outside", label: "Leave it outside" },
-  ],
-  office: [
-    { value: "to_office", label: "To the office" },
-    { value: "to_reception", label: "To reception" },
-    { value: "at_entrance", label: "At the entrance" },
-  ],
-  other: [
-    { value: "at_door", label: "At the door" },
-    { value: "at_entrance", label: "At the entrance" },
-  ],
-};
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
@@ -121,10 +98,8 @@ export function AddressManagerContent() {
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationType, setLocationType] = useState<string>("house");
-  const [newFloor, setNewFloor] = useState("");
-  const [buildingName, setBuildingName] = useState("");
   const [entrance, setEntrance] = useState<string>("");
-  const [deliverySpot, setDeliverySpot] = useState<string>("");
+  const [apartmentNumber, setApartmentNumber] = useState<string>("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
   // Search state
@@ -151,10 +126,8 @@ export function AddressManagerContent() {
     setQuery("");
     setPredictions([]);
     setLocationType("house");
-    setNewFloor("");
-    setBuildingName("");
     setEntrance("");
-    setDeliverySpot("");
+    setApartmentNumber("");
     setDeliveryInstructions("");
   }
 
@@ -165,17 +138,11 @@ export function AddressManagerContent() {
     setNewLat(addr.lat);
     setNewLng(addr.lng);
     setLocationType(addr.locationType ?? "house");
-    setNewFloor(addr.floor ?? "");
-    setBuildingName(addr.companyName ?? "");
     setEntrance(addr.entrance ?? "");
-    setDeliverySpot(addr.accessDetails ?? "");
+    setApartmentNumber(addr.apartmentNumber ?? "");
     setDeliveryInstructions(addr.deliveryInstructions ?? "");
   }
 
-  // Reset delivery spot when location type changes
-  useEffect(() => {
-    setDeliverySpot("");
-  }, [locationType]);
 
   // Debounced place search
   useEffect(() => {
@@ -304,11 +271,11 @@ export function AddressManagerContent() {
     lat: newLat,
     lng: newLng,
     locationType: locationType || null,
-    floor: newFloor.trim() || null,
-    apartmentNumber: null,
-    companyName: buildingName.trim() || null,
+    floor: null,
+    apartmentNumber: apartmentNumber.trim() || null,
+    companyName: null,
     entrance: entrance || null,
-    accessDetails: deliverySpot || null,
+    accessDetails: null,
     deliveryInstructions: deliveryInstructions.trim() || null,
   });
 
@@ -341,7 +308,6 @@ export function AddressManagerContent() {
   };
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
-  const deliveryOptions = DELIVERY_SPOT_OPTIONS[locationType] ?? DELIVERY_SPOT_OPTIONS.house;
 
   return (
     <div className="flex flex-col overflow-y-auto flex-1">
@@ -463,7 +429,7 @@ export function AddressManagerContent() {
               </div>
             )}
 
-            {/* Section 1: Address details */}
+            {/* Address details section */}
             <SectionHeader
               title="Address details"
               subtitle="Add details to help the courier find you easily."
@@ -493,57 +459,25 @@ export function AddressManagerContent() {
               </Select>
             </div>
 
-            {/* Street address */}
+            {/* Entrance / Staircase */}
             <div className="space-y-1.5">
-              <label className="text-[13px] font-medium text-muted-foreground">{t("streetAddress")}</label>
-              <Input value={newStreet} onChange={(e) => setNewStreet(e.target.value)}
-                placeholder={t("streetPlaceholder")} className="h-12 rounded-xl text-[15px]" />
+              <label className="text-[13px] font-medium text-muted-foreground">Entrance / Staircase</label>
+              <Input value={entrance} onChange={(e) => setEntrance(e.target.value)}
+                placeholder="e.g. A or 3" className="h-12 rounded-xl text-[15px]" />
             </div>
 
-            {/* Building name */}
+            {/* Name / Number on door */}
             <div className="space-y-1.5">
-              <label className="text-[13px] font-medium text-muted-foreground">
-                {locationType === "office" ? t("companyName") : "Building name"}
-              </label>
-              <Input value={buildingName} onChange={(e) => setBuildingName(e.target.value)}
-                placeholder={locationType === "office" ? t("companyPlaceholder") : "e.g. Yuho Tower"}
-                className="h-12 rounded-xl text-[15px]" />
+              <label className="text-[13px] font-medium text-muted-foreground">Name / Number on door</label>
+              <Input value={apartmentNumber} onChange={(e) => setApartmentNumber(e.target.value)}
+                placeholder="e.g. 5 or your last name" className="h-12 rounded-xl text-[15px]" />
             </div>
 
-            {/* Floor + Entrance side by side */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground">{t("floor")}</label>
-                <Input value={newFloor} onChange={(e) => setNewFloor(e.target.value)}
-                  placeholder={t("floorPlaceholder")} className="h-12 rounded-xl text-[15px]" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground">Entrance / Staircase</label>
-                <Input value={entrance} onChange={(e) => setEntrance(e.target.value)}
-                  placeholder="e.g. B" className="h-12 rounded-xl text-[15px]" />
-              </div>
-            </div>
-
-            {/* Section 2: Where to leave */}
+            {/* How do we get in */}
             <SectionHeader
-              title="Where should we leave the delivery?"
+              title="How do we get in?"
               subtitle="Help the courier find you faster."
             />
-
-            <div className="rounded-xl border border-border overflow-hidden">
-              <RadioGroup value={deliverySpot} onValueChange={setDeliverySpot}>
-                {deliveryOptions.map((opt, i) => (
-                  <label
-                    key={opt.value}
-                    htmlFor={`spot-${opt.value}`}
-                    className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/40 transition-colors duration-300 ${i < deliveryOptions.length - 1 ? "border-b border-border" : ""}`}
-                  >
-                    <RadioGroupItem id={`spot-${opt.value}`} value={opt.value} />
-                    <span className="text-[15px] text-foreground">{opt.label}</span>
-                  </label>
-                ))}
-              </RadioGroup>
-            </div>
 
             {/* Map */}
             {newLat != null && newLng != null && (
@@ -557,31 +491,13 @@ export function AddressManagerContent() {
             <div className="space-y-1.5">
               <label className="text-[13px] font-medium text-muted-foreground">Other instructions for the courier</label>
               <Textarea value={deliveryInstructions} onChange={(e) => setDeliveryInstructions(e.target.value)}
-                placeholder={t("deliveryInstructionsPlaceholder")} rows={2}
+                placeholder={t("deliveryInstructionsPlaceholder")} rows={3}
                 className="rounded-xl text-[15px] resize-none" />
             </div>
-
-            {/* Section 3: Address label */}
-            <SectionHeader
-              title="Address label"
-              subtitle="Labelling addresses helps you to choose between them. Choose 'Other' to create your own custom label."
-            />
-
-            <PillSelector
-              options={LABEL_OPTIONS.map((label) => ({
-                key: label,
-                label: t(LABEL_TRANSLATION_KEYS[label]),
-                icon: getAddressLabelIcon(label),
-              }))}
-              value={newLabel}
-              onChange={setNewLabel}
-              pillClassName="flex-1 h-11 text-[14px]"
-            />
 
             {/* Save button */}
             <Button variant="brand" onClick={handleSave} disabled={!newStreet.trim()}
               loading={isSaving}
-              icon={<Check className="size-4.5" />}
               className="w-full h-12 rounded-xl font-semibold text-[15px]">
               {isSaving ? t("saving") : editingAddress ? "Save changes" : t("saveAddress")}
             </Button>
