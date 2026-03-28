@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 
-import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
+import { resolveTenantRoute, findCustomer } from "@/lib/api/tenant-route";
 import { findEligibleGroupDiscounts } from "@/lib/groups/query";
 
 export async function GET(
@@ -11,17 +10,16 @@ export async function GET(
 ) {
   const { tenantSlug } = await params;
 
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await resolveTenantRoute(tenantSlug);
+  if ("error" in ctx) return ctx.error;
+  const { session, tenant } = ctx;
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { slug: tenantSlug, isActive: true },
+  const tenantWithConfig = await prisma.tenant.findUnique({
+    where: { id: tenant.id },
     include: { config: true },
   });
 
-  if (!tenant || !tenant.config) {
+  if (!tenantWithConfig?.config) {
     return NextResponse.json({ enabled: false, coupons: [], milestoneProgress: null });
   }
 
@@ -34,7 +32,7 @@ export async function GET(
     couponType,
     couponMaxPerOrder,
     couponRedeemMinOrder,
-  } = tenant.config;
+  } = tenantWithConfig.config;
 
   const milestoneType = couponMilestoneType || "ORDERS";
 
@@ -43,11 +41,7 @@ export async function GET(
   }
 
   // Get customer record
-  const customer = await prisma.customer.findUnique({
-    where: {
-      tenantId_userId: { tenantId: tenant.id, userId: session.user.id },
-    },
-  });
+  const customer = await findCustomer(tenant.id, session.user.id);
 
   if (!customer) {
     const required =

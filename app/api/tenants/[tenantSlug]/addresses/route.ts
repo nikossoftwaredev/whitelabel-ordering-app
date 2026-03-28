@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
 
-import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
+import { resolveTenantRoute, findCustomer } from "@/lib/api/tenant-route";
 
 const createAddressSchema = z.object({
   label: z.string().min(1, "Label is required"),
@@ -29,27 +28,11 @@ export async function GET(
 ) {
   const { tenantSlug } = await params;
 
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await resolveTenantRoute(tenantSlug);
+  if ("error" in ctx) return ctx.error;
+  const { session, tenant } = ctx;
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { slug: tenantSlug, isActive: true },
-  });
-
-  if (!tenant) {
-    return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
-  }
-
-  const customer = await prisma.customer.findUnique({
-    where: {
-      tenantId_userId: {
-        tenantId: tenant.id,
-        userId: session.user.id,
-      },
-    },
-  });
+  const customer = await findCustomer(tenant.id, session.user.id);
 
   if (!customer) {
     return NextResponse.json({ addresses: [] });
@@ -69,18 +52,9 @@ export async function POST(
 ) {
   const { tenantSlug } = await params;
 
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const tenant = await prisma.tenant.findUnique({
-    where: { slug: tenantSlug, isActive: true },
-  });
-
-  if (!tenant) {
-    return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
-  }
+  const ctx = await resolveTenantRoute(tenantSlug);
+  if ("error" in ctx) return ctx.error;
+  const { session, tenant } = ctx;
 
   const body = await request.json();
   const parsed = createAddressSchema.safeParse(body);

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
+import { findCustomer } from "@/lib/api/tenant-route";
 import { ACTIVE_ORDER_STATUSES } from "@/lib/general/status-config";
 
 export async function GET(
@@ -24,14 +25,7 @@ export async function GET(
     return NextResponse.json({ order: null });
   }
 
-  const customer = await prisma.customer.findUnique({
-    where: {
-      tenantId_userId: {
-        tenantId: tenant.id,
-        userId: session.user.id,
-      },
-    },
-  });
+  const customer = await findCustomer(tenant.id, session.user.id);
 
   if (!customer) {
     return NextResponse.json({ order: null });
