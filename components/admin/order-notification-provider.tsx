@@ -32,6 +32,7 @@ export function OrderNotificationProvider({
   const routerRef = useRef(router);
   const setPendingOrderIdRef = useRef(setPendingOrderId);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const chatChannelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     playSoundRef.current = playSound;
@@ -97,6 +98,35 @@ export function OrderNotificationProvider({
       channelRef.current = null;
     };
   }, [tenantId, queryClient]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const supabase = getSupabaseBrowserClient();
+
+    const chatChannel = supabase
+      .channel(`admin-chat:${tenantId}`)
+      .on("broadcast", { event: "new_customer_message" }, () => {
+        toast.info("New chat message", {
+          description: "A customer sent you a message",
+          action: {
+            label: "View",
+            onClick: () => {
+              routerRef.current.push("/admin/chat");
+            },
+          },
+          duration: 6000,
+        });
+      })
+      .subscribe();
+
+    chatChannelRef.current = chatChannel;
+
+    return () => {
+      supabase.removeChannel(chatChannel);
+      chatChannelRef.current = null;
+    };
+  }, [tenantId]);
 
   return null;
 }

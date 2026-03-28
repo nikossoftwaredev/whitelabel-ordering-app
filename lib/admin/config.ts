@@ -3,6 +3,7 @@ import {
   FileText,
   LayoutDashboard,
   LucideIcon,
+  MessageCircle,
   Settings,
   Shield,
   ShoppingBag,
@@ -28,6 +29,7 @@ export const adminNavItems: Record<string, AdminNavItem[]> = {
     { label: "Kitchen", href: "kitchen", icon: ChefHat },
     { label: "Menu", href: "menu", icon: UtensilsCrossed },
     { label: "Delivery", href: "delivery", icon: Truck },
+    { label: "Chat", href: "chat", icon: MessageCircle },
   ],
   People: [
     { label: "Customers", href: "customers", icon: UserSearch },
