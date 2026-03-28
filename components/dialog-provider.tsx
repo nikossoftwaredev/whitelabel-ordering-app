@@ -59,7 +59,7 @@ export const DIALOG_KEYS = {
 } as const;
 
 /** Dialogs that use the compact variant (auto-height, no close button) */
-const COMPACT_DIALOGS = new Set<string>([DIALOG_KEYS.CONFIRM]);
+const COMPACT_DIALOGS = new Set<string>([DIALOG_KEYS.CONFIRM, DIALOG_KEYS.AUTH]);
 
 function DialogFallback() {
   return (
