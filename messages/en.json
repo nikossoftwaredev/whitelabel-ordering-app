@@ -164,7 +164,13 @@
     "groupDiscount": "Group discount",
     "expires": "Expires",
     "totalSavings": "You save {amount} on this order!",
-    "table": "Table"
+    "table": "Table",
+    "orderAnalysis": "Order analysis",
+    "allergenInfo": "Allergen information",
+    "allergenNotice": "Our products may contain allergens. For a full list please contact the store.",
+    "legalText": "By placing your order you accept our {termsLink} and {privacyLink}.",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy"
   },
   "OrderConfirmation": {
     "orderDeclined": "Order {number} Declined",
@@ -334,6 +340,7 @@
     "shareLocation": "Share your location",
     "geolocationNotSupported": "Geolocation is not supported by your browser",
     "locationDenied": "Location access denied. Please enter your address manually.",
+    "locationDeniedSettings": "Location access is blocked. Click the lock icon in your browser's address bar and allow location, then try again.",
     "locationUnavailable": "Location unavailable. Please enter your address manually.",
     "locationError": "Could not get location. Please enter your address manually.",
     "signInForAddresses": "Sign in for saved addresses"

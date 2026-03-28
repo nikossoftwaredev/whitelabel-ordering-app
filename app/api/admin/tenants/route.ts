@@ -9,6 +9,7 @@ import {
   normalizeDomains,
 } from "@/lib/admin/tenant-helpers";
 import { authOptions } from "@/lib/auth/auth";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db";
 
 async function requireSuperAdmin() {
@@ -120,6 +121,8 @@ export async function POST(req: NextRequest) {
       // User not found — silently skip on create (tenant still created)
     }
   }
+
+  revalidateTag("stores", "default");
 
   return NextResponse.json({ ...tenant, ownerEmail: resolvedOwnerEmail }, { status: 201 });
 }

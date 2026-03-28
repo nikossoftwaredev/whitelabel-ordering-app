@@ -3,12 +3,18 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
+import { apiLimiter, getClientIp } from "@/lib/security/rate-limit";
 
 interface Params {
   params: Promise<{ tenantSlug: string }>;
 }
 
 export async function POST(request: NextRequest, { params }: Params) {
+  const { success } = await apiLimiter.limit(getClientIp(request));
+  if (!success) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
+
   const { tenantSlug } = await params;
 
   const tenant = await prisma.tenant.findUnique({

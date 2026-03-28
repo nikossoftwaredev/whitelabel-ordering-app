@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   Leaf,
   QrCode,
@@ -10,62 +9,21 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useMemo,useState } from "react";
+import { useLocale } from "next-intl";
+import { useMemo, useState } from "react";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMenuQuery } from "@/hooks/use-menu-query";
 import { useFormatPrice } from "@/hooks/use-format-price";
-import { queryKeys } from "@/lib/query/keys";
-
-interface ModifierOption {
-  id: string;
-  name: string;
-  priceAdjustment: number;
-}
-
-interface ModifierGroup {
-  id: string;
-  name: string;
-  options: ModifierOption[];
-}
-
-interface Product {
-  id: string;
-  name: string;
-  nameEl: string | null;
-  description: string | null;
-  image: string | null;
-  price: number;
-  isVegan: boolean;
-  isVegetarian: boolean;
-  isGlutenFree: boolean;
-  isDairyFree: boolean;
-  containsNuts: boolean;
-  isSpicy: boolean;
-  allergens: string | null;
-  modifierGroups: ModifierGroup[];
-}
-
-interface Category {
-  id: string;
-  name: string;
-  nameEl: string | null;
-  products: Product[];
-}
-
-interface MenuData {
-  tenant: {
-    name: string;
-    isPaused: boolean;
-    currency: string;
-    logo: string | null;
-    description: string | null;
-  };
-  categories: Category[];
-}
 
 interface QrMenuProps {
   tenantSlug: string;
@@ -80,19 +38,12 @@ const dietaryFilters = [
 export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
   const formatPrice = useFormatPrice();
   const searchParams = useSearchParams();
+  const locale = useLocale();
   const tableNumber = searchParams.get("table");
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
-  const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery<MenuData>({
-    queryKey: queryKeys.menu.all(tenantSlug),
-    queryFn: async () => {
-      const res = await fetch(`/api/tenants/${tenantSlug}/menu`);
-      if (!res.ok) throw new Error("Failed to fetch menu");
-      return res.json();
-    },
-  });
+  const { data, isLoading } = useMenuQuery(tenantSlug);
 
   const filteredCategories = useMemo(() => {
     if (!data?.categories) return [];
@@ -189,10 +140,10 @@ export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
             <p className="text-muted-foreground">No products found</p>
           </div>
         )}
-        {!isLoading && filteredCategories.length > 0 && (
+        {!isLoading &&
           filteredCategories.map((cat) => (
             <section key={cat.id} className="mb-6">
-              <h2 className="text-lg font-semibold mb-3 sticky top-[140px] z-20 bg-background py-1">
+              <h2 className="text-lg font-semibold mb-3 sticky top-35 z-20 bg-background py-1">
                 {cat.name}
                 {cat.nameEl && (
                   <span className="text-sm font-normal text-muted-foreground ml-2">
@@ -200,20 +151,14 @@ export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
                   </span>
                 )}
               </h2>
-              <div className="space-y-2">
+              <Accordion type="single" collapsible className="space-y-2">
                 {cat.products.map((product) => (
-                  <div
+                  <AccordionItem
                     key={product.id}
-                    className="rounded-xl border overflow-hidden transition-colors duration-300"
+                    value={product.id}
+                    className="rounded-xl border overflow-hidden border-b-0"
                   >
-                    <div
-                      className="flex gap-3 p-3 cursor-pointer hover:bg-muted/50"
-                      onClick={() =>
-                        setExpandedProduct(
-                          expandedProduct === product.id ? null : product.id
-                        )
-                      }
-                    >
+                    <AccordionTrigger className="flex gap-3 p-3 hover:no-underline hover:bg-muted/50 [&>svg]:shrink-0 [&>svg]:self-center [&>svg]:text-muted-foreground">
                       {product.image ? (
                         <Image
                           src={product.image}
@@ -227,7 +172,7 @@ export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
                           <Store className="size-5 text-muted-foreground/30" />
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <h3 className="font-medium text-sm">{product.name}</h3>
@@ -276,64 +221,56 @@ export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
                           )}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Expanded details */}
-                    {expandedProduct === product.id && (
-                      <div className="px-3 pb-3 space-y-2">
-                        <Separator />
-                        {product.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {product.description}
-                          </p>
-                        )}
-                        {product.isSpicy && (
-                          <Badge variant="destructive" className="text-xs">
-                            Spicy 🌶
-                          </Badge>
-                        )}
-                        {product.containsNuts && (
-                          <Badge variant="outline" className="text-xs">
-                            Contains Nuts
-                          </Badge>
-                        )}
-                        {product.allergens && (
-                          <p className="text-xs text-muted-foreground">
-                            Allergens: {product.allergens}
-                          </p>
-                        )}
-                        {product.modifierGroups.length > 0 && (
-                          <div className="space-y-2 pt-1">
-                            {product.modifierGroups.map((group) => (
-                              <div key={group.id}>
-                                <p className="text-xs font-semibold">
-                                  {group.name}
-                                </p>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {group.options.map((opt) => (
-                                    <Badge
-                                      key={opt.id}
-                                      variant="secondary"
-                                      className="text-xs"
-                                    >
-                                      {opt.name}
-                                      {opt.priceAdjustment > 0 &&
-                                        ` +${formatPrice(opt.priceAdjustment)}`}
-                                    </Badge>
-                                  ))}
-                                </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-3 pb-3 space-y-2 border-t border-border">
+                      {product.description && (
+                        <p className="text-sm text-muted-foreground">
+                          {product.description}
+                        </p>
+                      )}
+                      {product.isSpicy && (
+                        <Badge variant="destructive" className="text-xs">
+                          Spicy 🌶
+                        </Badge>
+                      )}
+                      {product.containsNuts && (
+                        <Badge variant="outline" className="text-xs">
+                          Contains Nuts
+                        </Badge>
+                      )}
+                      {product.allergens && (
+                        <p className="text-xs text-muted-foreground">
+                          Allergens: {product.allergens}
+                        </p>
+                      )}
+                      {product.modifierGroups.length > 0 && (
+                        <div className="space-y-2 pt-1">
+                          {product.modifierGroups.map((group) => (
+                            <div key={group.id}>
+                              <p className="text-xs font-semibold">{group.name}</p>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {group.options.map((opt) => (
+                                  <Badge
+                                    key={opt.id}
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {opt.name}
+                                    {opt.priceAdjustment > 0 &&
+                                      ` +${formatPrice(opt.priceAdjustment)}`}
+                                  </Badge>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
                 ))}
-              </div>
+              </Accordion>
             </section>
-          ))
-        )}
+          ))}
 
         {/* Footer */}
         <div className="text-center py-8 border-t mt-4">
@@ -341,7 +278,7 @@ export const QrMenu = ({ tenantSlug }: QrMenuProps) => {
             Scan the QR code or visit our website to place an order
           </p>
           <Button variant="outline" className="mt-3 cursor-pointer" asChild>
-            <a href={tableNumber ? `/order?table=${tableNumber}` : `/order`}>
+            <a href={tableNumber ? `/${locale}/order?table=${tableNumber}` : `/${locale}/order`}>
               {tableNumber ? `Order at Table ${tableNumber}` : "Order Online"}
             </a>
           </Button>

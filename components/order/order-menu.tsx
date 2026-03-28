@@ -33,95 +33,22 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMenuQuery } from "@/hooks/use-menu-query";
 import { useFormatPrice } from "@/hooks/use-format-price";
 import { cn } from "@/lib/general/utils";
 import { useRouter } from "@/lib/i18n/navigation";
 import { applyFreeCount } from "@/lib/orders/free-count";
 import { hasActiveOffer } from "@/lib/orders/offers";
-import { queryKeys } from "@/lib/query/keys";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useDialogStore } from "@/lib/stores/dialog-store";
+import type { MenuCategory, MenuItem, ModifierGroup, ModifierOption } from "@/types/menu";
 
 import { PRODUCT_DETAIL_DIALOG } from "./product-detail-sheet";
 import { QuantityStepper } from "./quantity-stepper";
 import { ReorderCarousel } from "./reorder-carousel";
 
-/* ─────────────── Types ─────────────── */
-interface ModifierOption {
-  id: string;
-  name: string;
-  nameEl: string | null;
-  priceAdjustment: number;
-  isDefault: boolean;
-}
-
-interface ModifierGroup {
-  id: string;
-  name: string;
-  nameEl: string | null;
-  required: boolean;
-  minSelect: number;
-  maxSelect: number;
-  freeCount?: number;
-  options: ModifierOption[];
-}
-
-interface Product {
-  id: string;
-  name: string;
-  nameEl: string | null;
-  description: string | null;
-  image: string | null;
-  price: number;
-  isVegan: boolean;
-  isVegetarian: boolean;
-  isGlutenFree: boolean;
-  isDairyFree: boolean;
-  containsNuts: boolean;
-  isSpicy: boolean;
-  allergens: string | null;
-  modifierGroups: ModifierGroup[];
-  hasPreset?: boolean;
-  presetOptionIds?: string[];
-  presetName?: string | null;
-  presetNameEl?: string | null;
-  offerType?: string | null;
-  offerPrice?: number | null;
-  offerStart?: string | null;
-  offerEnd?: string | null;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  nameEl: string | null;
-  products: Product[];
-}
-
-interface OperatingHour {
-  dayOfWeek: number;
-  openTime: string;
-  closeTime: string;
-  isClosed: boolean;
-}
-
-interface MenuData {
-  tenant: {
-    name: string;
-    isPaused: boolean;
-    currency: string;
-    logo: string | null;
-    coverImage: string | null;
-    description: string | null;
-    prepTimeMinutes: number;
-    phone: string | null;
-    email: string | null;
-    address: string | null;
-    operatingHours: OperatingHour[];
-  };
-  categories: Category[];
-  popularProductIds?: string[];
-}
+type Product = MenuItem;
+type Category = MenuCategory;
 
 interface OrderMenuProps {
   tenantSlug: string;
@@ -507,14 +434,7 @@ export const OrderMenu = ({ tenantSlug, tenantName, logo }: OrderMenuProps) => {
     setTenantSlug(tenantSlug);
   }, [setTenantSlug, tenantSlug]);
 
-  const { data, isLoading } = useQuery<MenuData>({
-    queryKey: queryKeys.menu.all(tenantSlug),
-    queryFn: async () => {
-      const res = await fetch(`/api/tenants/${tenantSlug}/menu`);
-      if (!res.ok) throw new Error("Failed to fetch menu");
-      return res.json();
-    },
-  });
+  const { data, isLoading } = useMenuQuery(tenantSlug);
 
   const { data: couponData } = useQuery<{
     enabled: boolean;

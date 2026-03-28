@@ -21,4 +21,5 @@ export async function invalidateTenantCache(tenantId: string) {
   if (tenant) {
     revalidateTag(`tenant-${tenant.slug}`, "default");
   }
+  revalidateTag("stores", "default");
 }

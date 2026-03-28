@@ -1,6 +1,15 @@
+import { type NextRequest } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 
 import { redis } from "@/lib/redis";
+
+export function getClientIp(request: NextRequest): string {
+  return (
+    request.headers.get("x-forwarded-for") ??
+    request.headers.get("x-real-ip") ??
+    "anonymous"
+  );
+}
 
 // API rate limiter: 60 requests per 1 minute per token
 export const apiLimiter = new Ratelimit({

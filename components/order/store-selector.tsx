@@ -1,44 +1,26 @@
 "use client";
 
 import { MapPin, Store } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import type { CachedStore } from "@/lib/cache/stores";
 
-interface TenantInfo {
-  id: string;
-  name: string;
-  slug: string;
-  address: string | null;
-  logo: string | null;
-  primaryColor: string;
+interface StoreSelectorProps {
+  stores: CachedStore[];
 }
 
-export function StoreSelector() {
-  const [tenants, setTenants] = useState<TenantInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/stores")
-      .then((r) => r.json())
-      .then((data) => setTenants(data.stores ?? []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
+export function StoreSelector({ stores }: StoreSelectorProps) {
   const handleSelect = useCallback((slug: string) => {
     const host = window.location.hostname;
     const isSubdomainCapable =
       host.includes("lvh.me") || host.includes("localhost");
 
     if (isSubdomainCapable) {
-      // Local dev: redirect to subdomain
       const { protocol, port } = window.location;
       const portSuffix = port ? `:${port}` : "";
       window.location.assign(`${protocol}//${slug}.lvh.me${portSuffix}/order`);
     } else {
-      // Vercel / environments without wildcard subdomains: use cookie fallback
       document.cookie = `__tenant=${slug};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
       window.location.reload();
     }
@@ -56,23 +38,7 @@ export function StoreSelector() {
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-6">
-        {loading && (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardContent className="p-4 flex items-center gap-4">
-                  <Skeleton className="size-14 rounded-xl shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-5 w-40" />
-                    <Skeleton className="h-4 w-56" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {!loading && tenants.length === 0 && (
+        {stores.length === 0 && (
           <div className="flex flex-col items-center gap-4 py-20 text-center">
             <Store className="size-16 text-muted-foreground/30" />
             <div>
@@ -84,16 +50,15 @@ export function StoreSelector() {
           </div>
         )}
 
-        {!loading && tenants.length > 0 && (
+        {stores.length > 0 && (
           <div className="space-y-3">
-            {tenants.map((tenant) => (
+            {stores.map((tenant) => (
               <Card
                 key={tenant.id}
                 className="cursor-pointer hover:bg-muted/50 transition-colors duration-200"
                 onClick={() => handleSelect(tenant.slug)}
               >
                 <CardContent className="p-4 flex items-center gap-4">
-                  {/* Logo */}
                   {tenant.logo ? (
                     <div className="size-14 rounded-xl overflow-hidden bg-muted flex items-center justify-center shrink-0">
                       <img
@@ -113,7 +78,6 @@ export function StoreSelector() {
                     </div>
                   )}
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-base">{tenant.name}</h3>
                     {tenant.address && (
@@ -124,7 +88,6 @@ export function StoreSelector() {
                     )}
                   </div>
 
-                  {/* Arrow */}
                   <svg
                     className="size-5 text-muted-foreground shrink-0"
                     viewBox="0 0 20 20"
