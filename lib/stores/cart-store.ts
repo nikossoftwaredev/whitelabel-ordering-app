@@ -83,7 +83,7 @@ export const useCartStore = create<CartStore>()(
             return { items: updated };
           }
 
-          const cartItemId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          const cartItemId = crypto.randomUUID();
           return {
             items: [...state.items, { ...item, cartItemId, totalPrice: calcTotal(item) }],
           };

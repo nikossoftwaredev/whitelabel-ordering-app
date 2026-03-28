@@ -7,13 +7,6 @@ import {
   PlaceReviewsResponse,
 } from "@/server_actions/get-google-reviews";
 
-const MOCK_DATA: PlaceReviewsResponse = {
-  rating: 4.9,
-  user_ratings_total: 120,
-  url: "#",
-  reviews: [],
-};
-
 const GoogleIcon = () => (
   <svg viewBox="0 0 48 48" className="size-12">
     <path
@@ -41,10 +34,11 @@ interface ReviewsProps {
 
 const GoogleReviews = ({ placeId }: ReviewsProps) => {
   const [reviewsData, setReviewsData] =
-    useState<PlaceReviewsResponse>(MOCK_DATA);
+    useState<PlaceReviewsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!placeId) { setLoading(false); return; }
     const fetchReviews = async () => {
       try {
         setLoading(true);
@@ -56,12 +50,16 @@ const GoogleReviews = ({ placeId }: ReviewsProps) => {
         setLoading(false);
       }
     };
-    if (placeId) fetchReviews();
+    fetchReviews();
   }, [placeId]);
 
-  const { rating, user_ratings_total, url } = reviewsData;
+  if (loading) return (
+    <div className="relative bg-card/80 backdrop-blur-sm w-72 h-28 overflow-hidden border border-border/20 rounded-2xl shadow-lg animate-pulse" />
+  );
 
-  if (!loading && rating === 0) return null;
+  if (!reviewsData) return null;
+
+  const { rating, user_ratings_total, url } = reviewsData;
 
   return (
     <div className="relative bg-card/80 backdrop-blur-sm w-72 overflow-hidden border border-border/20 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">

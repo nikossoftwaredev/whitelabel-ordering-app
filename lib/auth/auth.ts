@@ -3,13 +3,9 @@ import type { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth";
 import EmailProvider from "next-auth/providers/email";
 import GoogleProvider from "next-auth/providers/google";
-import { Resend } from "resend";
 
 import { prisma } from "@/lib/db";
-
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+import { EMAIL_FROM, resend } from "@/lib/email/resend";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -21,7 +17,7 @@ export const authOptions: NextAuthOptions = {
     }),
     EmailProvider({
       server: "", // not used — we use custom sendVerificationRequest
-      from: process.env.EMAIL_FROM || "noreply@example.com",
+      from: EMAIL_FROM,
       sendVerificationRequest: async ({ identifier: email, url }) => {
         if (!resend) {
           console.log(`[Dev] Magic link for ${email}: ${url}`);
@@ -29,7 +25,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const { error } = await resend.emails.send({
-          from: process.env.EMAIL_FROM || "noreply@example.com",
+          from: EMAIL_FROM,
           to: email,
           subject: "Sign in link",
           html: `

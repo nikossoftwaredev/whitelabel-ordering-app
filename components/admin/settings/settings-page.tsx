@@ -159,7 +159,7 @@ export function SettingsPage({ tenantId }: { tenantId: string }) {
 
   const storeUrl = typeof window !== "undefined"
     ? `${window.location.protocol}//${tenant.slug}.${window.location.host.replace(/^[^.]+\./, "")}/order`
-    : `https://${tenant.slug}.example.com/order`;
+    : `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/order`;
 
   const downloadQr = useCallback(() => {
     const svg = qrRef.current?.querySelector("svg");
